@@ -1,7 +1,7 @@
 import java.util.ArrayList;
 
 public class Block {
-    private ArrayList<Transaction> txList = new ArrayList<Transaction>();
+    private ArrayList<Transaction> txList;
     private String prevBlockHash;
     private String txListHash;
 
