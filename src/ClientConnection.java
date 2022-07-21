@@ -23,41 +23,39 @@ class ClientConnection extends Thread {
 
     public void run() {
         maxPeers = node.getMaxPeers();
-        ArrayList<Address> potentialPeers = globalPeers;
-        while(true) {
-            if (node.getLocalPeers().size() < node.getMaxPeers()) {
-                for (Address address : potentialPeers) {
-                    try {
-                        if (!address.equals(node.getAddress()) && !node.getLocalPeers().contains(address)) {
-                            Socket s = new Socket(address.getHost(), address.getPort());
-                            InputStream in = s.getInputStream();
-                            ObjectInputStream oin = new ObjectInputStream(in);
-                            OutputStream out = s.getOutputStream();
-                            ObjectOutputStream oout = new ObjectOutputStream(out);
+        if (node.getLocalPeers().size() < node.getMaxPeers()) {
+            for (Address address : globalPeers) {
+                try {
+                    if (!address.equals(node.getAddress()) && !node.getLocalPeers().contains(address)) {
+                        Socket s = new Socket(address.getHost(), address.getPort());
+                        InputStream in = s.getInputStream();
+                        ObjectInputStream oin = new ObjectInputStream(in);
+                        OutputStream out = s.getOutputStream();
+                        ObjectOutputStream oout = new ObjectOutputStream(out);
 
-                            Message message = new Message(Message.Request.REQUEST_CONNECTION, node.getAddress());
-                            oout.writeObject(message);
-                            oout.flush();
-                            Message messageReceived = (Message) oin.readObject();
+                        Message message = new Message(Message.Request.REQUEST_CONNECTION, node.getAddress());
+                        oout.writeObject(message);
+                        oout.flush();
+                        Message messageReceived = (Message) oin.readObject();
 
 
-                            if (messageReceived.getRequest().equals(Message.Request.ACCEPT_CONNECTION)) {
-                                node.establishConnection(address);
-                                System.out.println("client estab");
-                            } else if (messageReceived.getRequest().equals(Message.Request.REJECT_CONNECTION)) {
-                                potentialPeers.remove(address);
-                            }
-                            s.close();
+                        if (messageReceived.getRequest().equals(Message.Request.ACCEPT_CONNECTION)) {
+                            node.establishConnection(address);
+                            System.out.println("client estab");
+                        } else if (messageReceived.getRequest().equals(Message.Request.REJECT_CONNECTION)) {
+
                         }
-                    } catch (ConnectException e0) {
-
-                    } catch (IOException e1) {
-                        System.out.println(e1);
-                    } catch (ClassNotFoundException e2) {
-                        System.out.println(e2);
+                        s.close();
                     }
+                } catch (ConnectException e0) {
+
+                } catch (IOException e1) {
+                    System.out.println(e1);
+                } catch (ClassNotFoundException e2) {
+                    System.out.println(e2);
                 }
             }
         }
+
     }
 }
