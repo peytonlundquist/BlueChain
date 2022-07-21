@@ -47,7 +47,6 @@ class ServerConnection extends Thread {
                         node.establishConnection(address);
                         System.out.println("server estab");
                         return;
-
                     }
                 }
                 Message outgoingMessage = new Message(Message.Request.REJECT_CONNECTION, node.getAddress());

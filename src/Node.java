@@ -11,37 +11,10 @@ public class Node implements NodeInterface {
     private ArrayList<Block> blockchain;
     private ArrayList<Address> globalPeers;
     private ArrayList<Address> localPeers;
-
     private Address myAddress;
-
     private Object lock1 = new Object();
     private Object lock2 = new Object();
-
     private final int MAX_PEERS;
-
-
-
-    public void establishConnection(Address address){
-        synchronized(lock1) {
-            if (localPeers.size() < MAX_PEERS && !localPeers.contains(address)) {
-                localPeers.add(address);
-                System.out.println("Added peer: " + address.getPort());
-
-            }
-        }
-    }
-
-    @Override
-    public void requestConnections(){
-        try {
-            if(globalPeers.size() > 0){
-                ClientConnection connect = new ClientConnection(this, globalPeers);
-                connect.start();
-            }
-        } catch (SocketException e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     @Override
     public void addBlock() {
@@ -99,6 +72,28 @@ public class Node implements NodeInterface {
     public ArrayList<Address> getLocalPeers(){
         synchronized (lock2){
             return this.localPeers;
+        }
+    }
+
+    public void establishConnection(Address address){
+        synchronized(lock1) {
+            if (localPeers.size() < MAX_PEERS && !localPeers.contains(address)) {
+                localPeers.add(address);
+                System.out.println("Added peer: " + address.getPort());
+
+            }
+        }
+    }
+
+    @Override
+    public void requestConnections(){
+        try {
+            if(globalPeers.size() > 0){
+                ClientConnection connect = new ClientConnection(this, globalPeers);
+                connect.start();
+            }
+        } catch (SocketException e) {
+            throw new RuntimeException(e);
         }
     }
 }

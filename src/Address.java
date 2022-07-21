@@ -16,4 +16,11 @@ public class Address implements Serializable {
     public String getHost(){
         return host;
     }
+
+    public boolean equals(Address address){
+        if(this.port == address.getPort() && this.host == address.getHost()){
+            return true;
+        }
+        return false;
+    }
 }
