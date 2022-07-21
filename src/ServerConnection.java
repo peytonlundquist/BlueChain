@@ -13,8 +13,6 @@ class ServerConnection extends Thread {
         this.client = client;
         this.node = node;
         setPriority(NORM_PRIORITY - 1);
-        System.out.println("Created thread " + this.getName());
-
     }
 
     public void run() {
@@ -24,7 +22,6 @@ class ServerConnection extends Thread {
             ObjectOutputStream oout = new ObjectOutputStream(out);
             ObjectInputStream oin = new ObjectInputStream(in);
             Message incomingMessage = (Message) oin.readObject();
-            System.out.println("got message");
             interpretMessage(incomingMessage, oout);
             client.close();
         } catch (IOException e) {
@@ -37,6 +34,7 @@ class ServerConnection extends Thread {
     public void interpretMessage(Message incomingMessage, ObjectOutputStream oout) throws IOException {
         switch(incomingMessage.getRequest()){
             case REQUEST_CONNECTION:
+                System.out.println("Received: Connection request.");
                 Address address = (Address) incomingMessage.getMetadata();
 
                 if(node.getLocalPeers().size() < node.getMaxPeers()){
@@ -45,7 +43,6 @@ class ServerConnection extends Thread {
                         oout.writeObject(outgoingMessage);
                         oout.flush();
                         node.establishConnection(address);
-                        System.out.println("server estab");
                         return;
                     }
                 }

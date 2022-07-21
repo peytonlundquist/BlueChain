@@ -17,8 +17,6 @@ class ClientConnection extends Thread {
         this.node = node;
         this.globalPeers = globalPeers;
         setPriority(NORM_PRIORITY - 1);
-        System.out.println("Created client thread " + this.getName());
-
     }
 
     public void run() {
@@ -41,7 +39,6 @@ class ClientConnection extends Thread {
 
                         if (messageReceived.getRequest().equals(Message.Request.ACCEPT_CONNECTION)) {
                             node.establishConnection(address);
-                            System.out.println("client estab");
                         } else if (messageReceived.getRequest().equals(Message.Request.REJECT_CONNECTION)) {
 
                         }

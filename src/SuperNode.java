@@ -2,7 +2,7 @@ import java.util.ArrayList;
 
 public class SuperNode {
     public static void main(String args[]) {
-        Node n1 = new Node(Integer.parseInt(args[0]), 4);
+        Node n1 = new Node(Integer.parseInt(args[0]), 5);
         ArrayList<Address> globalPeers = new ArrayList<Address>();
         globalPeers.add(new Address(8000, "localhost"));
         globalPeers.add(new Address(8001, "localhost"));

@@ -16,9 +16,15 @@ public class Node implements NodeInterface {
     private Object lock2 = new Object();
     private final int MAX_PEERS;
 
+    public int getMaxPeers(){
+        return this.MAX_PEERS;
+    }
+    public Address getAddress(){
+        return this.myAddress;
+    }
+
     @Override
     public void addBlock() {
-
     }
 
     @Override
@@ -27,7 +33,12 @@ public class Node implements NodeInterface {
     }
 
     public void searchForPeers(){
+    }
 
+    public ArrayList<Address> getLocalPeers(){
+        synchronized (lock2){
+            return this.localPeers;
+        }
     }
 
     public Node(int port, int MAX_PEERS) {
@@ -43,37 +54,7 @@ public class Node implements NodeInterface {
         }
     }
 
-    public void runNode(ArrayList<Address> globalPeers) {
-        Socket client;
-        this.globalPeers = globalPeers;
-        System.out.println("ClientConnection Started");
-        this.requestConnections();
-        System.out.println("ServerConnection Started");
-        try {
-            while (true) {
-                client = ss.accept();
-                System.out.println("Received connect from " + client.getInetAddress().getHostName() + " [ "
-                        + client.getInetAddress().getHostAddress() + " ] " + client.getPort());
-                new ServerConnection(client, this).start();
-            }
-        } catch (IOException e) {
-            System.err.println(e);
-        }
-    }
 
-    public int getMaxPeers(){
-        return this.MAX_PEERS;
-    }
-
-    public Address getAddress(){
-        return this.myAddress;
-    }
-
-    public ArrayList<Address> getLocalPeers(){
-        synchronized (lock2){
-            return this.localPeers;
-        }
-    }
 
     public void establishConnection(Address address){
         synchronized(lock1) {
@@ -94,6 +75,25 @@ public class Node implements NodeInterface {
             }
         } catch (SocketException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+
+    public void runNode(ArrayList<Address> globalPeers) {
+        Socket client;
+        this.globalPeers = globalPeers;
+        System.out.println("ClientConnection Started");
+        this.requestConnections();
+        System.out.println("ServerConnection Started");
+        try {
+            while (true) {
+                client = ss.accept();
+//                System.out.println("Received connect from " + client.getInetAddress().getHostName() + " [ "
+//                        + client.getInetAddress().getHostAddress() + " ] " + client.getPort());
+                new ServerConnection(client, this).start();
+            }
+        } catch (IOException e) {
+            System.err.println(e);
         }
     }
 }
