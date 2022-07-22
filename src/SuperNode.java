@@ -2,20 +2,28 @@ import node.Node;
 import node.communication.Address;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 public class SuperNode {
+
+    static final private String host = "localhost";
+    static final private int MAX_PORT = 8010;
+    static final private int MIN_PORT = 8000;
+
+
     public static void main(String args[]) {
-        Node n1 = new Node(Integer.parseInt(args[0]), 5);
+
+        Node n1 = new Node(Integer.parseInt(args[0]), 5, 3);
         ArrayList<Address> globalPeers = new ArrayList<Address>();
-        globalPeers.add(new Address(8000, "localhost"));
-        globalPeers.add(new Address(8001, "localhost"));
-        globalPeers.add(new Address(8002, "localhost"));
-        globalPeers.add(new Address(8003, "localhost"));
-        globalPeers.add(new Address(8004, "localhost"));
-        globalPeers.add(new Address(8005, "localhost"));
-        globalPeers.add(new Address(8006, "localhost"));
-        globalPeers.add(new Address(8007, "localhost"));
-        globalPeers.add(new Address(8008, "localhost"));
+
+        System.out.println("==== Global Peer List ====");
+        for(int i = MIN_PORT; i < MAX_PORT + 1; i++){
+            globalPeers.add(new Address(i, host));
+            System.out.println("Host: " + host + " Port: " + i);
+        }
+
+        System.out.println("==========================");
+        Collections.shuffle(globalPeers);
         n1.runNode(globalPeers);
     }
 }

@@ -10,6 +10,8 @@ import java.net.SocketException;
 import java.net.InetAddress;
 import java.util.ArrayList;
 
+import static node.utils.utils.containsAddress;
+
 public class Node implements NodeInterface {
     private ServerSocket ss;
     private ArrayList<Block> blockchain;
@@ -19,13 +21,19 @@ public class Node implements NodeInterface {
     private Object lock1 = new Object();
     private Object lock2 = new Object();
     private final int MAX_PEERS;
+    private final int INITIAL_CONNECTIONS;
+
 
     public int getMaxPeers(){
         return this.MAX_PEERS;
     }
+    public int getInitialConnections(){
+        return this.INITIAL_CONNECTIONS;
+    }
     public Address getAddress(){
         return this.myAddress;
     }
+
 
     @Override
     public void addBlock() {
@@ -40,16 +48,17 @@ public class Node implements NodeInterface {
     }
 
     public ArrayList<Address> getLocalPeers(){
-        synchronized (lock2){
+        synchronized (lock1){
             return this.localPeers;
         }
     }
 
-    public Node(int port, int MAX_PEERS) {
+    public Node(int port, int maxPeers, int initialConnections) {
         blockchain = new ArrayList<Block>();
         myAddress = new Address(port, "localhost");
         this.localPeers = new ArrayList<Address>();
-        this.MAX_PEERS = MAX_PEERS;
+        this.INITIAL_CONNECTIONS = initialConnections;
+        this.MAX_PEERS = maxPeers;
         try {
             ss = new ServerSocket(port);
             System.out.println("node.Node up and running on port " + port + " " + InetAddress.getLocalHost());
@@ -62,7 +71,7 @@ public class Node implements NodeInterface {
 
     public void establishConnection(Address address){
         synchronized(lock1) {
-            if (localPeers.size() < MAX_PEERS && !localPeers.contains(address)) {
+            if (localPeers.size() < MAX_PEERS && !containsAddress(localPeers, address)) {
                 localPeers.add(address);
                 System.out.println("Added peer: " + address.getPort());
 

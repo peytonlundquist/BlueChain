@@ -7,6 +7,8 @@ import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
 
+import static node.utils.utils.containsAddress;
+
 /**
  * Handles one connection in a separate thread.
  */
@@ -43,7 +45,7 @@ public class ServerConnection extends Thread {
                 Address address = (Address) incomingMessage.getMetadata();
 
                 if(node.getLocalPeers().size() < node.getMaxPeers()){
-                    if (!address.equals(node.getAddress()) && !node.getLocalPeers().contains(address)) {
+                    if (!address.equals(node.getAddress()) && !containsAddress(node.getLocalPeers(), address)) {
                         Message outgoingMessage = new Message(Message.Request.ACCEPT_CONNECTION, node.getAddress());
                         oout.writeObject(outgoingMessage);
                         oout.flush();

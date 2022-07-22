@@ -9,6 +9,8 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
 
+import static node.utils.utils.containsAddress;
+
 /**
  * Handles one connection in a separate thread.
  */
@@ -18,9 +20,12 @@ public class ClientConnection extends Thread {
     private ArrayList<Address> globalPeers;
     private int maxPeers;
 
+    private int numRequests;
+
     ClientConnection(Node node, ArrayList<Address> globalPeers) throws SocketException {
         this.node = node;
         this.globalPeers = globalPeers;
+        this.numRequests = numRequests;
         setPriority(NORM_PRIORITY - 1);
     }
 
@@ -29,7 +34,7 @@ public class ClientConnection extends Thread {
         if (node.getLocalPeers().size() < node.getMaxPeers()) {
             for (Address address : globalPeers) {
                 try {
-                    if (!address.equals(node.getAddress()) && !node.getLocalPeers().contains(address)) {
+                    if (!address.equals(node.getAddress()) && !containsAddress(node.getLocalPeers(), address)) {
                         Socket s = new Socket(address.getHost(), address.getPort());
                         InputStream in = s.getInputStream();
                         ObjectInputStream oin = new ObjectInputStream(in);
@@ -41,9 +46,11 @@ public class ClientConnection extends Thread {
                         oout.flush();
                         Message messageReceived = (Message) oin.readObject();
 
-
                         if (messageReceived.getRequest().equals(Message.Request.ACCEPT_CONNECTION)) {
                             node.establishConnection(address);
+                            if(node.getLocalPeers().size() == node.getInitialConnections()){
+                                return;
+                            }
                         } else if (messageReceived.getRequest().equals(Message.Request.REJECT_CONNECTION)) {
 
                         }
