@@ -7,7 +7,7 @@ import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
 
-import static node.utils.utils.containsAddress;
+import static node.utils.Utils.*;
 
 /**
  * Handles one connection in a separate thread.

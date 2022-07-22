@@ -7,7 +7,7 @@ import java.util.Collections;
 public class SuperNode {
 
     static final private String host = "localhost";
-    static final private int MAX_PORT = 8010;
+    static final private int MAX_PORT = 8020;
     static final private int MIN_PORT = 8000;
 
 

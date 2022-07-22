@@ -9,23 +9,19 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
 
-import static node.utils.utils.containsAddress;
+import static node.utils.Utils.*;
 
 /**
  * Handles one connection in a separate thread.
  */
 public class ClientConnection extends Thread {
-
     private Node node;
     private ArrayList<Address> globalPeers;
     private int maxPeers;
 
-    private int numRequests;
-
     ClientConnection(Node node, ArrayList<Address> globalPeers) throws SocketException {
         this.node = node;
         this.globalPeers = globalPeers;
-        this.numRequests = numRequests;
         setPriority(NORM_PRIORITY - 1);
     }
 
