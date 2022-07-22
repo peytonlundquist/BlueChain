@@ -1,3 +1,8 @@
+package node;
+
+
+import node.communication.*;
+
 import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
@@ -5,7 +10,7 @@ import java.net.SocketException;
 /**
  * Handles one connection in a separate thread.
  */
-class ServerConnection extends Thread {
+public class ServerConnection extends Thread {
     private Socket client;
     private Node node;
 

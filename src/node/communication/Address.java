@@ -1,4 +1,7 @@
+package node.communication;
+
 import java.io.Serializable;
+import java.util.Objects;
 
 public class Address implements Serializable {
     private int port;
@@ -18,9 +21,6 @@ public class Address implements Serializable {
     }
 
     public boolean equals(Address address){
-        if(this.port == address.getPort() && this.host == address.getHost()){
-            return true;
-        }
-        return false;
+        return this.port == address.getPort() && Objects.equals(this.host, address.getHost());
     }
 }

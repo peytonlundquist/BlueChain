@@ -1,3 +1,5 @@
+package node.blockchain;
+
 public class Transaction {
     private String data;
 

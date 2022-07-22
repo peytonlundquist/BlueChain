@@ -1,3 +1,7 @@
+package node;
+
+import node.communication.Address;
+
 public interface NodeInterface {
     void requestConnections();
 

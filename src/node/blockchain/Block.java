@@ -1,3 +1,5 @@
+package node.blockchain;
+
 import java.util.ArrayList;
 
 public class Block {

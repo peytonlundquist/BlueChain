@@ -1,3 +1,8 @@
+package node;
+
+import node.communication.*;
+
+
 import java.io.*;
 import java.net.ConnectException;
 import java.net.Socket;
@@ -7,7 +12,7 @@ import java.util.ArrayList;
 /**
  * Handles one connection in a separate thread.
  */
-class ClientConnection extends Thread {
+public class ClientConnection extends Thread {
 
     private Node node;
     private ArrayList<Address> globalPeers;

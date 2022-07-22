@@ -1,3 +1,7 @@
+package node;
+
+import node.blockchain.Block;
+import node.communication.Address;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -48,7 +52,7 @@ public class Node implements NodeInterface {
         this.MAX_PEERS = MAX_PEERS;
         try {
             ss = new ServerSocket(port);
-            System.out.println("Node up and running on port " + port + " " + InetAddress.getLocalHost());
+            System.out.println("node.Node up and running on port " + port + " " + InetAddress.getLocalHost());
         } catch (IOException e) {
             System.err.println(e);
         }
@@ -82,9 +86,9 @@ public class Node implements NodeInterface {
     public void runNode(ArrayList<Address> globalPeers) {
         Socket client;
         this.globalPeers = globalPeers;
-        System.out.println("ClientConnection Started");
+        System.out.println("connections.ClientConnection Started");
         this.requestConnections();
-        System.out.println("ServerConnection Started");
+        System.out.println("connections.ServerConnection Started");
         try {
             while (true) {
                 client = ss.accept();

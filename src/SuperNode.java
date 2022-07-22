@@ -1,3 +1,6 @@
+import node.Node;
+import node.communication.Address;
+
 import java.util.ArrayList;
 
 public class SuperNode {
