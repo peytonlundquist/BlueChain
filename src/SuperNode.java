@@ -7,7 +7,7 @@ import java.util.Collections;
 public class SuperNode {
 
     static final private String host = "localhost";
-    static final private int MAX_PORT = 8010;
+    static final private int MAX_PORT = 8020;
     static final private int MIN_PORT = 8000;
 
 
@@ -24,6 +24,6 @@ public class SuperNode {
 
         System.out.println("==========================");
         Collections.shuffle(globalPeers);
-        n1.runNode(globalPeers);
+        n1.requestConnections(globalPeers);
     }
 }

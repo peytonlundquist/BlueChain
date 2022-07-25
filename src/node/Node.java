@@ -2,7 +2,6 @@ package node;
 
 import node.blockchain.Block;
 import node.communication.Address;
-
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -10,50 +9,34 @@ import java.net.SocketException;
 import java.net.InetAddress;
 import java.util.ArrayList;
 
-import static node.utils.utils.containsAddress;
-
-public class Node implements NodeInterface {
+/**
+ * Node represents a peer, a cooperating member within the network
+ */
+public class Node  {
+    private final int MAX_PEERS;
+    private final int INITIAL_CONNECTIONS;
+    private final Object lock;
     private ServerSocket ss;
     private ArrayList<Block> blockchain;
     private ArrayList<Address> globalPeers;
     private ArrayList<Address> localPeers;
     private Address myAddress;
-    private Object lock1 = new Object();
-    private Object lock2 = new Object();
-    private final int MAX_PEERS;
-    private final int INITIAL_CONNECTIONS;
 
+    /* A collection of getters */
+    public int getMaxPeers(){return this.MAX_PEERS;}
+    public int getInitialConnections(){return this.INITIAL_CONNECTIONS;}
+    public Address getAddress(){return this.myAddress;}
+    public ArrayList<Address> getLocalPeers(){synchronized (lock){return this.localPeers;}}
 
-    public int getMaxPeers(){
-        return this.MAX_PEERS;
-    }
-    public int getInitialConnections(){
-        return this.INITIAL_CONNECTIONS;
-    }
-    public Address getAddress(){
-        return this.myAddress;
-    }
-
-
-    @Override
-    public void addBlock() {
-    }
-
-    @Override
-    public boolean validateBlock() {
-        return false;
-    }
-
-    public void searchForPeers(){
-    }
-
-    public ArrayList<Address> getLocalPeers(){
-        synchronized (lock1){
-            return this.localPeers;
-        }
-    }
-
+    /**
+     * Node constructor creates node and begins server socket to accept connections
+     *
+     * @param port
+     * @param maxPeers
+     * @param initialConnections
+     */
     public Node(int port, int maxPeers, int initialConnections) {
+        lock =  new Object();
         blockchain = new ArrayList<Block>();
         myAddress = new Address(port, "localhost");
         this.localPeers = new ArrayList<Address>();
@@ -61,16 +44,20 @@ public class Node implements NodeInterface {
         this.MAX_PEERS = maxPeers;
         try {
             ss = new ServerSocket(port);
+            Acceptor acceptor = new Acceptor(this);
+            acceptor.start();
             System.out.println("node.Node up and running on port " + port + " " + InetAddress.getLocalHost());
         } catch (IOException e) {
             System.err.println(e);
         }
     }
 
-
-
+    /**
+     * If eligible, add a connection to our dynamic list of peers to speak with
+     * @param address
+     */
     public void establishConnection(Address address){
-        synchronized(lock1) {
+        synchronized(lock) {
             if (localPeers.size() < MAX_PEERS && !containsAddress(localPeers, address)) {
                 localPeers.add(address);
                 System.out.println("Added peer: " + address.getPort());
@@ -79,8 +66,13 @@ public class Node implements NodeInterface {
         }
     }
 
-    @Override
-    public void requestConnections(){
+    /**
+     * Iterate through a list of peers and attempt to establish a mutual connection
+     * with a specified amount of nodes
+     * @param globalPeers
+     */
+    public void requestConnections(ArrayList<Address> globalPeers){
+        this.globalPeers = globalPeers;
         try {
             if(globalPeers.size() > 0){
                 ClientConnection connect = new ClientConnection(this, globalPeers);
@@ -91,22 +83,46 @@ public class Node implements NodeInterface {
         }
     }
 
-
-    public void runNode(ArrayList<Address> globalPeers) {
-        Socket client;
-        this.globalPeers = globalPeers;
-        System.out.println("connections.ClientConnection Started");
-        this.requestConnections();
-        System.out.println("connections.ServerConnection Started");
-        try {
-            while (true) {
-                client = ss.accept();
-//                System.out.println("Received connect from " + client.getInetAddress().getHostName() + " [ "
-//                        + client.getInetAddress().getHostAddress() + " ] " + client.getPort());
-                new ServerConnection(client, this).start();
+    /**
+     * Returns true if the provided address is in the list, otherwise false
+     * @param list
+     * @param address
+     * @return
+     */
+    public boolean containsAddress(ArrayList<Address> list, Address address){
+        synchronized(lock) {
+            for (Address existingAddress : list) {
+                if (existingAddress.equals(address)) {
+                    return true;
+                }
             }
-        } catch (IOException e) {
-            System.err.println(e);
+            return false;
+        }
+    }
+
+    /**
+     * Acceptor is a thread responsible for maintaining the server socket by
+     * accepting incoming connection requests, and starting a new ServerConnection
+     * thread for each request. Requests terminate in a finite amount of steps, so
+     * threads return upon completion.
+     */
+    class Acceptor extends Thread {
+        Node node;
+
+        Acceptor(Node node){
+            this.node = node;
+        }
+
+        public void run() {
+            Socket client;
+            while (true) {
+                try {
+                    client = ss.accept();
+                    new ServerConnection(client, node).start();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
         }
     }
 }

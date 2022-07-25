@@ -7,9 +7,12 @@ public class Block {
     private String prevBlockHash;
     private String txListHash;
 
-    public Block(ArrayList<Transaction> txList, String prevBlockHash){
+    private int blockId;
+
+    public Block(ArrayList<Transaction> txList, String prevBlockHash, int blockId){
         this.txList = txList;
         this.prevBlockHash = prevBlockHash;
+        this.blockId = blockId;
         txListHash = calcHash(txList);
     }
 

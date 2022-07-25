@@ -1,16 +1,12 @@
 package node;
 
-
 import node.communication.*;
-
 import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
 
-import static node.utils.utils.containsAddress;
-
 /**
- * Handles one connection in a separate thread.
+ * Deterministic thread which implements the nodes protocol
  */
 public class ServerConnection extends Thread {
     private Socket client;
@@ -29,7 +25,7 @@ public class ServerConnection extends Thread {
             ObjectOutputStream oout = new ObjectOutputStream(out);
             ObjectInputStream oin = new ObjectInputStream(in);
             Message incomingMessage = (Message) oin.readObject();
-            interpretMessage(incomingMessage, oout);
+            handleRequest(incomingMessage, oout);
             client.close();
         } catch (IOException e) {
             System.out.println("I/O error " + e);
@@ -38,25 +34,32 @@ public class ServerConnection extends Thread {
         }
     }
 
-    public void interpretMessage(Message incomingMessage, ObjectOutputStream oout) throws IOException {
+    public void handleRequest(Message incomingMessage, ObjectOutputStream oout) throws IOException {
+        Message outgoingMessage;
         switch(incomingMessage.getRequest()){
             case REQUEST_CONNECTION:
-                System.out.println("Received: Connection request.");
                 Address address = (Address) incomingMessage.getMetadata();
 
-                if(node.getLocalPeers().size() < node.getMaxPeers()){
-                    if (!address.equals(node.getAddress()) && !containsAddress(node.getLocalPeers(), address)) {
-                        Message outgoingMessage = new Message(Message.Request.ACCEPT_CONNECTION, node.getAddress());
+                if (node.getLocalPeers().size() < node.getMaxPeers()) {
+                    if (!address.equals(node.getAddress()) && !node.containsAddress(node.getLocalPeers(), address)) {
+                        outgoingMessage = new Message(Message.Request.ACCEPT_CONNECTION, node.getAddress());
                         oout.writeObject(outgoingMessage);
                         oout.flush();
                         node.establishConnection(address);
                         return;
                     }
                 }
-                Message outgoingMessage = new Message(Message.Request.REJECT_CONNECTION, node.getAddress());
+
+                outgoingMessage = new Message(Message.Request.REJECT_CONNECTION, node.getAddress());
                 oout.writeObject(outgoingMessage);
                 oout.flush();
-
+                break;
+            case QUERY_PEERS:
+                System.out.println("Received: Query request.");
+                outgoingMessage = new Message(node.getLocalPeers());
+                oout.writeObject(outgoingMessage);
+                oout.flush();
+                break;
             case REQUEST_BLOCK:
             case ADD_BLOCK:
         }
