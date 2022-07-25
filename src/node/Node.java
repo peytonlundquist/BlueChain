@@ -80,6 +80,17 @@ public class Node  {
         return false;
     }
 
+    public boolean containsAddress(ArrayList<Address> list, Address address){
+        synchronized(lock) {
+            for (Address existingAddress : list) {
+                if (existingAddress.equals(address)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
     class Acceptor extends Thread {
         Node node;
 
