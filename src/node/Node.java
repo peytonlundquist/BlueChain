@@ -10,9 +10,9 @@ import java.net.SocketException;
 import java.net.InetAddress;
 import java.util.ArrayList;
 
-import static node.utils.Utils.*;
+import static node.utils.Utils.containsAddress;
 
-public class Node implements NodeInterface {
+public class Node  {
     private final int MAX_PEERS;
     private final int INITIAL_CONNECTIONS;
     private final Object lock;
@@ -45,6 +45,8 @@ public class Node implements NodeInterface {
         this.MAX_PEERS = maxPeers;
         try {
             ss = new ServerSocket(port);
+            Acceptor acceptor = new Acceptor(this);
+            acceptor.start();
             System.out.println("node.Node up and running on port " + port + " " + InetAddress.getLocalHost());
         } catch (IOException e) {
             System.err.println(e);
@@ -61,8 +63,8 @@ public class Node implements NodeInterface {
         }
     }
 
-    @Override
-    public void requestConnections(){
+    public void requestConnections(ArrayList<Address> globalPeers){
+        this.globalPeers = globalPeers;
         try {
             if(globalPeers.size() > 0){
                 ClientConnection connect = new ClientConnection(this, globalPeers);
@@ -73,30 +75,29 @@ public class Node implements NodeInterface {
         }
     }
 
-    public void runNode(ArrayList<Address> globalPeers) {
-        Socket client;
-        this.globalPeers = globalPeers;
-        System.out.println("connections.ClientConnection Started");
-        this.requestConnections();
-        System.out.println("connections.ServerConnection Started");
-        try {
-            while (true) {
-                client = ss.accept();
-                new ServerConnection(client, this).start();
-            }
-        } catch (IOException e) {
-            System.err.println(e);
-        }
-    }
-
-    @Override
-    public void addBlock() {}
-
-    @Override
-    public boolean validateBlock() {
+    private void addBlock() {}
+    private boolean validateBlock() {
         return false;
     }
 
-    public void searchForPeers(){}
+    class Acceptor extends Thread {
+        Node node;
+
+        Acceptor(Node node){
+            this.node = node;
+        }
+
+        public void run() {
+            Socket client;
+            while (true) {
+                try {
+                    client = ss.accept();
+                    new ServerConnection(client, node).start();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+    }
 }
 

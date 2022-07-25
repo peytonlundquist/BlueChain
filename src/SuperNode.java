@@ -24,6 +24,6 @@ public class SuperNode {
 
         System.out.println("==========================");
         Collections.shuffle(globalPeers);
-        n1.runNode(globalPeers);
+        n1.requestConnections(globalPeers);
     }
 }
