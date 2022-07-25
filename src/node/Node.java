@@ -2,7 +2,6 @@ package node;
 
 import node.blockchain.Block;
 import node.communication.Address;
-
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -10,8 +9,9 @@ import java.net.SocketException;
 import java.net.InetAddress;
 import java.util.ArrayList;
 
-import static node.utils.Utils.containsAddress;
-
+/**
+ * Node represents a peer, a cooperating member within the network
+ */
 public class Node  {
     private final int MAX_PEERS;
     private final int INITIAL_CONNECTIONS;
@@ -22,20 +22,19 @@ public class Node  {
     private ArrayList<Address> localPeers;
     private Address myAddress;
 
-    public int getMaxPeers(){
-        return this.MAX_PEERS;
-    }
-
-    public int getInitialConnections(){
-        return this.INITIAL_CONNECTIONS;
-    }
-
-    public Address getAddress(){
-        return this.myAddress;
-    }
-
+    /* A collection of getters */
+    public int getMaxPeers(){return this.MAX_PEERS;}
+    public int getInitialConnections(){return this.INITIAL_CONNECTIONS;}
+    public Address getAddress(){return this.myAddress;}
     public ArrayList<Address> getLocalPeers(){synchronized (lock){return this.localPeers;}}
 
+    /**
+     * Node constructor creates node and begins server socket to accept connections
+     *
+     * @param port
+     * @param maxPeers
+     * @param initialConnections
+     */
     public Node(int port, int maxPeers, int initialConnections) {
         lock =  new Object();
         blockchain = new ArrayList<Block>();
@@ -53,6 +52,10 @@ public class Node  {
         }
     }
 
+    /**
+     * If eligible, add a connection to our dynamic list of peers to speak with
+     * @param address
+     */
     public void establishConnection(Address address){
         synchronized(lock) {
             if (localPeers.size() < MAX_PEERS && !containsAddress(localPeers, address)) {
@@ -63,6 +66,11 @@ public class Node  {
         }
     }
 
+    /**
+     * Iterate through a list of peers and attempt to establish a mutual connection
+     * with a specified amount of nodes
+     * @param globalPeers
+     */
     public void requestConnections(ArrayList<Address> globalPeers){
         this.globalPeers = globalPeers;
         try {
@@ -75,11 +83,12 @@ public class Node  {
         }
     }
 
-    private void addBlock() {}
-    private boolean validateBlock() {
-        return false;
-    }
-
+    /**
+     * Returns true if the provided address is in the list, otherwise false
+     * @param list
+     * @param address
+     * @return
+     */
     public boolean containsAddress(ArrayList<Address> list, Address address){
         synchronized(lock) {
             for (Address existingAddress : list) {
@@ -91,6 +100,12 @@ public class Node  {
         }
     }
 
+    /**
+     * Acceptor is a thread responsible for maintaining the server socket by
+     * accepting incoming connection requests, and starting a new ServerConnection
+     * thread for each request. Requests terminate in a finite amount of steps, so
+     * threads return upon completion.
+     */
     class Acceptor extends Thread {
         Node node;
 

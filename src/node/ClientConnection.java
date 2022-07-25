@@ -1,18 +1,15 @@
 package node;
 
 import node.communication.*;
-
-
 import java.io.*;
 import java.net.ConnectException;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
-
 import static node.utils.Utils.*;
 
 /**
- * Handles one connection in a separate thread.
+ * Attempts to establish bidirectional connection to specified amount of peers
  */
 public class ClientConnection extends Thread {
     private Node node;
@@ -26,6 +23,7 @@ public class ClientConnection extends Thread {
     }
 
     public void run() {
+        System.out.println("Requesting connections...");
         maxPeers = node.getMaxPeers();
         if (node.getLocalPeers().size() < node.getMaxPeers()) {
             for (Address address : globalPeers) {
@@ -61,6 +59,5 @@ public class ClientConnection extends Thread {
                 }
             }
         }
-
     }
 }
