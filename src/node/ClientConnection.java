@@ -12,9 +12,8 @@ import static node.utils.Utils.*;
  * Attempts to establish bidirectional connection to specified amount of peers
  */
 public class ClientConnection extends Thread {
-    private Node node;
-    private ArrayList<Address> globalPeers;
-    private int maxPeers;
+    private final Node node;
+    private final ArrayList<Address> globalPeers;
 
     ClientConnection(Node node, ArrayList<Address> globalPeers) throws SocketException {
         this.node = node;
@@ -24,7 +23,6 @@ public class ClientConnection extends Thread {
 
     public void run() {
         System.out.println("Requesting connections...");
-        maxPeers = node.getMaxPeers();
         if (node.getLocalPeers().size() < node.getMaxPeers()) {
             for (Address address : globalPeers) {
                 try {
@@ -45,8 +43,6 @@ public class ClientConnection extends Thread {
                             if(node.getLocalPeers().size() == node.getInitialConnections()){
                                 return;
                             }
-                        } else if (messageReceived.getRequest().equals(Message.Request.REJECT_CONNECTION)) {
-
                         }
                         s.close();
                     }

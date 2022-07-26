@@ -13,7 +13,7 @@ public class NetworkLauncher {
     final private static int INITIAL_CONNECTIONS = 3;
     private static ArrayList<Address> globalPeers = new ArrayList<Address>();
 
-    public static void main(String args[]) {
+    public static void main(String[] args) {
         ArrayList<Node> nodes = new ArrayList<Node>();
         for(int i = MIN_PORT; i < MAX_PORT + 1; i++){
             globalPeers.add(new Address(i, "localhost"));

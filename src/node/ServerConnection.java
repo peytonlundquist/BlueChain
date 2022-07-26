@@ -9,8 +9,8 @@ import java.net.SocketException;
  * Deterministic thread which implements the nodes protocol
  */
 public class ServerConnection extends Thread {
-    private Socket client;
-    private Node node;
+    private final Socket client;
+    private final Node node;
 
     ServerConnection(Socket client, Node node) throws SocketException {
         this.client = client;
@@ -55,7 +55,7 @@ public class ServerConnection extends Thread {
                 oout.flush();
                 break;
             case QUERY_PEERS:
-                System.out.println("Received: Query request.");
+                System.out.println("Node " + node.getAddress().getPort() + ": Received: Query request.");
                 outgoingMessage = new Message(node.getLocalPeers());
                 oout.writeObject(outgoingMessage);
                 oout.flush();

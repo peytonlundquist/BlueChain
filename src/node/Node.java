@@ -1,6 +1,5 @@
 package node;
 
-import node.blockchain.Block;
 import node.communication.Address;
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -16,11 +15,9 @@ public class Node  {
     private final int MAX_PEERS;
     private final int INITIAL_CONNECTIONS;
     private final Object lock;
+    private final Address myAddress;
     private ServerSocket ss;
-    private ArrayList<Block> blockchain;
-    private ArrayList<Address> globalPeers;
     private ArrayList<Address> localPeers;
-    private Address myAddress;
 
     /* A collection of getters */
     public int getMaxPeers(){return this.MAX_PEERS;}
@@ -31,15 +28,14 @@ public class Node  {
     /**
      * Node constructor creates node and begins server socket to accept connections
      *
-     * @param port
-     * @param maxPeers
-     * @param initialConnections
+     * @param port Port
+     * @param maxPeers Maximum amount of peer connections to maintain
+     * @param initialConnections How many nodes we want to attempt to connect to on start
      */
     public Node(int port, int maxPeers, int initialConnections) {
         lock =  new Object();
-        blockchain = new ArrayList<Block>();
         myAddress = new Address(port, "localhost");
-        this.localPeers = new ArrayList<Address>();
+        this.localPeers = new ArrayList<>();
         this.INITIAL_CONNECTIONS = initialConnections;
         this.MAX_PEERS = maxPeers;
         try {
@@ -60,7 +56,7 @@ public class Node  {
         synchronized(lock) {
             if (localPeers.size() < MAX_PEERS && !containsAddress(localPeers, address)) {
                 localPeers.add(address);
-                System.out.println("Added peer: " + address.getPort());
+                System.out.println("Node " + this.getAddress().getPort() + ": Added peer: " + address.getPort());
 
             }
         }
@@ -72,7 +68,6 @@ public class Node  {
      * @param globalPeers
      */
     public void requestConnections(ArrayList<Address> globalPeers){
-        this.globalPeers = globalPeers;
         try {
             if(globalPeers.size() > 0){
                 ClientConnection connect = new ClientConnection(this, globalPeers);
