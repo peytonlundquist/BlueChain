@@ -1,7 +1,9 @@
 package node;
 
 import node.communication.Address;
-import java.io.IOException;
+import node.communication.Message;
+
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
@@ -62,6 +64,68 @@ public class Node  {
         }
     }
 
+    public Message sendMessage(Message message, Address address, boolean expectReply){
+        try{
+            Thread.sleep(10000);
+            if(localPeers.size() > 0){
+                Socket s = new Socket("localhost", localPeers.get(0).getPort());
+                InputStream in = s.getInputStream();
+                ObjectInputStream oin = new ObjectInputStream(in);
+                OutputStream out = s.getOutputStream();
+                ObjectOutputStream oout = new ObjectOutputStream(out);
+                Message outgoingMessage = message;
+                oout.writeObject(outgoingMessage);
+                oout.flush();
+                Message messageReceived = (Message) oin.readObject();
+                s.close();
+                return messageReceived;
+            }
+
+        }catch(IOException e){
+            throw new RuntimeException(e);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        return message;
+    }
+
+//    public String stringLocalPeers(ArrayList<Address> peerList){
+//        String peers = "";
+//        for(Address address : peerList){
+//            peers = peers.concat()
+//        }
+//        return peers;
+//    }
+
+    public void queryPeers(){
+        try{
+            Thread.sleep(10000);
+            if(localPeers.size() > 0){
+                Socket s = new Socket("localhost", localPeers.get(0).getPort());
+                InputStream in = s.getInputStream();
+                ObjectInputStream oin = new ObjectInputStream(in);
+                OutputStream out = s.getOutputStream();
+                ObjectOutputStream oout = new ObjectOutputStream(out);
+                Message message = new Message(Message.Request.QUERY_PEERS);
+                oout.writeObject(message);
+                oout.flush();
+                Message messageReceived = (Message) oin.readObject();
+                ArrayList<Address> localPeers = (ArrayList<Address>) messageReceived.getMetadata();
+                System.out.println("Node " + this.getAddress().getPort() + ": Node " + localPeers.get(0).getPort() + " has " + localPeers.size() + " local peer connections.");
+                s.close();
+            }
+
+        }catch(IOException e){
+            throw new RuntimeException(e);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
      * Iterate through a list of peers and attempt to establish a mutual connection
      * with a specified amount of nodes
@@ -72,6 +136,7 @@ public class Node  {
             if(globalPeers.size() > 0){
                 ClientConnection connect = new ClientConnection(this, globalPeers);
                 connect.start();
+                queryPeers();
             }
         } catch (SocketException e) {
             throw new RuntimeException(e);

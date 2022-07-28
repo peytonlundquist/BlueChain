@@ -8,7 +8,7 @@ import java.util.Collections;
  */
 public class NetworkLauncher {
     final private static int MIN_PORT = 8000;
-    final private static int MAX_PORT = 8100;
+    final private static int MAX_PORT = 8010;
     final private static int MAX_PEERS = 10;
     final private static int INITIAL_CONNECTIONS = 3;
     private static ArrayList<Address> globalPeers = new ArrayList<Address>();
