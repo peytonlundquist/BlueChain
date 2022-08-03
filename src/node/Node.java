@@ -91,14 +91,6 @@ public class Node  {
         return message;
     }
 
-//    public String stringLocalPeers(ArrayList<Address> peerList){
-//        String peers = "";
-//        for(Address address : peerList){
-//            peers = peers.concat()
-//        }
-//        return peers;
-//    }
-
     public void queryPeers(){
         try{
             Thread.sleep(10000);
@@ -116,7 +108,6 @@ public class Node  {
                 System.out.println("Node " + this.getAddress().getPort() + ": Node " + localPeers.get(0).getPort() + " has " + localPeers.size() + " local peer connections.");
                 s.close();
             }
-
         }catch(IOException e){
             throw new RuntimeException(e);
         } catch (ClassNotFoundException e) {
@@ -136,7 +127,6 @@ public class Node  {
             if(globalPeers.size() > 0){
                 ClientConnection connect = new ClientConnection(this, globalPeers);
                 connect.start();
-                queryPeers();
             }
         } catch (SocketException e) {
             throw new RuntimeException(e);
