@@ -15,7 +15,7 @@ public class NetworkLauncher {
 
     public static void main(String[] args) {
         ArrayList<Node> nodes = new ArrayList<Node>();
-        for(int i = MIN_PORT; i < MAX_PORT + 1; i++){
+        for(int i = MIN_PORT; i < MAX_PORT; i++){
             globalPeers.add(new Address(i, "localhost"));
             nodes.add(new Node(i, MAX_PEERS, INITIAL_CONNECTIONS));
         }
@@ -24,7 +24,7 @@ public class NetworkLauncher {
     }
 
     public void startNetworkClients(ArrayList<Address> globalPeers, ArrayList<Node> nodes){
-        for(int i = 0; i < (MAX_PORT + 1) - MIN_PORT; i++){
+        for(int i = 0; i < MAX_PORT - MIN_PORT; i++){
             Collections.shuffle(globalPeers);
             new NodeLauncher(nodes.get(i), globalPeers).start();
         }

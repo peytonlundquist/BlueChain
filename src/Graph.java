@@ -13,40 +13,24 @@ public class Graph extends Canvas{
         this.graphNodes = graphNodes;
         JFrame f=new JFrame();
         f.add(this);
-        f.setSize(1000,1000);
-        //f.setLayout(null);
+        f.setSize(1000,1100);
         f.setVisible(true);
     }
 
     public void paint(Graphics g) {
-        int scalar = 80;
+        int scalar = 100;
         int offset = 50;
-
         Iterator<GraphNode> iterator = graphNodes.iterator();
         LinkedHashMap<Integer, Coordinates> nodeMap = new LinkedHashMap<>();
         for(int i = 0; i < 10; i++){
             for(int j = 0; j < 10; j++) {
                 GraphNode node = iterator.next();
-                g.setColor(Color.black);
-                g.drawOval(j * scalar, i * scalar + offset, 25, 25);
-                g.fillOval(j * scalar, i * scalar + offset, 25, 25);
-                g.setColor(Color.blue);
-                g.drawOval(j * scalar, i * scalar + offset, 20, 20);
-                g.fillOval(j * scalar, i * scalar + offset, 20, 20);
-                g.drawString(String.valueOf(node.getPort()),j * scalar,(i * scalar) + offset);
-                nodeMap.put(node.getPort(), new Coordinates(j * scalar, i * scalar + offset));
+                nodeMap.put(node.getPort(), new Coordinates(j * scalar, i * scalar + offset + 20));
             }
         }
 
-        g.setColor(Color.black);
-        g.drawOval(11 * scalar, 11 * scalar + offset, 25, 25);
-        g.fillOval(11 * scalar, 11 * scalar + offset, 25, 25);
-        g.setColor(Color.blue);
-        g.drawOval(11 * scalar, 11 * scalar + offset, 20, 20);
-        g.fillOval(11 * scalar, 11 * scalar + offset, 20, 20);
-        g.drawString("8100", 11 * scalar,(11 * scalar) + offset);
-        nodeMap.put(8100, new Coordinates(11 * scalar, 11 * scalar + offset));
-
+        Color connection = new Color(212, 174, 178);
+        g.setColor(connection);
         for(GraphNode node : graphNodes){
             ArrayList<Address> localPeers = node.getLocalPeers();
             for(Address address : localPeers){
@@ -57,7 +41,20 @@ public class Graph extends Canvas{
             }
         }
 
-        int i = 0;
+        iterator = graphNodes.iterator();
+        for(int i = 0; i < 10; i++){
+            for(int j = 0; j < 10; j++) {
+                GraphNode node = iterator.next();
+                g.setColor(Color.black);
+                g.drawOval(j * scalar, i * scalar + offset, 25, 25);
+                g.fillOval(j * scalar, i * scalar + offset, 25, 25);
+                g.setColor(Color.blue);
+                g.drawOval(j * scalar, i * scalar + offset, 20, 20);
+                g.fillOval(j * scalar, i * scalar + offset, 20, 20);
+                g.setColor(Color.black);
+                g.drawString(String.valueOf(node.getPort()),j * scalar,(i * scalar) + offset);
+            }
+        }
     }
 }
 
