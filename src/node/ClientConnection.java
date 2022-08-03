@@ -25,8 +25,11 @@ public class ClientConnection extends Thread {
         System.out.println("Requesting connections...");
         if (node.getLocalPeers().size() < node.getMaxPeers()) {
             for (Address address : globalPeers) {
+                if (node.getLocalPeers().size() >= node.getMaxPeers()){
+                    break;
+                }
                 try {
-                    if (!address.equals(node.getAddress()) && !containsAddress(node.getLocalPeers(), address)) {
+                    if (node.eligibleConnection(address, false)) {
                         Socket s = new Socket(address.getHost(), address.getPort());
                         InputStream in = s.getInputStream();
                         ObjectInputStream oin = new ObjectInputStream(in);
@@ -40,7 +43,7 @@ public class ClientConnection extends Thread {
 
                         if (messageReceived.getRequest().equals(Message.Request.ACCEPT_CONNECTION)) {
                             node.establishConnection(address);
-                            if(node.getLocalPeers().size() == node.getInitialConnections()){
+                            if (node.getLocalPeers().size() == node.getInitialConnections()) {
                                 return;
                             }
                         }

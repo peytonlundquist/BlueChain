@@ -40,14 +40,11 @@ public class ServerConnection extends Thread {
             case REQUEST_CONNECTION:
                 Address address = (Address) incomingMessage.getMetadata();
 
-                if (node.getLocalPeers().size() < node.getMaxPeers()) {
-                    if (!address.equals(node.getAddress()) && !node.containsAddress(node.getLocalPeers(), address)) {
-                        outgoingMessage = new Message(Message.Request.ACCEPT_CONNECTION, node.getAddress());
-                        oout.writeObject(outgoingMessage);
-                        oout.flush();
-                        node.establishConnection(address);
-                        return;
-                    }
+                if (node.eligibleConnection(address, true)) {
+                    outgoingMessage = new Message(Message.Request.ACCEPT_CONNECTION, node.getAddress());
+                    oout.writeObject(outgoingMessage);
+                    oout.flush();
+                    return;
                 }
 
                 outgoingMessage = new Message(Message.Request.REJECT_CONNECTION, node.getAddress());

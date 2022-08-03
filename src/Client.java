@@ -31,11 +31,11 @@ public class Client {
                 port = MIN_PORT + i;
                 ArrayList<Address> localPeers = queryPeer(port);
                 if(localPeers != null){
+                    System.out.println("Node " + port + " has " + localPeers.size() + " local peer connections.");
                     graphNodes.add(new GraphNode(port, localPeers));
                 }
             }
             new Graph(graphNodes);
-            int i = 0;
         }
     }
 

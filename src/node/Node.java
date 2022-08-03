@@ -16,6 +16,7 @@ import java.util.ArrayList;
 public class Node  {
     private final int MAX_PEERS;
     private final int INITIAL_CONNECTIONS;
+
     private final Object lock;
     private final Address myAddress;
     private ServerSocket ss;
@@ -25,7 +26,7 @@ public class Node  {
     public int getMaxPeers(){return this.MAX_PEERS;}
     public int getInitialConnections(){return this.INITIAL_CONNECTIONS;}
     public Address getAddress(){return this.myAddress;}
-    public ArrayList<Address> getLocalPeers(){synchronized (lock){return this.localPeers;}}
+    public ArrayList<Address> getLocalPeers(){return this.localPeers;}
 
     /**
      * Node constructor creates node and begins server socket to accept connections
@@ -50,18 +51,25 @@ public class Node  {
         }
     }
 
+    public boolean eligibleConnection(Address address, boolean connectIfEligible){
+        synchronized(lock) {
+            if (localPeers.size() < MAX_PEERS - 1 && (!address.equals(this.getAddress()) && !this.containsAddress(localPeers, address))) {
+                if(connectIfEligible){
+                    establishConnection(address);
+                }
+                return true;
+            }
+            return false;
+        }
+    }
+
     /**
-     * If eligible, add a connection to our dynamic list of peers to speak with
+     * Add a connection to our dynamic list of peers to speak with
      * @param address
      */
     public void establishConnection(Address address){
-        synchronized(lock) {
-            if (localPeers.size() < MAX_PEERS && !containsAddress(localPeers, address)) {
-                localPeers.add(address);
-                System.out.println("Node " + this.getAddress().getPort() + ": Added peer: " + address.getPort());
-
-            }
-        }
+        localPeers.add(address);
+        System.out.println("Node " + this.getAddress().getPort() + ": Added peer: " + address.getPort());
     }
 
     public Message sendMessage(Message message, Address address, boolean expectReply){
@@ -140,14 +148,12 @@ public class Node  {
      * @return
      */
     public boolean containsAddress(ArrayList<Address> list, Address address){
-        synchronized(lock) {
-            for (Address existingAddress : list) {
-                if (existingAddress.equals(address)) {
-                    return true;
-                }
+        for (Address existingAddress : list) {
+            if (existingAddress.equals(address)) {
+                return true;
             }
-            return false;
         }
+        return false;
     }
 
     /**
