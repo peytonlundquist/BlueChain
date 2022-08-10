@@ -4,8 +4,17 @@ import java.util.ArrayList;
 
 public class Block {
     private ArrayList<Transaction> txList;
+
+    public String getPrevBlockHash() {
+        return prevBlockHash;
+    }
+
     private String prevBlockHash;
     private String txListHash;
+
+    public int getBlockId() {
+        return blockId;
+    }
 
     private int blockId;
 

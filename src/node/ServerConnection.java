@@ -1,5 +1,6 @@
 package node;
 
+import node.blockchain.Block;
 import node.communication.*;
 import java.io.*;
 import java.net.Socket;
@@ -59,6 +60,14 @@ public class ServerConnection extends Thread {
                 break;
             case REQUEST_BLOCK:
             case ADD_BLOCK:
+                Block proposedBlock = (Block) incomingMessage.getMetadata();
+                node.addBlock(proposedBlock);
+            case PING:
+                System.out.println("Node " + node.getAddress().getPort() + ": Received: Ping.");
+                outgoingMessage = new Message(Message.Request.PING);
+                oout.writeObject(outgoingMessage);
+                oout.flush();
+                break;
         }
     }
 }

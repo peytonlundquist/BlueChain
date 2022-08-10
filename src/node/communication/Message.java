@@ -20,7 +20,7 @@ public class Message implements Serializable {
     }
 
     public enum Request{
-        ADD_BLOCK, REQUEST_BLOCK, REQUEST_CONNECTION, ACCEPT_CONNECTION, REJECT_CONNECTION, QUERY_PEERS
+        ADD_BLOCK, REQUEST_BLOCK, REQUEST_CONNECTION, ACCEPT_CONNECTION, REJECT_CONNECTION, QUERY_PEERS, PING
     }
 
     public Request getRequest(){

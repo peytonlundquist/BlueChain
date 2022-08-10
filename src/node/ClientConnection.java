@@ -6,7 +6,6 @@ import java.net.ConnectException;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
-import static node.utils.Utils.*;
 
 /**
  * Attempts to establish bidirectional connection to specified amount of peers
@@ -43,7 +42,7 @@ public class ClientConnection extends Thread {
 
                         if (messageReceived.getRequest().equals(Message.Request.ACCEPT_CONNECTION)) {
                             node.establishConnection(address);
-                            if (node.getLocalPeers().size() == node.getInitialConnections()) {
+                            if (node.getLocalPeers().size() == node.getMinConnections()) {
                                 return;
                             }
                         }
