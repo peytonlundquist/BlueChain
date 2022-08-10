@@ -3,11 +3,10 @@ import node.communication.Message;
 import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 
 /**
- * One shot client that queries the network's nodes for each nodes' amount of connections
+ * One shot client that queries the network's nodes for each nodes
  */
 public class Client {
     private final static int MIN_PORT = 8000;
