@@ -17,25 +17,40 @@ public class Client {
 
         int port;
 
-        if(args.length > 0){
-            try{
-                port = Integer.parseInt(args[0]);
-                queryPeer(port);
-            }catch (NumberFormatException e){
-                System.out.println("Expected integer or no arguments");
-                System.out.println("Usage: [Node port]");
+        if(args.length > 0) {
+            if (args[0].equals("graph")) {
+                LinkedList<GraphNode> graphNodes = new LinkedList<>();
+                for (int i = 0; i < NUM_NODES; i++) {
+                    port = MIN_PORT + i;
+                    ArrayList<Address> localPeers = queryPeer(port);
+                    if (localPeers != null) {
+                        System.out.println("Node " + port + " has " + localPeers.size() + " local peer connections.");
+                        graphNodes.add(new GraphNode(port, localPeers));
+                    }
+                }
+                new Graph(graphNodes);
+            } else if (args[0].equals("query")) {
+                try {
+                    port = Integer.parseInt(args[1]);
+                    ArrayList<Address> localPeers = queryPeer(port);
+                    if (localPeers != null) {
+                        System.out.print("Node " + port + " has " + localPeers.size() + " local peer connections. Peers: ");
+                        for(Address address : localPeers){
+                            System.out.print(address.getPort() + " ");
+                        }
+                        System.out.print("\n");
+                    }
+                } catch (NumberFormatException e) {
+                    System.out.println("Expected integer or no arguments");
+                    System.out.println("Usage: [graph] [query <portNum>]");
+                } catch (Exception e){
+                    System.out.println(e);
+                }
+            }else{
+                System.out.println("Usage: [graph] [query <portNum>]");
             }
         }else{
-            LinkedList<GraphNode> graphNodes = new LinkedList<>();
-            for(int i = 0; i < NUM_NODES; i++){
-                port = MIN_PORT + i;
-                ArrayList<Address> localPeers = queryPeer(port);
-                if(localPeers != null){
-                    System.out.println("Node " + port + " has " + localPeers.size() + " local peer connections.");
-                    graphNodes.add(new GraphNode(port, localPeers));
-                }
-            }
-            new Graph(graphNodes);
+            System.out.println("Usage: [graph] [query <portNum>]");
         }
     }
 
