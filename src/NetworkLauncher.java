@@ -1,30 +1,49 @@
 import node.Node;
 import node.communication.Address;
+
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Properties;
 
 /**
  * Launches a network given specified configurations
  */
 public class NetworkLauncher {
-    final private static int MIN_PORT = 8000;
-    final private static int MAX_PORT = 8100;
-    final private static int MAX_PEERS = 10;
-    final private static int INITIAL_CONNECTIONS = 3;
+
     private static ArrayList<Address> globalPeers = new ArrayList<Address>();
 
     public static void main(String[] args) {
-        ArrayList<Node> nodes = new ArrayList<Node>();
-        for(int i = MIN_PORT; i < MAX_PORT; i++){
-            globalPeers.add(new Address(i, "localhost"));
-            nodes.add(new Node(i, MAX_PEERS, INITIAL_CONNECTIONS));
+        try {
+            String configFilePath = "src/config.properties";
+            FileInputStream fileInputStream = new FileInputStream(configFilePath);
+            Properties prop = new Properties();
+            prop.load(fileInputStream);
+
+            int numNodes = Integer.parseInt(prop.getProperty("NUM_NODES"));
+            int maxConnections = Integer.parseInt(prop.getProperty("MAX_CONNECTIONS"));
+            int minConnections = Integer.parseInt(prop.getProperty("MIN_CONNECTIONS"));
+            int startingPort = Integer.parseInt(prop.getProperty("STARTING_PORT"));
+
+            ArrayList<Node> nodes = new ArrayList<Node>();
+            for(int i = startingPort; i < startingPort + numNodes; i++){
+                globalPeers.add(new Address(i, "localhost"));
+                nodes.add(new Node(i, maxConnections, minConnections));
+            }
+            NetworkLauncher n = new NetworkLauncher();
+            n.startNetworkClients(globalPeers, nodes);
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        NetworkLauncher n = new NetworkLauncher();
-        n.startNetworkClients(globalPeers, nodes);
     }
 
     public void startNetworkClients(ArrayList<Address> globalPeers, ArrayList<Node> nodes){
-        for(int i = 0; i < MAX_PORT - MIN_PORT; i++){
+        for(int i = 0; i < nodes.size(); i++){
             Collections.shuffle(globalPeers);
             new NodeLauncher(nodes.get(i), globalPeers).start();
         }
