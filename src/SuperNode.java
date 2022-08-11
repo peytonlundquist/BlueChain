@@ -1,9 +1,11 @@
 import node.Node;
 import node.communication.Address;
-
 import java.util.ArrayList;
 import java.util.Collections;
 
+/**
+ * Launches a single node instance for debugging or development
+ */
 public class SuperNode {
 
     static final private String host = "localhost";

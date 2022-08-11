@@ -1,3 +1,5 @@
+import graphing.Graph;
+import graphing.GraphNode;
 import node.communication.Address;
 import node.communication.Message;
 import java.io.*;
@@ -6,14 +8,13 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 
 /**
- * One shot client that queries the network's nodes for each nodes
+ * One shot client that queries the network's nodes
  */
 public class Client {
     private final static int MIN_PORT = 8000;
     private final static int NUM_NODES = 100;
 
     public static void main(String[] args) {
-
         int port;
 
         if(args.length > 0) {
@@ -53,6 +54,11 @@ public class Client {
         }
     }
 
+    /**
+     * Queries a specified node given its port, assuming localhost
+     * @param port
+     * @return ArrayList<Address> node's connection list
+     */
     private static ArrayList<Address> queryPeer(int port){
         try {
             Socket s = new Socket("localhost", port);

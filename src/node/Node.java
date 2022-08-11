@@ -11,7 +11,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.InetAddress;
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.ConcurrentModificationException;
 
 /**
  * Node represents a peer, a cooperating member within the network
@@ -59,6 +59,9 @@ public class Node  {
         }
     }
 
+    /**
+     * Initializes blockchain
+     */
     public void initializeBlockchain(){
         blockchain = new ArrayList<Block>();
         blockchain.add(new Block(new ArrayList<Transaction>(), "", 0));
@@ -68,6 +71,10 @@ public class Node  {
         // If block doesnt contain the signature of our peers, gossip to them ??
     }
 
+    /**
+     * Adds a block
+     * @param block Block to add
+     */
     public void addBlock(Block block){
         Block lastBlock = blockchain.get(blockchain.size() - 1);
 
@@ -90,8 +97,12 @@ public class Node  {
         }
     }
 
-
-
+    /**
+     * Determines if a connection is eligible
+     * @param address Address to verify
+     * @param connectIfEligible Connect to address if it is eligible
+     * @return True if eligible, otherwise false
+     */
     public boolean eligibleConnection(Address address, boolean connectIfEligible){
         synchronized(lock) {
             if (localPeers.size() < MAX_PEERS - 1 && (!address.equals(this.getAddress()) && !this.containsAddress(localPeers, address))) {
@@ -113,59 +124,6 @@ public class Node  {
         System.out.println("Node " + this.getAddress().getPort() + ": Added peer: " + address.getPort());
     }
 
-    public Message sendMessage(Message message, Address address, boolean expectReply){
-        try{
-            Thread.sleep(10000);
-            if(localPeers.size() > 0){
-                Socket s = new Socket("localhost", localPeers.get(0).getPort());
-                InputStream in = s.getInputStream();
-                ObjectInputStream oin = new ObjectInputStream(in);
-                OutputStream out = s.getOutputStream();
-                ObjectOutputStream oout = new ObjectOutputStream(out);
-                Message outgoingMessage = message;
-                oout.writeObject(outgoingMessage);
-                oout.flush();
-                Message messageReceived = (Message) oin.readObject();
-                s.close();
-                return messageReceived;
-            }
-
-        }catch(IOException e){
-            throw new RuntimeException(e);
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-        return message;
-    }
-
-    public void queryPeers(){
-        try{
-            Thread.sleep(10000);
-            if(localPeers.size() > 0){
-                Socket s = new Socket("localhost", localPeers.get(0).getPort());
-                InputStream in = s.getInputStream();
-                ObjectInputStream oin = new ObjectInputStream(in);
-                OutputStream out = s.getOutputStream();
-                ObjectOutputStream oout = new ObjectOutputStream(out);
-                Message message = new Message(Message.Request.QUERY_PEERS);
-                oout.writeObject(message);
-                oout.flush();
-                Message messageReceived = (Message) oin.readObject();
-                ArrayList<Address> localPeers = (ArrayList<Address>) messageReceived.getMetadata();
-                System.out.println("Node " + this.getAddress().getPort() + ": Node " + localPeers.get(0).getPort() + " has " + localPeers.size() + " local peer connections.");
-                s.close();
-            }
-        }catch(IOException e){
-            throw new RuntimeException(e);
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     /**
      * Iterate through a list of peers and attempt to establish a mutual connection
      * with a specified amount of nodes
@@ -174,13 +132,14 @@ public class Node  {
     public void requestConnections(ArrayList<Address> globalPeers){
         try {
             if(globalPeers.size() > 0){
+                /* Begin seeking connections */
                 ClientConnection connect = new ClientConnection(this, globalPeers);
                 connect.start();
 
+                /* Begin heartbeat monitor */
                 Thread.sleep(10000);
                 HeartBeatMonitor heartBeatMonitor = new HeartBeatMonitor(this);
                 heartBeatMonitor.start();
-
             }
         } catch (SocketException e) {
             throw new RuntimeException(e);
@@ -202,6 +161,16 @@ public class Node  {
             }
         }
         return false;
+    }
+
+    public Address removeAddress(Address address){
+        for (Address existingAddress : localPeers) {
+            if (existingAddress.equals(address)) {
+                localPeers.remove(address);
+                return address;
+            }
+        }
+        return null;
     }
 
     /**
@@ -230,6 +199,11 @@ public class Node  {
         }
     }
 
+    /**
+     * HeartBeatMonitor is a thread which will periodically 'ping' nodes which this node is connected to.
+     * It expects a 'ping' back. Upon receiving the expected reply the other node is deemed healthy.
+     *
+     */
     class HeartBeatMonitor extends Thread {
         Node node;
 
@@ -258,11 +232,15 @@ public class Node  {
                         }
                         s.close();
                     } catch (IOException e) {
-                        throw new RuntimeException(e);
+                        System.out.println("Received IO Exception from node " + address.getPort());
+                        removeAddress(address);
                     } catch (ClassNotFoundException e) {
                         throw new RuntimeException(e);
                     } catch (InterruptedException e) {
+                        System.out.println("Received Interrupted Exception from node " + address.getPort());
                         throw new RuntimeException(e);
+                    } catch (ConcurrentModificationException e){
+                        break;
                     }
                 }
             }

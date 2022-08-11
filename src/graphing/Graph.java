@@ -1,3 +1,5 @@
+package graphing;
+
 import node.communication.Address;
 
 import java.awt.*;
@@ -74,3 +76,4 @@ class Coordinates{
         return y;
     }
 }
+
