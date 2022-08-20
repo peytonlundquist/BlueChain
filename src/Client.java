@@ -1,27 +1,47 @@
 import graphing.Graph;
 import graphing.GraphNode;
+import node.Node;
 import node.communication.Address;
 import node.communication.Message;
+
 import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.Properties;
+
+import javax.json.*;
 
 /**
  * One shot client that queries the network's nodes
  */
 public class Client {
-    private final static int MIN_PORT = 8000;
-    private final static int NUM_NODES = 100;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws FileNotFoundException {
         int port;
+        int numNodes = 0;
+        int startingPort = 0;
+
+        try {
+            String configFilePath = "src/config.properties";
+            FileInputStream fileInputStream = new FileInputStream(configFilePath);
+            Properties prop = new Properties();
+            prop.load(fileInputStream);
+
+            numNodes = Integer.parseInt(prop.getProperty("NUM_NODES"));
+            startingPort = Integer.parseInt(prop.getProperty("STARTING_PORT"));
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         if(args.length > 0) {
             if (args[0].equals("graph")) {
                 LinkedList<GraphNode> graphNodes = new LinkedList<>();
-                for (int i = 0; i < NUM_NODES; i++) {
-                    port = MIN_PORT + i;
+                for (int i = 0; i < numNodes; i++) {
+                    port = startingPort + i;
                     ArrayList<Address> localPeers = queryPeer(port);
                     if (localPeers != null) {
                         System.out.println("Node " + port + " has " + localPeers.size() + " local peer connections.");
@@ -35,7 +55,7 @@ public class Client {
                     ArrayList<Address> localPeers = queryPeer(port);
                     if (localPeers != null) {
                         System.out.print("Node " + port + " has " + localPeers.size() + " local peer connections. Peers: ");
-                        for(Address address : localPeers){
+                        for (Address address : localPeers) {
                             System.out.print(address.getPort() + " ");
                         }
                         System.out.print("\n");
@@ -43,9 +63,35 @@ public class Client {
                 } catch (NumberFormatException e) {
                     System.out.println("Expected integer or no arguments");
                     System.out.println("Usage: [graph] [query <portNum>]");
-                } catch (Exception e){
+                } catch (Exception e) {
                     System.out.println(e);
                 }
+
+            }else if(args[0].equals("json")){
+
+                JsonArrayBuilder jsonNodes = Json.createArrayBuilder();
+                JsonArrayBuilder jsonLinks = Json.createArrayBuilder();
+
+                for (int i = 0; i < numNodes; i++) {
+                    port = startingPort + i;
+                    ArrayList<Address> localPeers = queryPeer(port);
+                    if (localPeers != null) {
+                        jsonNodes.add(Json.createObjectBuilder().add("id", String.valueOf(port)).add("group", 1));
+
+                        for(Address address : localPeers){
+                            jsonLinks.add(Json.createObjectBuilder().add("source", String.valueOf(port)).add("target", String.valueOf(address.getPort())).add("value", 2));
+                        }
+                    }
+                }
+
+                JsonObjectBuilder jsonObjectBuilder = Json.createObjectBuilder();
+                jsonObjectBuilder.add("nodes", jsonNodes).add("links", jsonLinks);
+                JsonObject empJsonObject = jsonObjectBuilder.build();
+
+                OutputStream os = new FileOutputStream("emp.txt");
+                JsonWriter jsonWriter = Json.createWriter(os);
+                jsonWriter.writeObject(empJsonObject);
+                jsonWriter.close();
             }else{
                 System.out.println("Usage: [graph] [query <portNum>]");
             }
@@ -74,7 +120,7 @@ public class Client {
             s.close();
             return (ArrayList<Address>) localPeers;
         } catch (IOException | ClassNotFoundException e) {
-            System.out.println("Error occurred");
+            //System.out.println("Error occurred");
         }
         return null;
     }
