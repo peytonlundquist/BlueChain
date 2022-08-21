@@ -4,8 +4,8 @@ import java.io.Serializable;
 import java.util.Objects;
 
 public class Address implements Serializable {
-    private int port;
-    private String host;
+    private final int port;
+    private final String host;
 
     public Address(int port, String host){
         this.port = port;

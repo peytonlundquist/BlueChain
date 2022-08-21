@@ -1,7 +1,7 @@
 package node.blockchain;
 
 public class Transaction {
-    private String data;
+    private final String data;
 
     public Transaction(String data){
         this.data = data;

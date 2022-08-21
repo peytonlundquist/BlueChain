@@ -13,11 +13,11 @@ import java.util.Properties;
  */
 public class NetworkLauncher {
 
-    private static ArrayList<Address> globalPeers = new ArrayList<Address>();
+    private static final ArrayList<Address> globalPeers = new ArrayList<Address>();
 
     public static void main(String[] args) {
         try {
-            String configFilePath = "src/config.properties";
+            String configFilePath = "src/main/java/config.properties";
             FileInputStream fileInputStream = new FileInputStream(configFilePath);
             Properties prop = new Properties();
             prop.load(fileInputStream);

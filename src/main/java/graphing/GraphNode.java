@@ -5,8 +5,8 @@ import node.communication.Address;
 import java.util.ArrayList;
 
 public class GraphNode {
-    private int port;
-    private ArrayList<Address> localPeers;
+    private final int port;
+    private final ArrayList<Address> localPeers;
     private int x;
     private int y;
 

@@ -17,7 +17,7 @@ public class JavaHTTPServer implements Runnable{
     static final boolean verbose = true;
 
     // Client Connection via Socket Class
-    private Socket connect;
+    private final Socket connect;
 
     public JavaHTTPServer(Socket c) {
         connect = c;

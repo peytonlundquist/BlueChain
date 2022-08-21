@@ -13,7 +13,7 @@ public class SuperNode {
     static final private int MIN_PORT = 8000;
 
 
-    public static void main(String args[]) {
+    public static void main(String[] args) {
 
         Node n1 = new Node(Integer.parseInt(args[0]), 5, 3);
         ArrayList<Address> globalPeers = new ArrayList<Address>();

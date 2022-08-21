@@ -23,7 +23,7 @@ public class Client {
         int startingPort = 0;
 
         try {
-            String configFilePath = "src/config.properties";
+            String configFilePath = "src/main/java/config.properties";
             FileInputStream fileInputStream = new FileInputStream(configFilePath);
             Properties prop = new Properties();
             prop.load(fileInputStream);

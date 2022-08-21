@@ -23,7 +23,7 @@ public class Node  {
     private final Object lock;
     private final Address myAddress;
     private ServerSocket ss;
-    private ArrayList<Address> localPeers;
+    private final ArrayList<Address> localPeers;
 
     /* A collection of getters */
     public int getMaxPeers(){return this.MAX_PEERS;}

@@ -3,20 +3,20 @@ package node.blockchain;
 import java.util.ArrayList;
 
 public class Block {
-    private ArrayList<Transaction> txList;
+    private final ArrayList<Transaction> txList;
 
     public String getPrevBlockHash() {
         return prevBlockHash;
     }
 
-    private String prevBlockHash;
-    private String txListHash;
+    private final String prevBlockHash;
+    private final String txListHash;
 
     public int getBlockId() {
         return blockId;
     }
 
-    private int blockId;
+    private final int blockId;
 
     public Block(ArrayList<Transaction> txList, String prevBlockHash, int blockId){
         this.txList = txList;
