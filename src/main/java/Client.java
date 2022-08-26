@@ -88,7 +88,7 @@ public class Client {
                 jsonObjectBuilder.add("nodes", jsonNodes).add("links", jsonLinks);
                 JsonObject empJsonObject = jsonObjectBuilder.build();
 
-                OutputStream os = new FileOutputStream("emp.txt");
+                OutputStream os = new FileOutputStream("graph.json");
                 JsonWriter jsonWriter = Json.createWriter(os);
                 jsonWriter.writeObject(empJsonObject);
                 jsonWriter.close();
