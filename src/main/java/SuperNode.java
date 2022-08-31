@@ -15,7 +15,7 @@ public class SuperNode {
 
     public static void main(String[] args) {
 
-        Node n1 = new Node(Integer.parseInt(args[0]), 5, 3);
+        Node n1 = new Node(Integer.parseInt(args[0]), 5, 3, 1000, 10, 8000);
         ArrayList<Address> globalPeers = new ArrayList<Address>();
 
         System.out.println("==== Global Peer List ====");

@@ -244,7 +244,7 @@ public class JavaHTTPServer implements Runnable{
         if (fileRequested.endsWith(".htm")  ||  fileRequested.endsWith(".html"))
             return "text/html";
         else
-            return "text/plain";
+            return "text/javascript";
     }
 
     private void fileNotFound(PrintWriter out, OutputStream dataOut, String fileRequested) throws IOException {

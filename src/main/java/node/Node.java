@@ -4,14 +4,18 @@ import node.blockchain.Block;
 import node.blockchain.Transaction;
 import node.communication.Address;
 import node.communication.Message;
+import node.utils.Hashing;
 
 import java.io.*;
+import java.math.BigInteger;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.InetAddress;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
+import java.util.Random;
 
 /**
  * Node represents a peer, a cooperating member within the network
@@ -21,9 +25,18 @@ public class Node  {
     private final int MAX_PEERS;
     private final int MIN_CONNECTIONS;
     private final Object lock;
+    private final Object quorumLock;
+
     private final Address myAddress;
+
+    private final int NUM_NODES;
+    private final int QUORUM_SIZE;
+
+    private final int STARTING_PORT;
     private ServerSocket ss;
     private final ArrayList<Address> localPeers;
+    private ArrayList<Address> quorumPeers;
+
 
     /* A collection of getters */
     public int getMaxPeers(){return this.MAX_PEERS;}
@@ -34,18 +47,26 @@ public class Node  {
     /**
      * Node constructor creates node and begins server socket to accept connections
      *
-     * @param port Port
-     * @param maxPeers Maximum amount of peer connections to maintain
+     * @param port               Port
+     * @param maxPeers           Maximum amount of peer connections to maintain
      * @param initialConnections How many nodes we want to attempt to connect to on start
+     * @param num_nodes
+     * @param quorum_size
+     * @param starting_port
      */
-    public Node(int port, int maxPeers, int initialConnections) {
+    public Node(int port, int maxPeers, int initialConnections, int num_nodes, int quorum_size, int starting_port) {
 
         /* Initialize global variables */
         lock =  new Object();
+        quorumLock = new Object();
         myAddress = new Address(port, "localhost");
         this.localPeers = new ArrayList<>();
+        this.quorumPeers = new ArrayList<>();
         this.MIN_CONNECTIONS = initialConnections;
         this.MAX_PEERS = maxPeers;
+        this.NUM_NODES = num_nodes;
+        QUORUM_SIZE = quorum_size;
+        STARTING_PORT = starting_port;
 
         initializeBlockchain();
 
@@ -168,6 +189,41 @@ public class Node  {
             if (existingAddress.equals(address)) {
                 localPeers.remove(address);
                 return address;
+            }
+        }
+        return null;
+    }
+
+    public void establishQuorumConnection(Address address){
+        synchronized (quorumLock){
+            ArrayList<Address> quorum = deriveQuorum(blockchain.get(blockchain.size() - 1));
+            if(quorum.contains(address)){
+                return;
+            }
+
+            quorum.add(address);
+        }
+    }
+
+    // 8000 8086 8944
+    public ArrayList<Address> deriveQuorum(Block block){
+        String blockHash;
+        if(block != null && block.getPrevBlockHash() != null){
+            try {
+                ArrayList<Address> quorum = new ArrayList<>();
+                blockHash = Hashing.getBlockHash(block);
+                BigInteger bigInt = new BigInteger(blockHash, 16);
+                bigInt = bigInt.mod(BigInteger.valueOf(NUM_NODES));
+                int seed = bigInt.intValue();
+                Random random = new Random(seed);
+                for(int i = 0; i < QUORUM_SIZE; i++){
+                    int port = STARTING_PORT + random.nextInt(NUM_NODES);
+                    quorum.add(new Address(port, "localhost"));
+                    System.out.println(port);
+                }
+                return quorum;
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException(e);
             }
         }
         return null;
