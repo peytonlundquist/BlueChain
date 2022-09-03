@@ -30,7 +30,7 @@ public class NetworkLauncher {
             ArrayList<Node> nodes = new ArrayList<Node>();
             for(int i = startingPort; i < startingPort + numNodes; i++){
                 globalPeers.add(new Address(i, "localhost"));
-                nodes.add(new Node(i, maxConnections, minConnections));
+                nodes.add(new Node(i, maxConnections, minConnections, numNodes, 10, startingPort));
             }
             NetworkLauncher n = new NetworkLauncher();
             n.startNetworkClients(globalPeers, nodes);

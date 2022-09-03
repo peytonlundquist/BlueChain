@@ -1,6 +1,7 @@
 package node;
 
 import node.blockchain.Block;
+import node.blockchain.Transaction;
 import node.communication.*;
 import java.io.*;
 import java.net.Socket;
@@ -67,6 +68,20 @@ public class ServerConnection extends Thread {
                 outgoingMessage = new Message(Message.Request.PING);
                 oout.writeObject(outgoingMessage);
                 oout.flush();
+                break;
+            case REQUEST_QUORUM_CONNECTION:
+                Address quorumAddress = (Address) incomingMessage.getMetadata();
+
+                    outgoingMessage = new Message(Message.Request.ACCEPT_CONNECTION, node.getAddress());
+                    oout.writeObject(outgoingMessage);
+                    oout.flush();
+                outgoingMessage = new Message(Message.Request.REJECT_CONNECTION, node.getAddress());
+                oout.writeObject(outgoingMessage);
+                oout.flush();
+                break;
+            case ADD_TRANSACTION:
+                Transaction transaction = (Transaction) incomingMessage.getMetadata();
+                node.addTransaction(transaction);
                 break;
         }
     }

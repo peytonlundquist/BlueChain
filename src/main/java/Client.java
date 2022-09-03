@@ -1,6 +1,6 @@
 import graphing.Graph;
 import graphing.GraphNode;
-import node.Node;
+import node.blockchain.Transaction;
 import node.communication.Address;
 import node.communication.Message;
 
@@ -91,7 +91,11 @@ public class Client {
                 OutputStream os = new FileOutputStream("graph.json");
                 JsonWriter jsonWriter = Json.createWriter(os);
                 jsonWriter.writeObject(empJsonObject);
-                jsonWriter.close();
+//                jsonWriter.close();
+            }else if(args[0].equals("trans")){
+                port = Integer.parseInt(args[1]);
+                submitTransaction(port, args[2]);
+                System.out.println("Submitted transaction");
             }else{
                 System.out.println("Usage: [graph] [query <portNum>]");
             }
@@ -123,5 +127,19 @@ public class Client {
             //System.out.println("Error occurred");
         }
         return null;
+    }
+
+    private static void submitTransaction(int port, String transaction){
+        try {
+            Socket s = new Socket("localhost", port);
+            OutputStream out = s.getOutputStream();
+            ObjectOutputStream oout = new ObjectOutputStream(out);
+            Message message = new Message(Message.Request.ADD_TRANSACTION, new Transaction(transaction));
+            oout.writeObject(message);
+            oout.flush();
+            s.close();
+        } catch (IOException e) {
+            //System.out.println("Error occurred");
+        }
     }
 }
