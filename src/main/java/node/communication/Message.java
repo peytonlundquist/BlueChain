@@ -27,7 +27,8 @@ public class Message implements Serializable {
         REJECT_CONNECTION,
         QUERY_PEERS,
         PING,
-        REQUEST_QUORUM_CONNECTION
+        REQUEST_QUORUM_CONNECTION,
+        ADD_TRANSACTION
     }
 
     public Request getRequest(){

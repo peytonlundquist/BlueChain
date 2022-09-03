@@ -16,6 +16,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
 import java.util.Random;
+import java.util.TreeMap;
 
 /**
  * Node represents a peer, a cooperating member within the network
@@ -26,6 +27,8 @@ public class Node  {
     private final int MIN_CONNECTIONS;
     private final Object lock;
     private final Object quorumLock;
+    private final Object memPoolLock;
+
 
     private final Address myAddress;
 
@@ -36,6 +39,7 @@ public class Node  {
     private ServerSocket ss;
     private final ArrayList<Address> localPeers;
     private ArrayList<Address> quorumPeers;
+    private ArrayList<Transaction> mempool;
 
 
     /* A collection of getters */
@@ -43,6 +47,11 @@ public class Node  {
     public int getMinConnections(){return this.MIN_CONNECTIONS;}
     public Address getAddress(){return this.myAddress;}
     public ArrayList<Address> getLocalPeers(){return this.localPeers;}
+
+    public ArrayList<Address> getQuorumPeers(){return this.quorumPeers;}
+    public ArrayList<Transaction> getMempool(){return this.mempool;}
+
+
 
     /**
      * Node constructor creates node and begins server socket to accept connections
@@ -67,6 +76,9 @@ public class Node  {
         this.NUM_NODES = num_nodes;
         QUORUM_SIZE = quorum_size;
         STARTING_PORT = starting_port;
+        this.mempool = new ArrayList<>();
+        memPoolLock = new Object();
+
 
         initializeBlockchain();
 
@@ -184,6 +196,15 @@ public class Node  {
         return false;
     }
 
+    public boolean containsTransaction(ArrayList<Transaction> list, Transaction transaction){
+        for (Transaction existingTransactions : list) {
+            if (existingTransactions.equals(transaction)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public Address removeAddress(Address address){
         for (Address existingAddress : localPeers) {
             if (existingAddress.equals(address)) {
@@ -194,24 +215,71 @@ public class Node  {
         return null;
     }
 
-    public void establishQuorumConnection(Address address){
-        synchronized (quorumLock){
-            ArrayList<Address> quorum = deriveQuorum(blockchain.get(blockchain.size() - 1));
-            if(quorum.contains(address)){
-                return;
-            }
 
-            quorum.add(address);
+
+    public void gossipTransaction(Transaction transaction){
+        for(Address address : localPeers){
+            try {
+                Socket s = new Socket("localhost", address.getPort());
+                InputStream in = s.getInputStream();
+                ObjectInputStream oin = new ObjectInputStream(in);
+                OutputStream out = s.getOutputStream();
+                ObjectOutputStream oout = new ObjectOutputStream(out);
+                Message message = new Message(Message.Request.ADD_TRANSACTION, transaction);
+                oout.writeObject(message);
+                oout.flush();
+                s.close();
+            } catch (IOException e) {
+                System.out.println("Received IO Exception from node " + address.getPort());
+                removeAddress(address);
+            } catch (ConcurrentModificationException e){
+                break;
+            }
+        }
+    }
+
+    public void beginQuorum(){
+
+    }
+
+    public void addTransaction(Transaction transaction){
+        synchronized (memPoolLock){
+            if(!containsTransaction(mempool, transaction)){
+                mempool.add(transaction);
+                gossipTransaction(transaction);
+                System.out.println("node " + myAddress.getPort() + ": Added tran");
+
+                if(mempool.size() == 3){
+                    if(establishQuorumPeers()){
+                        System.out.println("3 tran");
+                    }
+                }
+            }
+        }
+    }
+
+    public boolean establishQuorumPeers(){
+        synchronized (quorumLock){
+            ArrayList<Address> quorum = deriveQuorum(blockchain.get(blockchain.size() - 1), 0);
+            Boolean quorumMember = false;
+            for(Address quorumAddress : quorum){
+                if(myAddress.equals(quorumAddress)) {
+                    quorumMember = true;
+                }else{
+                    quorumPeers.add(quorumAddress);
+                }
+            }
+            return quorumMember;
         }
     }
 
     // 8000 8086 8944
-    public ArrayList<Address> deriveQuorum(Block block){
+    public ArrayList<Address> deriveQuorum(Block block, int nonce){
         String blockHash;
         if(block != null && block.getPrevBlockHash() != null){
             try {
                 ArrayList<Address> quorum = new ArrayList<>();
-                blockHash = Hashing.getBlockHash(block);
+                blockHash = Hashing.getBlockHash(block, nonce);
                 BigInteger bigInt = new BigInteger(blockHash, 16);
                 bigInt = bigInt.mod(BigInteger.valueOf(NUM_NODES));
                 int seed = bigInt.intValue();
@@ -287,6 +355,7 @@ public class Node  {
                             System.out.println("Node " + node.getAddress().getPort() + ": Node " + localPeers.get(0).getPort() + " idk :(");
                         }
                         s.close();
+                        System.out.println("Node " + node.getAddress().getPort() + ": Node " + localPeers.get(0).getPort() + " mempool: " + mempool);
                     } catch (IOException e) {
                         System.out.println("Received IO Exception from node " + address.getPort());
                         removeAddress(address);

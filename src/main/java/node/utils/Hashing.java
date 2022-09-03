@@ -35,8 +35,8 @@ public class Hashing {
         return toHexString(getSHA(input));
     }
 
-    public static String getBlockHash(Block block) throws NoSuchAlgorithmException {
-        String blockString = block.getPrevBlockHash().concat(String.valueOf(block.getBlockId()));
+    public static String getBlockHash(Block block, int nonce) throws NoSuchAlgorithmException {
+        String blockString = block.getPrevBlockHash().concat(String.valueOf(block.getBlockId())).concat(String.valueOf(nonce));
         return getSHAString(blockString);
     }
 }
