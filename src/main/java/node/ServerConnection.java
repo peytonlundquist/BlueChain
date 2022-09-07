@@ -6,6 +6,7 @@ import node.communication.*;
 import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.ArrayList;
 
 /**
  * Deterministic thread which implements the nodes protocol
@@ -64,7 +65,7 @@ public class ServerConnection extends Thread {
                 Block proposedBlock = (Block) incomingMessage.getMetadata();
                 node.addBlock(proposedBlock);
             case PING:
-                System.out.println("Node " + node.getAddress().getPort() + ": Received: Ping.");
+                //System.out.println("Node " + node.getAddress().getPort() + ": Received: Ping.");
                 outgoingMessage = new Message(Message.Request.PING);
                 oout.writeObject(outgoingMessage);
                 oout.flush();
@@ -83,6 +84,11 @@ public class ServerConnection extends Thread {
                 Transaction transaction = (Transaction) incomingMessage.getMetadata();
                 node.addTransaction(transaction);
                 break;
+            case RECEIVE_MEMPOOL:
+                ArrayList<Transaction> memPool = (ArrayList<Transaction>) incomingMessage.getMetadata();
+                node.receiveMempool(memPool);
+                break;
+
         }
     }
 }

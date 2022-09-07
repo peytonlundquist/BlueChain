@@ -13,34 +13,30 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.InetAddress;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.ConcurrentModificationException;
-import java.util.Random;
-import java.util.TreeMap;
+import java.util.*;
 
 /**
  * Node represents a peer, a cooperating member within the network
  */
 public class Node  {
-    private ArrayList<Block> blockchain;
     private final int MAX_PEERS;
+    private final int NUM_NODES;
+    private final int QUORUM_SIZE;
+    private final int STARTING_PORT;
     private final int MIN_CONNECTIONS;
     private final Object lock;
     private final Object quorumLock;
     private final Object memPoolLock;
 
 
+    private ArrayList<Block> blockchain;
     private final Address myAddress;
-
-    private final int NUM_NODES;
-    private final int QUORUM_SIZE;
-
-    private final int STARTING_PORT;
     private ServerSocket ss;
     private final ArrayList<Address> localPeers;
     private ArrayList<Address> quorumPeers;
     private ArrayList<Transaction> mempool;
 
+    private int memPoolRounds;
 
     /* A collection of getters */
     public int getMaxPeers(){return this.MAX_PEERS;}
@@ -69,17 +65,16 @@ public class Node  {
         lock =  new Object();
         quorumLock = new Object();
         myAddress = new Address(port, "localhost");
-        this.localPeers = new ArrayList<>();
-        this.quorumPeers = new ArrayList<>();
-        this.MIN_CONNECTIONS = initialConnections;
-        this.MAX_PEERS = maxPeers;
-        this.NUM_NODES = num_nodes;
+        localPeers = new ArrayList<>();
+        quorumPeers = new ArrayList<>();
+        MIN_CONNECTIONS = initialConnections;
+        MAX_PEERS = maxPeers;
+        NUM_NODES = num_nodes;
         QUORUM_SIZE = quorum_size;
         STARTING_PORT = starting_port;
-        this.mempool = new ArrayList<>();
+        mempool = new ArrayList<>();
         memPoolLock = new Object();
-
-
+        memPoolRounds = 0;
         initializeBlockchain();
 
         try {
@@ -98,10 +93,6 @@ public class Node  {
     public void initializeBlockchain(){
         blockchain = new ArrayList<Block>();
         blockchain.add(new Block(new ArrayList<Transaction>(), "", 0));
-    }
-
-    public void gossipBlock(){
-        // If block doesnt contain the signature of our peers, gossip to them ??
     }
 
     /**
@@ -218,28 +209,42 @@ public class Node  {
 
 
     public void gossipTransaction(Transaction transaction){
-        for(Address address : localPeers){
-            try {
-                Socket s = new Socket("localhost", address.getPort());
-                InputStream in = s.getInputStream();
-                ObjectInputStream oin = new ObjectInputStream(in);
-                OutputStream out = s.getOutputStream();
-                ObjectOutputStream oout = new ObjectOutputStream(out);
-                Message message = new Message(Message.Request.ADD_TRANSACTION, transaction);
-                oout.writeObject(message);
-                oout.flush();
-                s.close();
-            } catch (IOException e) {
-                System.out.println("Received IO Exception from node " + address.getPort());
-                removeAddress(address);
-            } catch (ConcurrentModificationException e){
-                break;
+        synchronized (lock){
+            for(Address address : localPeers){
+                try {
+                    Socket s = new Socket("localhost", address.getPort());
+                    InputStream in = s.getInputStream();
+                    ObjectInputStream oin = new ObjectInputStream(in);
+                    OutputStream out = s.getOutputStream();
+                    ObjectOutputStream oout = new ObjectOutputStream(out);
+                    Message message = new Message(Message.Request.ADD_TRANSACTION, transaction);
+                    oout.writeObject(message);
+                    oout.flush();
+                    s.close();
+                } catch (IOException e) {
+                    System.out.println("Received IO Exception from node " + address.getPort());
+                    //removeAddress(address);
+                } catch (ConcurrentModificationException e){
+                    break;
+                }
             }
         }
     }
 
-    public void beginQuorum(){
-
+    public void sendOneWayMessage(Address address, Message message) {
+        try {
+            Socket s = new Socket("localhost", address.getPort());
+            InputStream in = s.getInputStream();
+            ObjectInputStream oin = new ObjectInputStream(in);
+            OutputStream out = s.getOutputStream();
+            ObjectOutputStream oout = new ObjectOutputStream(out);
+            oout.writeObject(message);
+            oout.flush();
+            s.close();
+        } catch (IOException e) {
+            System.out.println("Received IO Exception from node " + address.getPort());
+            //removeAddress(address);
+        }
     }
 
     public void addTransaction(Transaction transaction){
@@ -250,11 +255,96 @@ public class Node  {
                 System.out.println("node " + myAddress.getPort() + ": Added tran");
 
                 if(mempool.size() == 3){
-                    if(establishQuorumPeers()){
-                        System.out.println("3 tran");
+                    if(inQuorum()){
+                        System.out.println("node " + myAddress.getPort() + ": In quorum");
+
                     }
                 }
             }
+        }
+    }
+
+    public void beginQuorum(){
+    }
+
+    public void shareMempool(){
+        // send mempool to each node in quorum
+        // expect to receive all members in quorum's mempool
+        ArrayList<Address> quorum = deriveQuorum(blockchain.get(blockchain.size() - 1), 0);
+
+        for (Address quorumAddress : quorum) {
+            if (!myAddress.equals(quorumAddress)) {
+                sendOneWayMessage(quorumAddress, new Message(Message.Request.RECEIVE_MEMPOOL, getMempool()));
+            }
+        }
+    }
+
+    public void receiveMempool(ArrayList<Transaction> newMempool){
+        synchronized (memPoolLock){
+            if(!inQuorum() || memPoolRounds >= QUORUM_SIZE - 1){
+                return;
+            }
+
+            memPoolRounds++;
+            // add any unknown transactions
+            // share mempool with quorum
+            for (Transaction transaction : newMempool){
+                if(!containsTransaction(mempool, transaction)){ //if theres a tran in their list that is not in mine
+                    mempool.add(transaction);
+                }
+            }
+
+            for (Transaction transaction : mempool){
+                if(!containsTransaction(newMempool, transaction)){ //if theres a tran in my list that is not in theirs
+                    shareMempool();
+                }
+            }
+
+            // do x rounds of communication
+            // construct block
+            if(memPoolRounds == QUORUM_SIZE - 1){
+                constructBlock();
+            }
+        }
+    }
+
+    public void constructBlock(){
+        // deterministically construct block
+    }
+
+    public void beginElection(){
+        // share block signed,
+        // receive blocks and sign
+        // gossip block
+    }
+
+    public void gossipBlock(){
+    }
+
+    public void beginQuorumProtocol(){
+        synchronized (quorumLock){
+            ArrayList<Address> quorum = deriveQuorum(blockchain.get(blockchain.size() - 1), 0);
+            Boolean quorumMember = false;
+            for(Address quorumAddress : quorum){
+                if(!myAddress.equals(quorumAddress)) {
+
+                }
+            }
+        }
+    }
+
+    public boolean inQuorum(){
+        synchronized (quorumLock){
+            ArrayList<Address> quorum = deriveQuorum(blockchain.get(blockchain.size() - 1), 0);
+            Boolean quorumMember = false;
+            for(Address quorumAddress : quorum){
+                if(myAddress.equals(quorumAddress)) {
+                    quorumMember = true;
+                }else{
+                    quorumPeers.add(quorumAddress);
+                }
+            }
+            return quorumMember;
         }
     }
 
@@ -287,7 +377,6 @@ public class Node  {
                 for(int i = 0; i < QUORUM_SIZE; i++){
                     int port = STARTING_PORT + random.nextInt(NUM_NODES);
                     quorum.add(new Address(port, "localhost"));
-                    System.out.println(port);
                 }
                 return quorum;
             } catch (NoSuchAlgorithmException e) {
@@ -349,16 +438,19 @@ public class Node  {
                         oout.writeObject(message);
                         oout.flush();
                         Message messageReceived = (Message) oin.readObject();
-                        if(messageReceived.getRequest().name().equals("PING")){
-                            System.out.println("Node " + node.getAddress().getPort() + ": Node " + localPeers.get(0).getPort() + " pinged back");
-                        }else{
-                            System.out.println("Node " + node.getAddress().getPort() + ": Node " + localPeers.get(0).getPort() + " idk :(");
-                        }
+//                        if(messageReceived.getRequest().name().equals("PING")){
+//                            System.out.println("Node " + node.getAddress().getPort() + ": Node " + localPeers.get(0).getPort() + " pinged back");
+//                        }else{
+//                            System.out.println("Node " + node.getAddress().getPort() + ": Node " + localPeers.get(0).getPort() + " idk :(");
+//                        }
                         s.close();
                         System.out.println("Node " + node.getAddress().getPort() + ": Node " + localPeers.get(0).getPort() + " mempool: " + mempool);
                     } catch (IOException e) {
                         System.out.println("Received IO Exception from node " + address.getPort());
-                        removeAddress(address);
+                        //removeAddress(address);
+                        System.out.println("Removing address");
+                        System.out.println(e);
+                        break;
                     } catch (ClassNotFoundException e) {
                         throw new RuntimeException(e);
                     } catch (InterruptedException e) {

@@ -28,7 +28,9 @@ public class Message implements Serializable {
         QUERY_PEERS,
         PING,
         REQUEST_QUORUM_CONNECTION,
-        ADD_TRANSACTION
+        ADD_TRANSACTION,
+
+        RECEIVE_MEMPOOL
     }
 
     public Request getRequest(){
