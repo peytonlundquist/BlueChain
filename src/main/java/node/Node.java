@@ -2,18 +2,23 @@ package node;
 
 import node.blockchain.Block;
 import node.blockchain.Transaction;
+import node.blockchain.blockContainer;
 import node.communication.Address;
 import node.communication.Message;
-import node.utils.Hashing;
+import node.communication.utils.Hashing;
 
 import java.io.*;
 import java.math.BigInteger;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
-import java.net.InetAddress;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+
+import static node.communication.utils.Hashing.getBlockHash;
+import static node.communication.utils.Hashing.getSHAString;
+import static node.communication.utils.Utils.deepCloneHashmap;
 
 /**
  * Node represents a peer, a cooperating member within the network
@@ -27,16 +32,18 @@ public class Node  {
     private final Object lock;
     private final Object quorumLock;
     private final Object memPoolLock;
-
-
     private ArrayList<Block> blockchain;
     private final Address myAddress;
     private ServerSocket ss;
     private final ArrayList<Address> localPeers;
     private ArrayList<Address> quorumPeers;
-    private ArrayList<Transaction> mempool;
+    private HashMap<String, Transaction> mempool;
 
-    private int memPoolRounds;
+    private enum status{IN_QUORUM, NOT_IN_QUORUM};
+    private status nodeStatus;
+
+
+
 
     /* A collection of getters */
     public int getMaxPeers(){return this.MAX_PEERS;}
@@ -45,8 +52,16 @@ public class Node  {
     public ArrayList<Address> getLocalPeers(){return this.localPeers;}
 
     public ArrayList<Address> getQuorumPeers(){return this.quorumPeers;}
-    public ArrayList<Transaction> getMempool(){return this.mempool;}
+    public HashMap<String, Transaction> getMempool(){return this.mempool;}
 
+    public status getStatus() {
+        return nodeStatus;
+    }
+
+    private int quorumReadyVotes;
+    private Object quorumReadyVotesLock;
+    private int memPoolRounds;
+    private Object memPoolRoundsLock;
 
 
     /**
@@ -64,6 +79,10 @@ public class Node  {
         /* Initialize global variables */
         lock =  new Object();
         quorumLock = new Object();
+        quorumReadyVotesLock = new Object();
+        memPoolRoundsLock = new Object();
+
+
         myAddress = new Address(port, "localhost");
         localPeers = new ArrayList<>();
         quorumPeers = new ArrayList<>();
@@ -72,7 +91,7 @@ public class Node  {
         NUM_NODES = num_nodes;
         QUORUM_SIZE = quorum_size;
         STARTING_PORT = starting_port;
-        mempool = new ArrayList<>();
+        mempool = new HashMap<>();
         memPoolLock = new Object();
         memPoolRounds = 0;
         initializeBlockchain();
@@ -92,7 +111,7 @@ public class Node  {
      */
     public void initializeBlockchain(){
         blockchain = new ArrayList<Block>();
-        blockchain.add(new Block(new ArrayList<Transaction>(), "", 0));
+        blockchain.add(new Block(new HashMap<String, Transaction>(), "", 0));
     }
 
     /**
@@ -187,13 +206,16 @@ public class Node  {
         return false;
     }
 
-    public boolean containsTransaction(ArrayList<Transaction> list, Transaction transaction){
-        for (Transaction existingTransactions : list) {
-            if (existingTransactions.equals(transaction)) {
-                return true;
+    public boolean containsTransaction(HashMap<String, Transaction> list, Transaction transaction){
+        synchronized (mempool){
+            Set<Transaction> values = (Set<Transaction>) list.values();
+            for (Transaction existingTransactions : values) {
+                if (existingTransactions.equals(transaction)) {
+                    return true;
+                }
             }
+            return false;
         }
-        return false;
     }
 
     public Address removeAddress(Address address){
@@ -247,25 +269,203 @@ public class Node  {
         }
     }
 
+    public Message sendTwoWayMessage(Address address, Message message) {
+        try {
+            Socket s = new Socket("localhost", address.getPort());
+            InputStream in = s.getInputStream();
+            ObjectInputStream oin = new ObjectInputStream(in);
+            OutputStream out = s.getOutputStream();
+            ObjectOutputStream oout = new ObjectOutputStream(out);
+            oout.writeObject(message);
+            oout.flush();
+            Message messageReceived = (Message) oin.readObject();
+            s.close();
+            return messageReceived;
+        } catch (IOException e) {
+            System.out.println("Received IO Exception from node " + address.getPort());
+            //removeAddress(address);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+        return null;
+    }
+
+
+
+
+
+
+
+
     public void addTransaction(Transaction transaction){
         synchronized (memPoolLock){
-            if(!containsTransaction(mempool, transaction)){
-                mempool.add(transaction);
+            if(containsTransaction(mempool, transaction)){
+                try {
+                    mempool.put(getSHAString(transaction.getData()), transaction);
+                } catch (NoSuchAlgorithmException e) {
+                    throw new RuntimeException(e);
+                }
                 gossipTransaction(transaction);
                 System.out.println("node " + myAddress.getPort() + ": Added tran");
 
                 if(mempool.size() == 3){
                     if(inQuorum()){
                         System.out.println("node " + myAddress.getPort() + ": In quorum");
-
+                        //sendQuorumReady();
                     }
                 }
             }
         }
     }
 
-    public void beginQuorum(){
+    public void sendQuorumReady(){
+        sendOneWayMessageQuorum(new Message(Message.Request.QUORUM_READY));
     }
+
+    public void receiveQuorumReady(){
+        synchronized (quorumReadyVotesLock){
+            quorumReadyVotes++;
+
+            if(quorumReadyVotes == quorumPeers.size() - 1){
+                sendMempoolHashes();
+            }
+        }
+    }
+
+    public void sendMempoolHashes() {
+
+        Set<String> keys = mempool.keySet();
+        ArrayList<Address> quorum = deriveQuorum(blockchain.get(blockchain.size() - 1), 0);
+
+        for (Address quorumAddress : quorum) {
+            if (!myAddress.equals(quorumAddress)) {
+                Socket s = null;
+                try {
+                    s = new Socket("localhost", quorumAddress.getPort());
+                    InputStream in = s.getInputStream();
+                    ObjectInputStream oin = new ObjectInputStream(in);
+                    OutputStream out = s.getOutputStream();
+                    ObjectOutputStream oout = new ObjectOutputStream(out);
+                    oout.writeObject(new Message(Message.Request.RECEIVE_MEMPOOL, keys));
+                    oout.flush();
+                    Message messageReceived = (Message) oin.readObject();
+                    if(messageReceived.getRequest().name().equals("REQUEST_TRANSACTION")){
+                        ArrayList<String> hashesRequested = (ArrayList<String>) messageReceived.getMetadata();
+                        ArrayList<Transaction> transactionsToSend = new ArrayList<>();
+                        for(String hash : keys){
+                            if(mempool.containsKey(hash)){
+                                transactionsToSend.add(mempool.get(hash));
+                            }else{
+                                s.close();
+                                throw new Exception();
+                                // something is wrong
+                            }
+                        }
+                        oout.writeObject(new Message(Message.Request.RECEIVE_MEMPOOL, transactionsToSend));
+                    }else{
+                    }
+                    s.close();
+                } catch (IOException e) {
+                    //throw new RuntimeException(e);
+                } catch (ClassNotFoundException e) {
+                    //throw new RuntimeException(e);
+                } catch (Exception e){
+
+                }
+            }
+        }
+    }
+
+    public void receiveMempool(Set<String> keys, ObjectOutputStream oout, ObjectInputStream oin) {
+        synchronized (memPoolLock) {
+            ArrayList<String> keysAbsent = new ArrayList<>();
+            for (String key : keys) {
+                if (!mempool.containsKey(key)) {
+                    keysAbsent.add(key);
+                }
+            }
+            try {
+                if (keysAbsent.isEmpty()) {
+                    oout.writeObject(new Message(Message.Request.PING));
+                    oout.flush();
+                } else {
+                    oout.writeObject(new Message(Message.Request.REQUEST_TRANSACTION, keysAbsent));
+                    oout.flush();
+                    ArrayList<Transaction> transactionsReturned = (ArrayList<Transaction>) oin.readObject();
+                    for(Transaction transaction : transactionsReturned){
+                        try {
+                            mempool.put(getSHAString(transaction.getData()), transaction);
+                        } catch (NoSuchAlgorithmException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+
+            memPoolRounds++;
+            if(memPoolRounds == quorumPeers.size() - 1){
+                constructBlock();
+            }
+        }
+    }
+
+    public void constructBlock(){
+        synchronized (memPoolLock){
+            HashMap<String, Transaction> blockTransactions = deepCloneHashmap(mempool);
+            try {
+                Block block = new Block(blockTransactions,
+                        getBlockHash(blockchain.get(blockchain.size() - 1), 0),
+                                blockchain.size());
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    public void gossipBlock(Block block){
+        sendOneWayMessageQuorum(new Message(Message.Request.VOTE_BLOCK, new blockContainer(block)));
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     public void shareMempool(){
         // send mempool to each node in quorum
@@ -279,38 +479,35 @@ public class Node  {
         }
     }
 
-    public void receiveMempool(ArrayList<Transaction> newMempool){
-        synchronized (memPoolLock){
-            if(!inQuorum() || memPoolRounds >= QUORUM_SIZE - 1){
-                return;
-            }
+//    public void receiveMempool(ArrayList<Transaction> newMempool){
+//        synchronized (memPoolLock){
+//            if(!inQuorum() || memPoolRounds >= QUORUM_SIZE - 1){
+//                return;
+//            }
+//
+//            memPoolRounds++;
+//            // add any unknown transactions
+//            // share mempool with quorum
+//            for (Transaction transaction : newMempool){
+//                if(!containsTransaction(mempool, transaction)){ //if theres a tran in their list that is not in mine
+//                    mempool.add(transaction);
+//                }
+//            }
+//
+//            for (Transaction transaction : mempool){
+//                if(!containsTransaction(newMempool, transaction)){ //if theres a tran in my list that is not in theirs
+//                    shareMempool();
+//                }
+//            }
+//
+//            // do x rounds of communication
+//            // construct block
+//            if(memPoolRounds == QUORUM_SIZE - 1){
+//                constructBlock();
+//            }
+//        }
+//    }
 
-            memPoolRounds++;
-            // add any unknown transactions
-            // share mempool with quorum
-            for (Transaction transaction : newMempool){
-                if(!containsTransaction(mempool, transaction)){ //if theres a tran in their list that is not in mine
-                    mempool.add(transaction);
-                }
-            }
-
-            for (Transaction transaction : mempool){
-                if(!containsTransaction(newMempool, transaction)){ //if theres a tran in my list that is not in theirs
-                    shareMempool();
-                }
-            }
-
-            // do x rounds of communication
-            // construct block
-            if(memPoolRounds == QUORUM_SIZE - 1){
-                constructBlock();
-            }
-        }
-    }
-
-    public void constructBlock(){
-        // deterministically construct block
-    }
 
     public void beginElection(){
         // share block signed,
@@ -318,17 +515,13 @@ public class Node  {
         // gossip block
     }
 
-    public void gossipBlock(){
-    }
 
-    public void beginQuorumProtocol(){
-        synchronized (quorumLock){
-            ArrayList<Address> quorum = deriveQuorum(blockchain.get(blockchain.size() - 1), 0);
-            Boolean quorumMember = false;
-            for(Address quorumAddress : quorum){
-                if(!myAddress.equals(quorumAddress)) {
 
-                }
+    public void sendOneWayMessageQuorum(Message message){
+        ArrayList<Address> quorum = deriveQuorum(blockchain.get(blockchain.size() - 1), 0);
+        for(Address quorumAddress : quorum){
+            if(!myAddress.equals(quorumAddress)) {
+                sendOneWayMessage(quorumAddress, message);
             }
         }
     }
@@ -340,26 +533,20 @@ public class Node  {
             for(Address quorumAddress : quorum){
                 if(myAddress.equals(quorumAddress)) {
                     quorumMember = true;
-                }else{
-                    quorumPeers.add(quorumAddress);
                 }
             }
             return quorumMember;
         }
     }
 
-    public boolean establishQuorumPeers(){
-        synchronized (quorumLock){
-            ArrayList<Address> quorum = deriveQuorum(blockchain.get(blockchain.size() - 1), 0);
-            Boolean quorumMember = false;
-            for(Address quorumAddress : quorum){
-                if(myAddress.equals(quorumAddress)) {
-                    quorumMember = true;
-                }else{
+    public void establishQuorumPeers(){
+        ArrayList<Address> quorum = deriveQuorum(blockchain.get(blockchain.size() - 1), 0);
+        for(Address quorumAddress : quorum){
+            if(!myAddress.equals(quorumAddress)) {
+                if(!containsAddress(quorumPeers, quorumAddress)){
                     quorumPeers.add(quorumAddress);
                 }
             }
-            return quorumMember;
         }
     }
 
@@ -385,6 +572,8 @@ public class Node  {
         }
         return null;
     }
+
+
 
     /**
      * Acceptor is a thread responsible for maintaining the server socket by

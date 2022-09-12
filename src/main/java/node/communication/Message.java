@@ -30,7 +30,12 @@ public class Message implements Serializable {
         REQUEST_QUORUM_CONNECTION,
         ADD_TRANSACTION,
 
-        RECEIVE_MEMPOOL
+        RECEIVE_MEMPOOL,
+        QUORUM_READY,
+        CONSTRUCT_BLOCK,
+        VOTE_BLOCK,
+        QUORUM_COMPLETE,
+        REQUEST_TRANSACTION
     }
 
     public Request getRequest(){

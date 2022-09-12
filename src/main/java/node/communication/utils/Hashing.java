@@ -1,4 +1,4 @@
-package node.utils;
+package node.communication.utils;
 
 import node.blockchain.Block;
 

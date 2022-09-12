@@ -23,4 +23,18 @@ public class Transaction implements Serializable {
     public String toString(){
         return getData();
     }
+
+//    @Override
+//    public int compareTo(Object o) {
+//        Transaction transaction = (Transaction) o;
+//        try {
+//            String hashedTransaction = getSHAString(transaction.getData());
+//            String thisHashedTransaction = getSHAString(this.getData());
+//
+//
+//        } catch (NoSuchAlgorithmException e) {
+//            return 0;
+//        }
+//        return 0;
+//    }
 }

@@ -96,6 +96,19 @@ public class Client {
                 port = Integer.parseInt(args[1]);
                 submitTransaction(port, args[2]);
                 System.out.println("Submitted transaction");
+            }else if(args[0].equals("transEx")){
+                port = startingPort;
+                for(int i = 0; i < 10; i++){
+                    port = port + i;
+
+                    submitTransaction(port, String.valueOf(i));
+                    System.out.println("Submitted transaction");
+                    try {
+                        Thread.sleep(5000);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
             }else{
                 System.out.println("Usage: [graph] [query <portNum>]");
             }
