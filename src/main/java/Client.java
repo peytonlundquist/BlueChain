@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Properties;
 
-import javax.json.*;
+//import javax.json.*;
 
 /**
  * One shot client that queries the network's nodes
@@ -69,35 +69,35 @@ public class Client {
 
             }else if(args[0].equals("json")){
 
-                JsonArrayBuilder jsonNodes = Json.createArrayBuilder();
-                JsonArrayBuilder jsonLinks = Json.createArrayBuilder();
-
-                for (int i = 0; i < numNodes; i++) {
-                    port = startingPort + i;
-                    ArrayList<Address> localPeers = queryPeer(port);
-                    if (localPeers != null) {
-                        jsonNodes.add(Json.createObjectBuilder().add("id", String.valueOf(port)).add("group", 1));
-
-                        for(Address address : localPeers){
-                            jsonLinks.add(Json.createObjectBuilder().add("source", String.valueOf(port)).add("target", String.valueOf(address.getPort())).add("value", 2));
-                        }
-                    }
-                }
-
-                JsonObjectBuilder jsonObjectBuilder = Json.createObjectBuilder();
-                jsonObjectBuilder.add("nodes", jsonNodes).add("links", jsonLinks);
-                JsonObject empJsonObject = jsonObjectBuilder.build();
-
-                OutputStream os = new FileOutputStream("graph.json");
-                JsonWriter jsonWriter = Json.createWriter(os);
-                jsonWriter.writeObject(empJsonObject);
+//                JsonArrayBuilder jsonNodes = Json.createArrayBuilder();
+//                JsonArrayBuilder jsonLinks = Json.createArrayBuilder();
+//
+//                for (int i = 0; i < numNodes; i++) {
+//                    port = startingPort + i;
+//                    ArrayList<Address> localPeers = queryPeer(port);
+//                    if (localPeers != null) {
+//                        jsonNodes.add(Json.createObjectBuilder().add("id", String.valueOf(port)).add("group", 1));
+//
+//                        for(Address address : localPeers){
+//                            jsonLinks.add(Json.createObjectBuilder().add("source", String.valueOf(port)).add("target", String.valueOf(address.getPort())).add("value", 2));
+//                        }
+//                    }
+//                }
+//
+//                JsonObjectBuilder jsonObjectBuilder = Json.createObjectBuilder();
+//                jsonObjectBuilder.add("nodes", jsonNodes).add("links", jsonLinks);
+//                JsonObject empJsonObject = jsonObjectBuilder.build();
+//
+//                OutputStream os = new FileOutputStream("graph.json");
+//                JsonWriter jsonWriter = Json.createWriter(os);
+//                jsonWriter.writeObject(empJsonObject);
 //                jsonWriter.close();
             }else if(args[0].equals("trans")){
                 port = Integer.parseInt(args[1]);
                 submitTransaction(port, args[2]);
                 System.out.println("Submitted transaction");
             }else if(args[0].equals("transEx")){
-                port = startingPort;
+                port = 8000;
                 for(int i = 0; i < 10; i++){
                     port = port + i;
 

@@ -206,16 +206,14 @@ public class Node  {
         return false;
     }
 
-    public boolean containsTransaction(HashMap<String, Transaction> list, Transaction transaction){
-        synchronized (mempool){
-            Set<Transaction> values = (Set<Transaction>) list.values();
-            for (Transaction existingTransactions : values) {
-                if (existingTransactions.equals(transaction)) {
-                    return true;
-                }
+    public boolean containsTransaction(Transaction transaction){
+        Set<Transaction> values = new HashSet<>();
+        for(Map.Entry<String, Transaction> entry : mempool.entrySet()){
+            if (entry.getValue().equals(transaction)) {
+                return true;
             }
-            return false;
         }
+        return false;
     }
 
     public Address removeAddress(Address address){
@@ -299,14 +297,14 @@ public class Node  {
 
     public void addTransaction(Transaction transaction){
         synchronized (memPoolLock){
-            if(containsTransaction(mempool, transaction)){
+            if(!containsTransaction(transaction)){
                 try {
                     mempool.put(getSHAString(transaction.getData()), transaction);
                 } catch (NoSuchAlgorithmException e) {
                     throw new RuntimeException(e);
                 }
                 gossipTransaction(transaction);
-                System.out.println("node " + myAddress.getPort() + ": Added tran");
+                System.out.println("Node " + myAddress.getPort() + ": Node " + localPeers.get(0).getPort() + " mempool: " + mempool.values());
 
                 if(mempool.size() == 3){
                     if(inQuorum()){
@@ -617,7 +615,7 @@ public class Node  {
             while (true) {
                 for(Address address : localPeers){
                     try {
-                        Thread.sleep(5000);
+                        Thread.sleep(30000);
                         Socket s = new Socket("localhost", address.getPort());
                         InputStream in = s.getInputStream();
                         ObjectInputStream oin = new ObjectInputStream(in);
@@ -633,7 +631,7 @@ public class Node  {
 //                            System.out.println("Node " + node.getAddress().getPort() + ": Node " + localPeers.get(0).getPort() + " idk :(");
 //                        }
                         s.close();
-                        System.out.println("Node " + node.getAddress().getPort() + ": Node " + localPeers.get(0).getPort() + " mempool: " + mempool);
+                        //System.out.println("Node " + node.getAddress().getPort() + ": Node " + localPeers.get(0).getPort() + " mempool: " + mempool.values());
                     } catch (IOException e) {
                         System.out.println("Received IO Exception from node " + address.getPort());
                         //removeAddress(address);
