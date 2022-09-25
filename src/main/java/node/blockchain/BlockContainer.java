@@ -3,12 +3,12 @@ package node.blockchain;
 import java.io.Serializable;
 import java.util.ArrayList;
 
-public class blockContainer implements Serializable {
+public class BlockContainer implements Serializable {
     private final Block block;
 
     private ArrayList<String> signatures = new ArrayList<>();
 
-    public blockContainer (Block block){
+    public BlockContainer (Block block){
         this.block = block;
     }
 
@@ -20,7 +20,7 @@ public class blockContainer implements Serializable {
         return signatures;
     }
 
-    public void addSignatures(String signature) {
+    public void addSignature(String signature) {
         signatures.add(signature);
     }
 }

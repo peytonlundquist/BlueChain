@@ -1,12 +1,14 @@
 package node;
 
 import node.blockchain.Block;
+import node.blockchain.BlockContainer;
 import node.blockchain.Transaction;
 import node.communication.*;
 import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -76,13 +78,15 @@ public class ServerConnection extends Thread {
                 node.addTransaction(transaction);
                 break;
             case RECEIVE_MEMPOOL:
-                Set<String> memPoolHashes = (Set<String>) incomingMessage.getMetadata();
+                Set<String> memPoolHashes = (HashSet<String>) incomingMessage.getMetadata();
                 node.receiveMempool(memPoolHashes, oout, oin);
                 break;
-            case CONSTRUCT_BLOCK:
-
-
-
+            case QUORUM_READY:
+                node.receiveQuorumReady();
+                break;
+            case VOTE_BLOCK:
+                BlockContainer blockContainer = (BlockContainer) incomingMessage.getMetadata();
+                node.receiveBlockForVoting(blockContainer);
                 break;
         }
     }
