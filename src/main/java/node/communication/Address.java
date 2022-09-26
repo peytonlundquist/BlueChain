@@ -23,4 +23,9 @@ public class Address implements Serializable {
     public boolean equals(Address address){
         return this.port == address.getPort() && Objects.equals(this.host, address.getHost());
     }
+
+    @Override
+    public String toString() {
+        return String.valueOf(port);
+    }
 }

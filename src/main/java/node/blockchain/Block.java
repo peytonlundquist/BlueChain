@@ -17,6 +17,11 @@ public class Block implements Serializable {
         return blockId;
     }
 
+    public HashMap<String, Transaction> getTxList() {
+        return txList;
+    }
+
+
     private final int blockId;
 
     public Block(HashMap<String, Transaction> txList, String prevBlockHash, int blockId){
