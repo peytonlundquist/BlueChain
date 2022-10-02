@@ -29,6 +29,8 @@ public class Node  {
     private final int QUORUM_SIZE;
     private final int STARTING_PORT;
     private final int MIN_CONNECTIONS;
+
+    private final int MIN_TRANSACTIONS_PER_BLOCK;
     private final Object lock;
     private final Object quorumLock;
     private final Object memPoolLock;
@@ -70,11 +72,8 @@ public class Node  {
      * @param port               Port
      * @param maxPeers           Maximum amount of peer connections to maintain
      * @param initialConnections How many nodes we want to attempt to connect to on start
-     * @param num_nodes
-     * @param quorum_size
-     * @param starting_port
      */
-    public Node(int port, int maxPeers, int initialConnections, int num_nodes, int quorum_size, int starting_port) {
+    public Node(int port, int maxPeers, int initialConnections, int numNodes, int quorumSize, int startingPort, int minTransactionsPerBlock) {
 
         /* Initialize global variables */
         lock =  new Object();
@@ -88,12 +87,14 @@ public class Node  {
         quorumPeers = new ArrayList<>();
         MIN_CONNECTIONS = initialConnections;
         MAX_PEERS = maxPeers;
-        NUM_NODES = num_nodes;
-        QUORUM_SIZE = quorum_size;
-        STARTING_PORT = starting_port;
+        NUM_NODES = numNodes;
+        QUORUM_SIZE = quorumSize;
+        STARTING_PORT = startingPort;
+        MIN_TRANSACTIONS_PER_BLOCK = minTransactionsPerBlock;
         mempool = new HashMap<>();
         memPoolLock = new Object();
         memPoolRounds = 0;
+        quorumReadyVotes = 0;
         initializeBlockchain();
 
         try {
@@ -300,7 +301,7 @@ public class Node  {
                 gossipTransaction(transaction);
                 //System.out.println("Node " + myAddress.getPort() + " mempool :" + mempool.values());
 
-                if(mempool.size() == 3){
+                if(mempool.size() == MIN_TRANSACTIONS_PER_BLOCK){
                     if(inQuorum()){
                         //System.out.println("node " + myAddress.getPort() + ": In quorum");
                         sendQuorumReady();
@@ -317,12 +318,10 @@ public class Node  {
 
     public void receiveQuorumReady(){
         synchronized (quorumReadyVotesLock){
-            //System.out.println("Node " + myAddress.getPort() + " received quorum is ready");
-
             quorumReadyVotes++;
             ArrayList<Address> quorum = deriveQuorum(blockchain.get(blockchain.size() - 1), 0);
             if(quorumReadyVotes == quorum.size() - 1){
-                //System.out.println("Node " + myAddress.getPort() + " quorum is ready");
+                quorumReadyVotes = 0;
                 sendMempoolHashes();
             }
         }
@@ -409,8 +408,8 @@ public class Node  {
 
             memPoolRounds++;
             int i = quorum.size() - 1;
-            //System.out.println("Node " + myAddress.getPort() + " mPoolRounds " + memPoolRounds + ". Needs: " + i);
             if(memPoolRounds == quorum.size() - 1){
+                memPoolRounds = 0;
                 constructBlock();
             }
         }
