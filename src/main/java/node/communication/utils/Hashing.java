@@ -40,8 +40,7 @@ public class Hashing {
     }
 
     public static String getBlockHash(Block block, int nonce) throws NoSuchAlgorithmException {
-        HashSet<String> txKeys = (HashSet<String>) block.getTxList().keySet();
-        List<String> txList = new ArrayList<>(txKeys);
+        List<String> txList = new ArrayList<>(block.getTxList().keySet());
         Collections.sort(txList);
         String txString = "";
         for(String key : txList){

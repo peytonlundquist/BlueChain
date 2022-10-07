@@ -217,8 +217,6 @@ public class Node  {
         return null;
     }
 
-
-
     public void gossipTransaction(Transaction transaction){
         synchronized (lock){
             for(Address address : localPeers){
@@ -289,7 +287,7 @@ public class Node  {
                     throw new RuntimeException(e);
                 }
                 gossipTransaction(transaction);
-                //System.out.println("Node " + myAddress.getPort() + " mempool :" + mempool.values());
+                System.out.println("Node " + myAddress.getPort() + ": mempool :" + mempool.values());
 
                 if(mempool.size() == MIN_TRANSACTIONS_PER_BLOCK){
                     if(inQuorum()){
@@ -661,7 +659,7 @@ public class Node  {
 //                            System.out.println("Node " + node.getAddress().getPort() + ": Node " + localPeers.get(0).getPort() + " idk :(");
 //                        }
                         s.close();
-                        //System.out.println("Node " + node.getAddress().getPort() + ": Node " + localPeers.get(0).getPort() + " mempool: " + mempool.values());
+                        System.out.println("Node " + node.getAddress().getPort() + ": Node " + localPeers.get(0).getPort() + " mempool: " + mempool.values());
                     } catch (IOException e) {
                         System.out.println("Received IO Exception from node " + address.getPort());
                         //removeAddress(address);
