@@ -35,7 +35,9 @@ public class Message implements Serializable {
         CONSTRUCT_BLOCK,
         VOTE_BLOCK,
         QUORUM_COMPLETE,
-        REQUEST_TRANSACTION
+        REQUEST_TRANSACTION,
+
+        RECEIVE_SKELETON
     }
 
     public Request getRequest(){

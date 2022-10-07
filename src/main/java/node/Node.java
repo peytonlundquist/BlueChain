@@ -1,6 +1,7 @@
 package node;
 
 import node.blockchain.Block;
+import node.blockchain.BlockSkeleton;
 import node.blockchain.Transaction;
 import node.blockchain.BlockContainer;
 import node.communication.Address;
@@ -24,26 +25,20 @@ import static node.communication.utils.Utils.deepCloneHashmap;
  * Node represents a peer, a cooperating member within the network
  */
 public class Node  {
-    private final int MAX_PEERS;
-    private final int NUM_NODES;
-    private final int QUORUM_SIZE;
-    private final int STARTING_PORT;
-    private final int MIN_CONNECTIONS;
 
-    private final int MIN_TRANSACTIONS_PER_BLOCK;
-    private final Object lock;
-    private final Object quorumLock;
-    private final Object memPoolLock;
+    private final int MAX_PEERS, NUM_NODES, QUORUM_SIZE, STARTING_PORT, MIN_CONNECTIONS, MIN_TRANSACTIONS_PER_BLOCK;
+    private final Object lock, quorumLock, memPoolLock, quorumReadyVotesLock, memPoolRoundsLock, sigRoundsLock;
+    private int quorumReadyVotes, memPoolRounds, sigRounds;
+    private ArrayList<Address> localPeers, quorumPeers;
     private ArrayList<Block> blockchain;
     private final Address myAddress;
     private ServerSocket ss;
-    private final ArrayList<Address> localPeers;
-    private ArrayList<Address> quorumPeers;
     private HashMap<String, Transaction> mempool;
+
+    private ArrayList<String> quorumSigs;
 
     private enum status{IN_QUORUM, NOT_IN_QUORUM};
     private status nodeStatus;
-
 
 
 
@@ -52,18 +47,11 @@ public class Node  {
     public int getMinConnections(){return this.MIN_CONNECTIONS;}
     public Address getAddress(){return this.myAddress;}
     public ArrayList<Address> getLocalPeers(){return this.localPeers;}
-
     public ArrayList<Address> getQuorumPeers(){return this.quorumPeers;}
     public HashMap<String, Transaction> getMempool(){return this.mempool;}
-
     public status getStatus() {
         return nodeStatus;
     }
-
-    private int quorumReadyVotes;
-    private Object quorumReadyVotesLock;
-    private int memPoolRounds;
-    private Object memPoolRoundsLock;
 
 
     /**
@@ -80,11 +68,12 @@ public class Node  {
         quorumLock = new Object();
         quorumReadyVotesLock = new Object();
         memPoolRoundsLock = new Object();
-
+        sigRoundsLock = new Object();
 
         myAddress = new Address(port, "localhost");
         localPeers = new ArrayList<>();
         quorumPeers = new ArrayList<>();
+        quorumSigs = new ArrayList<>();
         MIN_CONNECTIONS = initialConnections;
         MAX_PEERS = maxPeers;
         NUM_NODES = numNodes;
@@ -95,6 +84,7 @@ public class Node  {
         memPoolLock = new Object();
         memPoolRounds = 0;
         quorumReadyVotes = 0;
+        sigRounds = 0;
         initializeBlockchain();
 
         try {
@@ -421,14 +411,65 @@ public class Node  {
 
             HashMap<String, Transaction> blockTransactions = deepCloneHashmap(mempool);
             try {
-                Block block = new Block(blockTransactions,
+                quorumBlock = new Block(blockTransactions,
                         getBlockHash(blockchain.get(blockchain.size() - 1), 0),
                                 blockchain.size());
-//                blockchain.add(block);
-                sendBlockForVoting(block);
+                //sendBlockForVoting(block);
             } catch (NoSuchAlgorithmException e) {
                 throw new RuntimeException(e);
             }
+        }
+    }
+
+    private Block quorumBlock;
+    public void receiveQuorumSignature(String signature){
+        synchronized (sigRoundsLock){
+            quorumSigs.add(signature);
+            //sigRounds++;
+            ArrayList<Address> quorum = deriveQuorum(blockchain.get(blockchain.size() - 1), 0);
+            if(quorumSigs.size() == quorum.size() - 1){
+                verifyQuorumSigs();
+            }
+        }
+    }
+
+    public void verifyQuorumSigs(){
+        ArrayList<Address> quorum = deriveQuorum(blockchain.get(blockchain.size() - 1), 0);
+        HashMap<String, Integer> sigVotes = new HashMap<>();
+        try {
+            quorumSigs.add(getBlockHash((blockchain.get(blockchain.size() - 1)), 0));
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+        for(String sig : quorumSigs){
+            if(sigVotes.containsKey(sig)){
+                int votes = sigVotes.get(sig);
+                votes++;
+                sigVotes.put(sig, votes);
+            }else{
+                sigVotes.put(sig, 0);
+            }
+        }
+
+        String winningSig = quorumSigs.get(0);
+
+        for(String sig : quorumSigs){
+            if(sigVotes.get(sig) > sigVotes.get(winningSig)){
+                winningSig = sig;
+            }
+        }
+
+        if(sigVotes.get(winningSig) == quorum.size()){
+            sendSkeleton();
+        }
+    }
+
+    public void sendSkeleton(){
+        BlockSkeleton skeleton = new BlockSkeleton(quorumBlock.getBlockId(),
+                quorumBlock.getTxList().keySet(), quorumSigs);
+
+        for(Address address : localPeers){
+            sendOneWayMessage(address, new Message(Message.Request.RECEIVE_SKELETON, skeleton));
         }
     }
 
