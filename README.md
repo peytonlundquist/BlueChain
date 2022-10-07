@@ -15,7 +15,7 @@ This software is not a public network costing gas fees to expirement with, nor i
   1. Navigate to the config.properties file (network/src/main/java/config.properties)
   2. Configure the network to the specifications you desire. 
   
-  - **Warning:** The number of nodes your local machine can handle depends on the computing resources that the machine has. In addition, networks over the size of 100 nodes may be subject to port exhaustion depending on how many transcations are submitted in small time intervals.
+  - **Warning:** The number of nodes your local machine can handle depends on the computing resources that the machine has. In addition, **networks over the size of 100 nodes may be subject to port exhaustion** depending on how many transcations are submitted in small time intervals. **Unexpected exceptions may occur as a result.**
   
   3. Use Maven to compile and run the NetworkLauncher
   
