@@ -19,10 +19,8 @@ This software is not a public network costing gas fees to expirement with, nor i
   
   3. Use Maven to compile and run the NetworkLauncher
   
-  ```mvn clean install
-     java -cp target/network-1.0-SNAPSHOT.jar NetworkLauncher
-  ```
-  
+    mvn clean install
+    java -cp target/network-1.0-SNAPSHOT.jar Client trans 8000 1
   4. Begin submitting transactions in new terminal
     - The transactions are arbitrary in content as of this version. 
     - The Client application transaction args: Client trans <portNum> <transactionContent>
