@@ -23,9 +23,9 @@ This software is not a public network costing gas fees to expirement with, nor i
      java -cp target/network-1.0-SNAPSHOT.jar NetworkLauncher
   ```
   
-  4. Begin submitting transactions 
+  4. Begin submitting transactions in new terminal
     - The transactions are arbitrary in content as of this version. 
     - The Client application transaction args: Client trans <portNum> <transactionContent>
     - The Client as of now simply submits a transaction to an arbitrarily specified nodewhose content is an input string. That node gossips the transaction to the rest of the network
   
-  ```java -cp target/network-1.0-SNAPSHOT.jar Client trans 8000 1```
+    ```java -cp target/network-1.0-SNAPSHOT.jar Client trans 8000 1```
