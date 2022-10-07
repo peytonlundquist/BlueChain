@@ -28,7 +28,16 @@ public class Message implements Serializable {
         QUERY_PEERS,
         PING,
         REQUEST_QUORUM_CONNECTION,
-        ADD_TRANSACTION
+        ADD_TRANSACTION,
+
+        RECEIVE_MEMPOOL,
+        QUORUM_READY,
+        CONSTRUCT_BLOCK,
+        VOTE_BLOCK,
+        QUORUM_COMPLETE,
+        REQUEST_TRANSACTION,
+
+        RECEIVE_SKELETON
     }
 
     public Request getRequest(){

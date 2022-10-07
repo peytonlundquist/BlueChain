@@ -1,4 +1,4 @@
-package node.utils;
+package node.communication.utils;
 
 import node.blockchain.Block;
 
@@ -6,6 +6,10 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 
 
 public class Hashing {
@@ -36,7 +40,13 @@ public class Hashing {
     }
 
     public static String getBlockHash(Block block, int nonce) throws NoSuchAlgorithmException {
-        String blockString = block.getPrevBlockHash().concat(String.valueOf(block.getBlockId())).concat(String.valueOf(nonce));
+        List<String> txList = new ArrayList<>(block.getTxList().keySet());
+        Collections.sort(txList);
+        String txString = "";
+        for(String key : txList){
+            txString = txString.concat(key);
+        }
+        String blockString = block.getPrevBlockHash().concat(String.valueOf(block.getBlockId())).concat(String.valueOf(nonce).concat(txString));
         return getSHAString(blockString);
     }
 }
