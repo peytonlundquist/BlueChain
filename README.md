@@ -17,7 +17,7 @@ This software is not a public network costing gas fees to expirement with, nor i
   
   - **Warning:** The number of nodes your local machine can handle depends on the computing resources that the machine has. In addition, **networks over the size of 100 nodes may be subject to port exhaustion** depending on how many transcations are submitted in small time intervals. **Unexpected exceptions may occur as a result.**
   
-  3. Use Maven to compile and run the NetworkLauncher
+  3. Use Maven to compile and run the NetworkLauncher (navigate back to network/)
   
     mvn clean install
     java -cp target/network-1.0-SNAPSHOT.jar NetworkLauncher
