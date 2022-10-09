@@ -23,6 +23,7 @@ import static node.communication.utils.Utils.deepCloneHashmap;
 
 /**
  * Node represents a peer, a cooperating member within the network
+ * Beware, any methods below are a WIP
  */
 public class Node  {
 
@@ -30,17 +31,14 @@ public class Node  {
     private final Object lock, quorumLock, memPoolLock, quorumReadyVotesLock, memPoolRoundsLock, sigRoundsLock;
     private int quorumReadyVotes, memPoolRounds, sigRounds;
     private ArrayList<Address> localPeers, quorumPeers;
+    private HashMap<String, Transaction> mempool;
+    private ArrayList<String> quorumSigs;
     private ArrayList<Block> blockchain;
     private final Address myAddress;
     private ServerSocket ss;
-    private HashMap<String, Transaction> mempool;
-
-    private ArrayList<String> quorumSigs;
 
     private enum status{IN_QUORUM, NOT_IN_QUORUM};
     private status nodeStatus;
-
-
 
     /* A collection of getters */
     public int getMaxPeers(){return this.MAX_PEERS;}
@@ -69,7 +67,6 @@ public class Node  {
         quorumReadyVotesLock = new Object();
         memPoolRoundsLock = new Object();
         sigRoundsLock = new Object();
-
         myAddress = new Address(port, "localhost");
         localPeers = new ArrayList<>();
         quorumPeers = new ArrayList<>();
@@ -103,32 +100,6 @@ public class Node  {
     public void initializeBlockchain(){
         blockchain = new ArrayList<Block>();
         blockchain.add(new Block(new HashMap<String, Transaction>(), "", 0));
-    }
-
-    /**
-     * Adds a block
-     * @param block Block to add
-     */
-    public void addBlock(Block block){
-        Block lastBlock = blockchain.get(blockchain.size() - 1);
-
-        /* Verify block signatures */
-        // Avoiding a memory fill attack
-
-        /* Is the block newer than our chain */
-        if(block.getBlockId() > lastBlock.getBlockId()){ //
-
-            /* Is the block ahead of our expectation */
-            if(block.getBlockId() > lastBlock.getBlockId() + 1){
-                // Add to memory, seek or wait for the expected block
-
-            }else{ // It is the block we expect
-                // add block
-                // gossip block
-            }
-        }else{
-            // Do not add block
-        }
     }
 
     /**
@@ -506,24 +477,31 @@ public class Node  {
         }
     }
 
-    public void gossipBlock(){
+    /**
+     * Adds a block
+     * @param block Block to add
+     */
+    public void addBlock(Block block){
+        Block lastBlock = blockchain.get(blockchain.size() - 1);
 
+        /* Verify block signatures */
+        // Avoiding a memory fill attack
+
+        /* Is the block newer than our chain */
+        if(block.getBlockId() > lastBlock.getBlockId()){ //
+
+            /* Is the block ahead of our expectation */
+            if(block.getBlockId() > lastBlock.getBlockId() + 1){
+                // Add to memory, seek or wait for the expected block
+
+            }else{ // It is the block we expect
+                // add block
+                // gossip block
+            }
+        }else{
+            // Do not add block
+        }
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     public void shareMempool(){
         // send mempool to each node in quorum
