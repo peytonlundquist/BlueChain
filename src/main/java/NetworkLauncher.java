@@ -13,10 +13,13 @@ import java.util.Properties;
  */
 public class NetworkLauncher {
 
+    /* Make a list of the entirety of each node's address */
     private static final ArrayList<Address> globalPeers = new ArrayList<Address>();
 
     public static void main(String[] args) {
         try {
+
+            /* Grab values from config file */
             String configFilePath = "src/main/java/config.properties";
             FileInputStream fileInputStream = new FileInputStream(configFilePath);
             Properties prop = new Properties();
@@ -29,9 +32,10 @@ public class NetworkLauncher {
             int quorumSize = Integer.parseInt(prop.getProperty("QUORUM"));
             int minTransactionsPerBlock = Integer.parseInt(prop.getProperty("MIN_TRANSACTIONS_PER_BLOCK"));
 
-
+            /* List of node objects for the launcher to start*/
             ArrayList<Node> nodes = new ArrayList<Node>();
 
+            /* Allow specification for subnets */
             if(args.length > 0){
                 int myNodesStartingPort = Integer.parseInt(args[0]);
                 int myNodesEndingPort = Integer.parseInt(args[1]);
@@ -49,7 +53,7 @@ public class NetworkLauncher {
                 }
             }
             NetworkLauncher n = new NetworkLauncher();
-            n.startNetworkClients(globalPeers, nodes);
+            n.startNetworkClients(globalPeers, nodes); // Begins network connections
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -58,6 +62,7 @@ public class NetworkLauncher {
         }
     }
 
+    /* Gives each node a thread to start node connections */
     public void startNetworkClients(ArrayList<Address> globalPeers, ArrayList<Node> nodes){
         for(int i = 0; i < nodes.size(); i++){
             Collections.shuffle(globalPeers);
@@ -65,6 +70,9 @@ public class NetworkLauncher {
         }
     }
 
+    /**
+     * Thread which is assigned to start a single node within the NetworkLaunchers managed nodes
+     */
     class NodeLauncher extends Thread {
         Node node;
         ArrayList<Address> globalPeers;

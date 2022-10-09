@@ -13,7 +13,8 @@ import java.util.Properties;
 //import javax.json.*;
 
 /**
- * One shot client that queries the network's nodes
+ * One shot client that communicates with the network's nodes
+ * Usage: <[graph] [query <portNum>] [trans <portNum> <Transaction String Id>]>
  */
 public class Client {
 
@@ -110,10 +111,10 @@ public class Client {
                     }
                 }
             }else{
-                System.out.println("Usage: [graph] [query <portNum>]");
+                System.out.println("Usage: <[graph] [query <portNum>] [trans <portNum> <Transaction String Id>]>");
             }
         }else{
-            System.out.println("Usage: [graph] [query <portNum>]");
+            System.out.println("Usage: <[graph] [query <portNum>] [trans <portNum> <Transaction String Id>]>");
         }
     }
 
