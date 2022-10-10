@@ -192,7 +192,7 @@ public class Node  {
         synchronized (lock){
             for(Address address : localPeers){
                 try {
-                    Socket s = new Socket("localhost", address.getPort());
+                    Socket s = new Socket(address.getHost(), address.getPort());
                     InputStream in = s.getInputStream();
                     ObjectInputStream oin = new ObjectInputStream(in);
                     OutputStream out = s.getOutputStream();
@@ -214,7 +214,7 @@ public class Node  {
 
     public void sendOneWayMessage(Address address, Message message) {
         try {
-            Socket s = new Socket("localhost", address.getPort());
+            Socket s = new Socket(address.getHost(), address.getPort());
             InputStream in = s.getInputStream();
             ObjectInputStream oin = new ObjectInputStream(in);
             OutputStream out = s.getOutputStream();
@@ -230,7 +230,7 @@ public class Node  {
 
     public Message sendTwoWayMessage(Address address, Message message) {
         try {
-            Socket s = new Socket("localhost", address.getPort());
+            Socket s = new Socket(address.getHost(), address.getPort());
             InputStream in = s.getInputStream();
             ObjectInputStream oin = new ObjectInputStream(in);
             OutputStream out = s.getOutputStream();
@@ -263,7 +263,7 @@ public class Node  {
                 if(mempool.size() == MIN_TRANSACTIONS_PER_BLOCK){
                     if(inQuorum()){
                         //System.out.println("node " + myAddress.getPort() + ": In quorum");
-                        sendQuorumReady();
+                        //sendQuorumReady();
                     }
                 }
             }
@@ -296,7 +296,7 @@ public class Node  {
             if (!myAddress.equals(quorumAddress)) {
                 Socket s = null;
                 try {
-                    s = new Socket("localhost", quorumAddress.getPort());
+                    s = new Socket(quorumAddress.getHost(), quorumAddress.getPort());
                     InputStream in = s.getInputStream();
                     ObjectInputStream oin = new ObjectInputStream(in);
                     OutputStream out = s.getOutputStream();
@@ -622,7 +622,7 @@ public class Node  {
                 for(Address address : localPeers){
                     try {
                         Thread.sleep(30000);
-                        Socket s = new Socket("localhost", address.getPort());
+                        Socket s = new Socket(address.getHost(), address.getPort());
                         InputStream in = s.getInputStream();
                         ObjectInputStream oin = new ObjectInputStream(in);
                         OutputStream out = s.getOutputStream();
