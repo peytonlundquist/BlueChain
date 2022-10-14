@@ -14,9 +14,13 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.util.*;
 
+import static node.communication.utils.DSA.generateDSAKeyPair;
+import static node.communication.utils.DSA.writePubKeyToRegistry;
 import static node.communication.utils.Hashing.getBlockHash;
 import static node.communication.utils.Hashing.getSHAString;
 import static node.communication.utils.Utils.deepCloneHashmap;
@@ -36,6 +40,8 @@ public class Node  {
     private ArrayList<Block> blockchain;
     private final Address myAddress;
     private ServerSocket ss;
+
+    private PrivateKey privateKey;
 
     private enum status{IN_QUORUM, NOT_IN_QUORUM};
     private status nodeStatus;
@@ -83,6 +89,10 @@ public class Node  {
         quorumReadyVotes = 0;
         sigRounds = 0;
         initializeBlockchain();
+
+        KeyPair keys = generateDSAKeyPair();
+        privateKey = keys.getPrivate();
+        writePubKeyToRegistry(myAddress, keys.getPublic());
 
         try {
             ss = new ServerSocket(port);
@@ -489,6 +499,10 @@ public class Node  {
 
         /* Is the block newer than our chain */
         if(block.getBlockId() > lastBlock.getBlockId()){ //
+
+
+
+
 
             /* Is the block ahead of our expectation */
             if(block.getBlockId() > lastBlock.getBlockId() + 1){
