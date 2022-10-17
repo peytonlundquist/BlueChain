@@ -37,7 +37,8 @@ public class Message implements Serializable {
         QUORUM_COMPLETE,
         REQUEST_TRANSACTION,
 
-        RECEIVE_SKELETON
+        RECEIVE_SKELETON,
+        RECEIVE_SIGNATURE
     }
 
     public Request getRequest(){

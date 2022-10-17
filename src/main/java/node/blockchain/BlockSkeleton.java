@@ -8,15 +8,15 @@ public class BlockSkeleton implements Serializable{
     private final Set<String> keys;
     private final int blockId;
 
-    private ArrayList<String> signatures;
+    private ArrayList<byte[]> signatures;
 
-    public BlockSkeleton (int blockId, Set<String> keys , ArrayList<String> signatures){
+    public BlockSkeleton (int blockId, Set<String> keys , ArrayList<byte[]> signatures){
         this.keys = keys;
         this.blockId = blockId;
         this.signatures = signatures;
     }
 
-    public ArrayList<String> getSignatures() {
+    public ArrayList<byte[]> getSignatures() {
         return signatures;
     }
 

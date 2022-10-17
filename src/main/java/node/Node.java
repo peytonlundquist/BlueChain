@@ -5,6 +5,7 @@ import node.blockchain.BlockSkeleton;
 import node.blockchain.Transaction;
 import node.blockchain.BlockContainer;
 import node.communication.Address;
+import node.communication.BlockSignature;
 import node.communication.Message;
 import node.communication.utils.Hashing;
 
@@ -19,8 +20,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.util.*;
 
-import static node.communication.utils.DSA.generateDSAKeyPair;
-import static node.communication.utils.DSA.writePubKeyToRegistry;
+import static node.communication.utils.DSA.*;
 import static node.communication.utils.Hashing.getBlockHash;
 import static node.communication.utils.Hashing.getSHAString;
 import static node.communication.utils.Utils.deepCloneHashmap;
@@ -36,7 +36,7 @@ public class Node  {
     private int quorumReadyVotes, memPoolRounds, sigRounds;
     private ArrayList<Address> localPeers, quorumPeers;
     private HashMap<String, Transaction> mempool;
-    private ArrayList<String> quorumSigs;
+    private ArrayList<BlockSignature> quorumSigs;
     private ArrayList<Block> blockchain;
     private final Address myAddress;
     private ServerSocket ss;
@@ -399,73 +399,78 @@ public class Node  {
             }
         }
     }
-
     private Block quorumBlock;
-    public void receiveQuorumSignature(String signature){
+    public void sendSigOfBlockHash(){
+        ArrayList<Address> quorum = deriveQuorum(blockchain.get(blockchain.size() - 1), 0);
+        String blockHash;
+        byte[] sig;
+
+        try {blockHash = getBlockHash(quorumBlock, 0);
+            sig = signBlockHash(blockHash, privateKey);
+        } catch (NoSuchAlgorithmException e) {throw new RuntimeException(e);}
+
+        BlockSignature blockSignature = new BlockSignature(sig, blockHash, myAddress);
+        sendOneWayMessageQuorum(new Message(Message.Request.RECEIVE_SIGNATURE, blockSignature));
+    }
+
+    public void receiveQuorumSignature(BlockSignature signature){
         synchronized (sigRoundsLock){
             quorumSigs.add(signature);
             //sigRounds++;
             ArrayList<Address> quorum = deriveQuorum(blockchain.get(blockchain.size() - 1), 0);
             if(quorumSigs.size() == quorum.size() - 1){
-                verifyQuorumSigs();
+                tallyQuorumSigs();
             }
         }
     }
 
-    public void verifyQuorumSigs(){
+
+
+    public void tallyQuorumSigs(){
         ArrayList<Address> quorum = deriveQuorum(blockchain.get(blockchain.size() - 1), 0);
-        HashMap<String, Integer> sigVotes = new HashMap<>();
+        HashMap<String, Integer> hashVotes = new HashMap<>();
+        String quorumBlockHash;
         try {
-            quorumSigs.add(getBlockHash((blockchain.get(blockchain.size() - 1)), 0));
+            quorumBlockHash = getBlockHash(quorumBlock, 0);
+            hashVotes.put(quorumBlockHash, 0);
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
-        for(String sig : quorumSigs){
-            if(sigVotes.containsKey(sig)){
-                int votes = sigVotes.get(sig);
-                votes++;
-                sigVotes.put(sig, votes);
-            }else{
-                sigVotes.put(sig, 0);
-            }
-        }
-
-        String winningSig = quorumSigs.get(0);
-
-        for(String sig : quorumSigs){
-            if(sigVotes.get(sig) > sigVotes.get(winningSig)){
-                winningSig = sig;
-            }
-        }
-
-        if(sigVotes.get(winningSig) == quorum.size()){
-            sendSkeleton();
-        }
-    }
-
-    public void sendSkeleton(){
-        BlockSkeleton skeleton = new BlockSkeleton(quorumBlock.getBlockId(),
-                quorumBlock.getTxList().keySet(), quorumSigs);
-
-        for(Address address : localPeers){
-            sendOneWayMessage(address, new Message(Message.Request.RECEIVE_SKELETON, skeleton));
-        }
-    }
-
-    public Address findQuorumNeighbor(){
-        ArrayList<Address> quorum = deriveQuorum(blockchain.get(blockchain.size() - 1), 0);
-        for(int i = 0; i < quorum.size(); i++){
-            if(myAddress.equals(quorum.get(i))){
-                if(i == quorum.size() - 1){
-                    //System.out.println("Node " + myAddress.getPort() + " neighbor is: " + quorum.get(0).getPort());
-                    return quorum.get(0);
+        for(BlockSignature sig : quorumSigs){
+            if(verifySignature(sig.getHash(), sig.getSignature(), sig.getAddress())){
+                if(hashVotes.containsKey(sig.getHash())){
+                    int votes = hashVotes.get(sig.getHash());
+                    votes++;
+                    hashVotes.put(sig.getHash(), votes);
                 }else{
-                    //System.out.println("Node " + myAddress.getPort() + " neighbor is: " + quorum.get(i + 1).getPort());
-                    return quorum.get(i + 1);
+                    hashVotes.put(sig.getHash(), 0);
                 }
+            }else{
+                /* Signature has failed. Authenticity or integrity compromised */
+            }
+
+
+        }
+
+        String winningHash = quorumSigs.get(0).getHash();
+
+        for(BlockSignature blockSignature : quorumSigs){
+            String hash = blockSignature.getHash();
+            if(hashVotes.get(hash) != null && (hashVotes.get(hash) > hashVotes.get(winningHash))){
+                winningHash = hash;
             }
         }
-        return null;
+
+        if(hashVotes.get(winningHash) == quorum.size()){
+            if(quorumBlockHash.equals(winningHash)){
+                //sendSkeleton();
+
+            }else{
+
+            }
+        }else{
+            // failed
+        }
     }
 
     public void sendBlockForVoting(Block block){
@@ -486,6 +491,37 @@ public class Node  {
             //System.out.println("Node " + myAddress.getPort() + " sent out block for voting");
         }
     }
+
+
+
+
+
+    public void sendSkeleton(){
+//        BlockSkeleton skeleton = new BlockSkeleton(quorumBlock.getBlockId(),
+//                quorumBlock.getTxList().keySet(), quorumSigs);
+//
+//        for(Address address : localPeers){
+//            sendOneWayMessage(address, new Message(Message.Request.RECEIVE_SKELETON, skeleton));
+//        }
+    }
+
+    public Address findQuorumNeighbor(){
+        ArrayList<Address> quorum = deriveQuorum(blockchain.get(blockchain.size() - 1), 0);
+        for(int i = 0; i < quorum.size(); i++){
+            if(myAddress.equals(quorum.get(i))){
+                if(i == quorum.size() - 1){
+                    //System.out.println("Node " + myAddress.getPort() + " neighbor is: " + quorum.get(0).getPort());
+                    return quorum.get(0);
+                }else{
+                    //System.out.println("Node " + myAddress.getPort() + " neighbor is: " + quorum.get(i + 1).getPort());
+                    return quorum.get(i + 1);
+                }
+            }
+        }
+        return null;
+    }
+
+
 
     /**
      * Adds a block
