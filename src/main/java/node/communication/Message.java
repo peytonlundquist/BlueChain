@@ -38,7 +38,8 @@ public class Message implements Serializable {
         REQUEST_TRANSACTION,
 
         RECEIVE_SKELETON,
-        RECEIVE_SIGNATURE
+        RECEIVE_SIGNATURE,
+        RECONCILE_BLOCK
     }
 
     public Request getRequest(){
