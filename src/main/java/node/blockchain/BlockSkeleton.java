@@ -9,10 +9,10 @@ import java.util.Set;
 public class BlockSkeleton implements Serializable{
     private final int blockId;
     private String hash;
-    private final Set<String> keys;
+    private final ArrayList<String> keys;
     private ArrayList<BlockSignature> signatures;
 
-    public BlockSkeleton (int blockId, Set<String> keys, ArrayList<BlockSignature> signatures, String hash){
+    public BlockSkeleton (int blockId, ArrayList<String> keys, ArrayList<BlockSignature> signatures, String hash){
         this.keys = keys;
         this.blockId = blockId;
         this.signatures = signatures;
@@ -21,7 +21,7 @@ public class BlockSkeleton implements Serializable{
 
     public ArrayList<BlockSignature> getSignatures() {return signatures;}
     public int getBlockId(){return blockId;}
-    public Set<String> getKeys() {return keys;}
+    public ArrayList<String> getKeys() {return keys;}
     public String getHash(){return hash;}
 }
 

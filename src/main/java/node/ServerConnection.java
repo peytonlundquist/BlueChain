@@ -1,7 +1,6 @@
 package node;
 
 import node.blockchain.Block;
-import node.blockchain.BlockContainer;
 import node.blockchain.BlockSkeleton;
 import node.blockchain.Transaction;
 import node.communication.*;
@@ -88,6 +87,8 @@ public class ServerConnection extends Thread {
                 BlockSkeleton blockSkeleton = (BlockSkeleton) incomingMessage.getMetadata();
                 node.receiveSkeleton(blockSkeleton);
                 break;
+            case REQUEST_BLOCK:
+
         }
     }
 }
