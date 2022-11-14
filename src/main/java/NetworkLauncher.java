@@ -43,6 +43,8 @@ public class NetworkLauncher {
             int startingPort = Integer.parseInt(prop.getProperty("STARTING_PORT"));
             int quorumSize = Integer.parseInt(prop.getProperty("QUORUM"));
             int minTransactionsPerBlock = Integer.parseInt(prop.getProperty("MIN_TRANSACTIONS_PER_BLOCK"));
+            int debugLevel = Integer.parseInt(prop.getProperty("DEBUG_LEVEL"));
+
 
             /* List of node objects for the launcher to start*/
             ArrayList<Node> nodes = new ArrayList<Node>();
@@ -78,7 +80,7 @@ public class NetworkLauncher {
                     myNodesEndingPort = Integer.parseInt(args[currentArg + 2]);
 
                     for(int i = myNodesStartingPort; i < myNodesEndingPort; i++){
-                        nodes.add(new Node(i, maxConnections, minConnections, numNodes, quorumSize, startingPort, minTransactionsPerBlock));
+                        nodes.add(new Node(i, maxConnections, minConnections, numNodes, quorumSize, startingPort, debugLevel));
                         globalPeers.add(new Address(i, "localhost"));
                     }
 
@@ -103,7 +105,7 @@ public class NetworkLauncher {
             if(!oFlag){
                 for(int i = startingPort; i < startingPort + numNodes; i++){
                     globalPeers.add(new Address(i, "localhost"));
-                    nodes.add(new Node(i, maxConnections, minConnections, numNodes, quorumSize, startingPort, minTransactionsPerBlock));
+                    nodes.add(new Node(i, maxConnections, minConnections, numNodes, quorumSize, startingPort,debugLevel));
                 }
             }
 

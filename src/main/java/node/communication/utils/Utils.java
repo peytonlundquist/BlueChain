@@ -1,5 +1,6 @@
 package node.communication.utils;
 
+import node.blockchain.Block;
 import node.blockchain.Transaction;
 import node.communication.Address;
 
@@ -9,16 +10,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-public class Utils {
+import static node.communication.utils.Hashing.getBlockHash;
 
-    public static boolean containsAddress(ArrayList<Address> list, Address address){
-        for(Address existingAddress : list){
-            if(existingAddress.equals(address)){
-                return true;
-            }
-        }
-        return false;
-    }
+public class Utils {
 
     public static HashMap<String, Transaction> deepCloneHashmap(HashMap<String, Transaction> givenHashMap){
         HashMap newHashMap = new HashMap<>();
@@ -28,4 +22,16 @@ public class Utils {
         return newHashMap;
     }
 
+    public static String chainString(ArrayList<Block> blockChain){
+        String hash;
+        String chainString = "Chain: [";
+        for(Block block : blockChain){
+            hash = block.getPrevBlockHash().substring(0, 4);
+            if(block.getTxList().size() > 0){
+                hash = hash.concat(" tx{" + block.getTxList().keySet().toString().substring(0, 4) + "}");
+            }
+            chainString = chainString.concat(block.getBlockId() + " " + hash + ", ");
+        }
+        return chainString.concat("]");
+    }
 }
