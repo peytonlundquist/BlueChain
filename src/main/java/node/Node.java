@@ -435,7 +435,8 @@ public class Node  {
                 } else {
                     oout.writeObject(new Message(Message.Request.REQUEST_TRANSACTION, keysAbsent));
                     oout.flush();
-                    ArrayList<Transaction> transactionsReturned = (ArrayList<Transaction>) oin.readObject();
+                    Message message = (Message) oin.readObject();
+                    ArrayList<Transaction> transactionsReturned = (ArrayList<Transaction>) message.getMetadata();
                     for(Transaction transaction : transactionsReturned){
                         try {
                             mempool.put(getSHAString(transaction.getData()), transaction);
@@ -466,6 +467,7 @@ public class Node  {
                 System.out.println("Node " + myAddress.getPort() + ": constructBlock invoked");
             }
             HashMap<String, Transaction> blockTransactions = deepCloneHashmap(mempool);
+            mempool = new HashMap<>();
             try {
                 quorumBlock = new Block(blockTransactions,
                         getBlockHash(blockchain.get(blockchain.size() - 1), 0),
@@ -510,54 +512,58 @@ public class Node  {
 
 
     public void tallyQuorumSigs(){
-        if(DEBUG_LEVEL == 1) {
-            System.out.println("Node " + myAddress.getPort() + ": tallyQuorumSigs invoked");
-        }
-        ArrayList<Address> quorum = deriveQuorum(blockchain.get(blockchain.size() - 1), 0);
-        HashMap<String, Integer> hashVotes = new HashMap<>();
-        String quorumBlockHash;
-        try {
-            quorumBlockHash = getBlockHash(quorumBlock, 0);
-            hashVotes.put(quorumBlockHash, 1);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
-        for(BlockSignature sig : quorumSigs){
-            if(verifySignature(sig.getHash(), sig.getSignature(), sig.getAddress())){
-                if(hashVotes.containsKey(sig.getHash())){
-                    int votes = hashVotes.get(sig.getHash());
-                    votes++;
-                    hashVotes.put(sig.getHash(), votes);
-                }else{
-                    hashVotes.put(sig.getHash(), 0);
+        synchronized (blockLock) {
+
+            if (DEBUG_LEVEL == 1) {
+                System.out.println("Node " + myAddress.getPort() + ": tallyQuorumSigs invoked");
+            }
+            ArrayList<Address> quorum = deriveQuorum(blockchain.get(blockchain.size() - 1), 0);
+            HashMap<String, Integer> hashVotes = new HashMap<>();
+            String quorumBlockHash;
+            try {
+                quorumBlockHash = getBlockHash(quorumBlock, 0);
+                hashVotes.put(quorumBlockHash, 1);
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException(e);
+            }
+            for (BlockSignature sig : quorumSigs) {
+                if (verifySignature(sig.getHash(), sig.getSignature(), sig.getAddress())) {
+                    if (hashVotes.containsKey(sig.getHash())) {
+                        int votes = hashVotes.get(sig.getHash());
+                        votes++;
+                        hashVotes.put(sig.getHash(), votes);
+                    } else {
+                        hashVotes.put(sig.getHash(), 0);
+                    }
+                } else {
+                    /* Signature has failed. Authenticity or integrity compromised */
                 }
-            }else{
-                /* Signature has failed. Authenticity or integrity compromised */
+
+
             }
 
+            String winningHash = quorumSigs.get(0).getHash();
 
-        }
-
-        String winningHash = quorumSigs.get(0).getHash();
-
-        for(BlockSignature blockSignature : quorumSigs){
-            String hash = blockSignature.getHash();
-            if(hashVotes.get(hash) != null && (hashVotes.get(hash) > hashVotes.get(winningHash))){
-                winningHash = hash;
+            for (BlockSignature blockSignature : quorumSigs) {
+                String hash = blockSignature.getHash();
+                if (hashVotes.get(hash) != null && (hashVotes.get(hash) > hashVotes.get(winningHash))) {
+                    winningHash = hash;
+                }
             }
-        }
-        if(DEBUG_LEVEL == 1) {
-            System.out.println("Node " + myAddress.getPort() + ": tallyQuorumSigs: Winning hash votes = " + hashVotes.get(winningHash));
-        }
-        if(hashVotes.get(winningHash) == quorum.size()){
-            if(quorumBlockHash.equals(winningHash)){
-                sendSkeleton();
-
-            }else{
-
+            if (DEBUG_LEVEL == 1) {
+                System.out.println("Node " + myAddress.getPort() + ": tallyQuorumSigs: Winning hash votes = " + hashVotes.get(winningHash));
             }
-        }else{
-            // failed
+            if (hashVotes.get(winningHash) == quorum.size()) {
+                if (quorumBlockHash.equals(winningHash)) {
+                    addBlock(quorumBlock);
+                    sendSkeleton();
+
+                } else {
+
+                }
+            } else {
+                // failed
+            }
         }
     }
 
@@ -603,7 +609,13 @@ public class Node  {
             int verifiedSignatures = 0;
             String hash = blockSkeleton.getHash();
 
-            if(currentBlock.getBlockId() + 1 != blockSkeleton.getBlockId()){
+            if(currentBlock.getBlockId() + 1 == blockSkeleton.getBlockId()){
+                //System.out.println("Node " + myAddress.getPort() + ": currentBlock.getBlockId() + 1 != blockSkeleton.getBlockId()");
+                //return;
+            }else{
+                if(blockchain.size() < 2){
+                    System.out.println("Node " + myAddress.getPort() + ": Failed check. Current block id: " + currentBlock.getBlockId() + " skeletonID: " + blockSkeleton.getBlockId() + " quorum: " + quorum);
+                }
                 return;
             }
 
@@ -617,6 +629,7 @@ public class Node  {
             }
 
             if(verifiedSignatures != quorum.size() - 1){
+                System.out.println("Node " + myAddress.getPort() + ": sigs not verified");
                 return;
             }
 
@@ -631,7 +644,7 @@ public class Node  {
             if(DEBUG_LEVEL == 1) {
                 System.out.println("Node " + myAddress.getPort() + ": constructBlockWithSkeleton(local) invoked");
             }
-            ArrayList<String> keys = (ArrayList<String>) skeleton.getKeys();
+            ArrayList<String> keys = skeleton.getKeys();
             HashMap<String, Transaction> blockTransactions = new HashMap<>();
             for(String key : keys){
                 if(mempool.containsKey(key)){
@@ -789,7 +802,11 @@ public class Node  {
     //                            System.out.println("Node " + node.getAddress().getPort() + ": Node " + localPeers.get(0).getPort() + " idk :(");
     //                        }
                             s.close();
-                            System.out.println("Node " + node.getAddress().getPort() + ": " + chainString(blockchain));
+                            if(blockchain.size() < 2){
+                                System.out.println("Node " + node.getAddress().getPort() + ": Peers: " + localPeers);
+                            }else{
+                                System.out.println("Node " + node.getAddress().getPort() + ": " + chainString(blockchain));
+                            }
                         } catch (IOException e) {
                             System.out.println("Received IO Exception from node " + address.getPort());
                             //removeAddress(address);
