@@ -4,7 +4,7 @@
 ## Description
 This network is being developed for the purpose of student researchers, interested in developing blockchain solutions. We provide an alternate blockchain network option to expirement with, without the burden of high learning curves associated with softwares such as HyperLedger, Ethereum, etc. 
 
-This software is not a public network costing gas fees to expirement with, nor is its implementation complex. With this, the students are invited to change code to meet their use case.
+This software is not a public network costing gas fees to expirement with, nor is its implementation complex. With this, researchers or other curious people are invited expirement with and fork our software meet their use case.
 
 ## How to Use
 ### Prerequisites
