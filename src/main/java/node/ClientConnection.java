@@ -21,7 +21,6 @@ public class ClientConnection extends Thread {
     }
 
     public void run() {
-        System.out.println("Requesting connections...");
         if (node.getLocalPeers().size() < node.getMaxPeers()) {
             for (Address address : globalPeers) {
                 if (node.getLocalPeers().size() >= node.getMaxPeers()){

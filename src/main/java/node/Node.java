@@ -22,32 +22,24 @@ import static node.communication.utils.Utils.*;
 
 
 /**
- * Node represents a peer, a cooperating member within the network
+ * A Node represents a peer, a cooperating member within a network following this Quorum-based blockchain protocol
+ * as implemented here.
+ *
+ * This node participates in a distributed and decentralized network protocol, and achieves this by using some of
+ * the following architecture features:
+ *
+ *      Quorum Consensus
+ *      DSA authentication
+ *      Blockchain using SHA-256
+ *      Multithreading
+ *      Servant Model
+ *      Stateful Model
+ *      TCP/IP communication
+ *
+ *
  * Beware, any methods below are a WIP
  */
 public class Node  {
-
-    private final int MAX_PEERS, NUM_NODES, QUORUM_SIZE, STARTING_PORT, MIN_CONNECTIONS;
-    private final Object lock, quorumLock, memPoolLock, quorumReadyVotesLock, memPoolRoundsLock, sigRoundsLock, blockLock;
-    private int quorumReadyVotes, memPoolRounds, sigRounds;
-    private ArrayList<Address> localPeers;
-    private HashMap<String, Transaction> mempool;
-    private ArrayList<BlockSignature> quorumSigs;
-    private ArrayList<Block> blockchain;
-    private final Address myAddress;
-    private ServerSocket ss;
-    private PrivateKey privateKey;
-    private final int DEBUG_LEVEL;
-
-
-    /* A collection of getters */
-    public int getMaxPeers(){return this.MAX_PEERS;}
-    public int getMinConnections(){return this.MIN_CONNECTIONS;}
-    public Address getAddress(){return this.myAddress;}
-    public ArrayList<Address> getLocalPeers(){return this.localPeers;}
-    public HashMap<String, Transaction> getMempool(){return this.mempool;}
-    public ArrayList<Block> getBlockchain(){return blockchain;}
-
 
     /**
      * Node constructor creates node and begins server socket to accept connections
@@ -58,32 +50,39 @@ public class Node  {
      */
     public Node(int port, int maxPeers, int initialConnections, int numNodes, int quorumSize, int startingPort, int debugLevel) {
 
-        /* Initialize global variables */
-        lock =  new Object();
-        quorumLock = new Object();
-        quorumReadyVotesLock = new Object();
-        memPoolRoundsLock = new Object();
-        sigRoundsLock = new Object();
-        myAddress = new Address(port, "localhost");
-        localPeers = new ArrayList<>();
+        /* Configurations */
         MIN_CONNECTIONS = initialConnections;
         MAX_PEERS = maxPeers;
         NUM_NODES = numNodes;
         QUORUM_SIZE = quorumSize;
         STARTING_PORT = startingPort;
-        mempool = new HashMap<>();
+        DEBUG_LEVEL = debugLevel;
+
+        /* Locks for Multithreading */
+        lock =  new Object();
+        quorumLock = new Object();
+        quorumReadyVotesLock = new Object();
+        memPoolRoundsLock = new Object();
+        sigRoundsLock = new Object();
         memPoolLock = new Object();
         blockLock = new Object();
+
+        /* Multithreaded Counters for Stateful Servant */
         memPoolRounds = 0;
         quorumReadyVotes = 0;
         sigRounds = 0;
-        DEBUG_LEVEL = debugLevel;
 
+        /* Other Data for Stateful Servant */
+        myAddress = new Address(port, "localhost");
+        localPeers = new ArrayList<>();
+        mempool = new HashMap<>();
 
+        /* Public-Private (DSA) Keys*/
         KeyPair keys = generateDSAKeyPair();
         privateKey = keys.getPrivate();
         writePubKeyToRegistry(myAddress, keys.getPublic());
 
+        /* Begin Server Socket */
         try {
             ss = new ServerSocket(port);
             Acceptor acceptor = new Acceptor(this);
@@ -93,6 +92,14 @@ public class Node  {
             System.err.println(e);
         }
     }
+
+    /* A collection of getters */
+    public int getMaxPeers(){return this.MAX_PEERS;}
+    public int getMinConnections(){return this.MIN_CONNECTIONS;}
+    public Address getAddress(){return this.myAddress;}
+    public ArrayList<Address> getLocalPeers(){return this.localPeers;}
+    public HashMap<String, Transaction> getMempool(){return this.mempool;}
+    public ArrayList<Block> getBlockchain(){return blockchain;}
 
     /**
      * Initializes blockchain
@@ -216,7 +223,6 @@ public class Node  {
         }
     }
 
-
     public void sendOneWayMessage(Address address, Message message) {
         try {
             Socket s = new Socket(address.getHost(), address.getPort());
@@ -270,9 +276,7 @@ public class Node  {
         }
     }
 
-    public void blockCatchUp(){
-
-    }
+    public void blockCatchUp(){}
 
     //Reconcile blocks
     public void sendQuorumReady(){
@@ -337,6 +341,7 @@ public class Node  {
             }
             Block currentBlock = blockchain.get(blockchain.size() - 1);
             ArrayList<Address> quorum = deriveQuorum(currentBlock, 0);
+
             try {
                 if(!inQuorum()){
                     oout.writeObject(new Message(Message.Request.RECONCILE_BLOCK, new Object[]{currentBlock.getBlockId(), getBlockHash(currentBlock, 0)}));
@@ -349,8 +354,8 @@ public class Node  {
                 }else{
                     oout.writeObject(new Message(Message.Request.PING));
                     oout.flush();
-
                     quorumReadyVotes++;
+
                     if(quorumReadyVotes == quorum.size() - 1){
                         quorumReadyVotes = 0;
                         sendMempoolHashes();
@@ -372,7 +377,6 @@ public class Node  {
         if(DEBUG_LEVEL == 1) {
             System.out.println("Node " + myAddress.getPort() + ": sendMempoolHashes invoked");
         }
-
         HashSet<String> keys = new HashSet(mempool.keySet());
         ArrayList<Address> quorum = deriveQuorum(blockchain.get(blockchain.size() - 1), 0);
 
@@ -478,6 +482,7 @@ public class Node  {
             }
         }
     }
+
     private Block quorumBlock;
     public void sendSigOfBlockHash(){
         if(DEBUG_LEVEL == 1) {
@@ -509,11 +514,8 @@ public class Node  {
         }
     }
 
-
-
     public void tallyQuorumSigs(){
         synchronized (blockLock) {
-
             if (DEBUG_LEVEL == 1) {
                 System.out.println("Node " + myAddress.getPort() + ": tallyQuorumSigs invoked");
             }
@@ -633,9 +635,10 @@ public class Node  {
                 return;
             }
 
-            sendSkeleton(blockSkeleton);
             Block newBlock = constructBlockWithSkeleton(blockSkeleton);
             addBlock(newBlock);
+            sendSkeleton(blockSkeleton);
+
         }
     }
 
@@ -668,13 +671,6 @@ public class Node  {
             return newBlock;
         }
     }
-
-
-
-
-
-
-
 
     /**
      * Adds a block
@@ -768,6 +764,7 @@ public class Node  {
         }
     }
 
+
     /**
      * HeartBeatMonitor is a thread which will periodically 'ping' nodes which this node is connected to.
      * It expects a 'ping' back. Upon receiving the expected reply the other node is deemed healthy.
@@ -775,7 +772,6 @@ public class Node  {
      */
     class HeartBeatMonitor extends Thread {
         Node node;
-
         HeartBeatMonitor(Node node){
             this.node = node;
         }
@@ -785,51 +781,55 @@ public class Node  {
                 Address address;
                 for(int i = 0; i < localPeers.size(); i++){
                     address = localPeers.get(i);
-                        try {
-                            Thread.sleep(10000);
-                            Socket s = new Socket(address.getHost(), address.getPort());
-                            InputStream in = s.getInputStream();
-                            ObjectInputStream oin = new ObjectInputStream(in);
-                            OutputStream out = s.getOutputStream();
-                            ObjectOutputStream oout = new ObjectOutputStream(out);
-                            Message message = new Message(Message.Request.PING);
-                            oout.writeObject(message);
-                            oout.flush();
-                            Message messageReceived = (Message) oin.readObject();
-    //                        if(messageReceived.getRequest().name().equals("PING")){
-    //                            System.out.println("Node " + node.getAddress().getPort() + ": Node " + localPeers.get(0).getPort() + " pinged back");
-    //                        }else{
-    //                            System.out.println("Node " + node.getAddress().getPort() + ": Node " + localPeers.get(0).getPort() + " idk :(");
-    //                        }
-                            s.close();
-                            if(blockchain.size() < 2){
-                                System.out.println("Node " + node.getAddress().getPort() + ": Peers: " + localPeers);
-                            }else{
-                                System.out.println("Node " + node.getAddress().getPort() + ": " + chainString(blockchain));
-                            }
-                        } catch (IOException e) {
-                            System.out.println("Received IO Exception from node " + address.getPort());
-                            //removeAddress(address);
-                            System.out.println("Removing address");
-                            System.out.println(e);
-                            break;
-                        } catch (ClassNotFoundException e) {
-                            throw new RuntimeException(e);
-                        } catch (InterruptedException e) {
-                            System.out.println("Received Interrupted Exception from node " + address.getPort());
-                            throw new RuntimeException(e);
-                        } catch (ConcurrentModificationException e){
-                            System.out.println(e);
-                            break;
-                        } catch (IndexOutOfBoundsException e){
-                            System.out.println(e);
+                    try {
+                        Thread.sleep(10000);
+                        Socket s = new Socket(address.getHost(), address.getPort());
+                        InputStream in = s.getInputStream();
+                        ObjectInputStream oin = new ObjectInputStream(in);
+                        OutputStream out = s.getOutputStream();
+                        ObjectOutputStream oout = new ObjectOutputStream(out);
+                        Message message = new Message(Message.Request.PING);
+                        oout.writeObject(message);
+                        oout.flush();
+                        Message messageReceived = (Message) oin.readObject();
+                        s.close();
+                        if(blockchain.size() < 2){
+                            System.out.println("Node " + node.getAddress().getPort() + ": Peers: " + localPeers);
+                        }else{
+                            System.out.println("Node " + node.getAddress().getPort() + ": " + chainString(blockchain));
                         }
+                    } catch (IOException e) {
+                        System.out.println("Received IO Exception from node " + address.getPort());
+                        //removeAddress(address);
+                        System.out.println("Removing address");
+                        System.out.println(e);
+                        break;
+                    } catch (ClassNotFoundException e) {
+                        throw new RuntimeException(e);
+                    } catch (InterruptedException e) {
+                        System.out.println("Received Interrupted Exception from node " + address.getPort());
+                        throw new RuntimeException(e);
+                    } catch (ConcurrentModificationException e){
+                        System.out.println(e);
+                        break;
+                    } catch (IndexOutOfBoundsException e){
+                        System.out.println(e);
+                    }
                 }
-//                for(Address address : localPeers){
-//
-//                }
             }
         }
     }
+
+    private final int MAX_PEERS, NUM_NODES, QUORUM_SIZE, STARTING_PORT, MIN_CONNECTIONS, DEBUG_LEVEL;
+    private final Object lock, quorumLock, memPoolLock, quorumReadyVotesLock, memPoolRoundsLock, sigRoundsLock, blockLock;
+    private int quorumReadyVotes, memPoolRounds, sigRounds;
+    private ArrayList<Address> localPeers;
+    private HashMap<String, Transaction> mempool;
+    private ArrayList<BlockSignature> quorumSigs;
+    private ArrayList<Block> blockchain;
+    private final Address myAddress;
+    private ServerSocket ss;
+    private PrivateKey privateKey;
+
 }
 
