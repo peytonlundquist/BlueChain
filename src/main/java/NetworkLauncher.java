@@ -1,12 +1,19 @@
 import node.Node;
 import node.communication.Address;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.security.*;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Properties;
+import java.util.StringTokenizer;
 
 /**
  * Launches a network given specified configurations
@@ -56,73 +63,107 @@ public class NetworkLauncher {
 
             /* Allow specification for subnets */
             if(args.length > 0){
-                if(args.length == 1){
+                if(args.length == 1 && !args[0].equals("-a")){
                     System.out.println(usage);
                     return;
                 }
 
-                if(args[0].equals("-t")){
-                    timedWaitDelay = Integer.parseInt(args[1]);
-                }
+                if(args[0].equals("-a")){
 
-                if (args[0].equals("-o") || (args.length > 3 && args[2].equals("-o"))) {
-                    if(oFlag){
-                        System.out.println("Error. Too many -o flags");
-                        System.out.println(usage);
-                        return;
-                    }
-                    oFlag = true;
-                    int currentArg = 0;
-                    if(args[2].equals("-o")){
-                        currentArg = 2;
-                    }
-                    myNodesStartingPort =Integer.parseInt(args[currentArg + 1]);
-                    myNodesEndingPort = Integer.parseInt(args[currentArg + 2]);
-
-                    for(int i = myNodesStartingPort; i < myNodesEndingPort; i++){
-                        nodes.add(new Node(i, maxConnections, minConnections, numNodes, quorumSize, startingPort, debugLevel));
-                        globalPeers.add(new Address(i, "localhost"));
+                    for(int i = startingPort; i < startingPort + numNodes; i++){
+                        nodes.add(new Node(i, maxConnections, minConnections, numNodes, quorumSize, startingPort,debugLevel));
                     }
 
-                    for(int i = currentArg + 3; i < args.length; i = i + 3){
-                        if(args[i].equals("-t")){
-                            timedWaitDelay = Integer.parseInt(args[i+1]);
-                            break;
+                    StringTokenizer st;
+                    String path = ".\\src\\main\\java\\node\\nodeRegistry\\";
+                    File folder = new File(path);
+                    File[] registeredNodes = folder.listFiles();
+
+
+
+                    for(int i = 0; i < registeredNodes.length; i++){
+                        String name = registeredNodes[i].getName();
+                        st = new StringTokenizer(name, "_");
+                        String host = st.nextToken();
+                        int port = Integer.parseInt(st.nextToken().substring(0, 4));
+                        System.out.println("Port: " + port + ", host: " + host);
+                        globalPeers.add(new Address(port, host));
+                    }
+
+                    NetworkLauncher n = new NetworkLauncher();
+                    n.startNetworkClients(globalPeers, nodes); // Begins network connections
+
+                }else{
+                    if(args[0].equals("-t")){
+                        timedWaitDelay = Integer.parseInt(args[1]);
+                    }
+
+                    if (args[0].equals("-o") || (args.length > 3 && args[2].equals("-o"))) {
+                        if(oFlag){
+                            System.out.println("Error. Too many -o flags");
+                            System.out.println(usage);
+                            return;
+                        }
+                        oFlag = true;
+                        int currentArg = 0;
+                        if(args[2].equals("-o")){
+                            currentArg = 2;
+                        }
+                        myNodesStartingPort =Integer.parseInt(args[currentArg + 1]);
+                        myNodesEndingPort = Integer.parseInt(args[currentArg + 2]);
+
+                        for(int i = myNodesStartingPort; i < myNodesEndingPort; i++){
+                            nodes.add(new Node(i, maxConnections, minConnections, numNodes, quorumSize, startingPort, debugLevel));
+                            globalPeers.add(new Address(i, "localhost"));
                         }
 
-                        for(int j = Integer.parseInt(args[i]); j < Integer.parseInt(args[i + 1]); j++){
-                            globalPeers.add(new Address(j, args[i + 2]));
-                            if(globalPeers.size() > numNodes){
-                                System.out.println("Error: Network total nodes is greater than number of nodes specified in config.properties");
-                                System.out.println(usage);
-                                return;
+                        for(int i = currentArg + 3; i < args.length; i = i + 3){
+                            if(args[i].equals("-t")){
+                                timedWaitDelay = Integer.parseInt(args[i+1]);
+                                break;
+                            }
+
+                            for(int j = Integer.parseInt(args[i]); j < Integer.parseInt(args[i + 1]); j++){
+                                globalPeers.add(new Address(j, args[i + 2]));
+                                if(globalPeers.size() > numNodes){
+                                    System.out.println("Error: Network total nodes is greater than number of nodes specified in config.properties");
+                                    System.out.println(usage);
+                                    return;
+                                }
                             }
                         }
                     }
-                }
-            }
 
-            if(!oFlag){
+                    if(!oFlag){
+                        for(int i = startingPort; i < startingPort + numNodes; i++){
+                            globalPeers.add(new Address(i, "localhost"));
+                            nodes.add(new Node(i, maxConnections, minConnections, numNodes, quorumSize, startingPort,debugLevel));
+                        }
+                    }
+
+                    try {
+                        Thread.sleep(timedWaitDelay);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                    NetworkLauncher n = new NetworkLauncher();
+                    n.startNetworkClients(globalPeers, nodes); // Begins network connections
+                }
+            }else{
                 for(int i = startingPort; i < startingPort + numNodes; i++){
                     globalPeers.add(new Address(i, "localhost"));
                     nodes.add(new Node(i, maxConnections, minConnections, numNodes, quorumSize, startingPort,debugLevel));
                 }
             }
 
-            try {
-                Thread.sleep(timedWaitDelay);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-            NetworkLauncher n = new NetworkLauncher();
-            n.startNetworkClients(globalPeers, nodes); // Begins network connections
+
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         } catch (NumberFormatException e){
-            System.out.println("Error: args formatted incorrect");
+            System.out.println("Error: args formatted incorrect" + e);
             System.out.println(usage);
         }
     }

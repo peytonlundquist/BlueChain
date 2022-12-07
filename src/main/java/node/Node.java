@@ -6,10 +6,7 @@ import node.communication.utils.Hashing;
 
 import java.io.*;
 import java.math.BigInteger;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.SocketException;
+import java.net.*;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -72,8 +69,18 @@ public class Node  {
         quorumReadyVotes = 0;
         sigRounds = 0;
 
+        InetAddress ip;
+
+        try {
+            ip = InetAddress.getLocalHost();
+        } catch (UnknownHostException e) {
+            throw new RuntimeException(e);
+        }
+
+        String host = ip.getHostAddress();
+
         /* Other Data for Stateful Servant */
-        myAddress = new Address(port, "localhost");
+        myAddress = new Address(port, host);
         localPeers = new ArrayList<>();
         mempool = new HashMap<>();
 
