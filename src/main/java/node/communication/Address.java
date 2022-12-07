@@ -26,6 +26,6 @@ public class Address implements Serializable {
 
     @Override
     public String toString() {
-        return String.valueOf(port);
+        return String.valueOf(port).concat("_" + host);
     }
 }
