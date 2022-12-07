@@ -69,6 +69,9 @@ public class NetworkLauncher {
                 }
 
                 if(args[0].equals("-a")){
+                    if(args[1].equals("-t")){
+                        timedWaitDelay = Integer.parseInt(args[2]);
+                    }
 
                     for(int i = startingPort; i < startingPort + numNodes; i++){
                         nodes.add(new Node(i, maxConnections, minConnections, numNodes, quorumSize, startingPort,debugLevel));
@@ -88,6 +91,12 @@ public class NetworkLauncher {
                         int port = Integer.parseInt(st.nextToken().substring(0, 4));
                         System.out.println("Port: " + port + ", host: " + host);
                         globalPeers.add(new Address(port, host));
+                    }
+
+                    try {
+                        Thread.sleep(timedWaitDelay);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
                     }
 
                     NetworkLauncher n = new NetworkLauncher();
