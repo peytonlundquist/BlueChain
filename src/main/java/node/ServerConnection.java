@@ -1,7 +1,7 @@
 package node;
 
 import node.blockchain.Block;
-import node.blockchain.BlockContainer;
+import node.blockchain.BlockSkeleton;
 import node.blockchain.Transaction;
 import node.communication.*;
 import java.io.*;
@@ -12,7 +12,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Deterministic thread which implements the nodes protocol
+ * Deterministic thread which implements the node's protocol
  */
 public class ServerConnection extends Thread {
     private final Socket client;
@@ -56,22 +56,17 @@ public class ServerConnection extends Thread {
                 oout.flush();
                 break;
             case QUERY_PEERS:
-                System.out.println("Node " + node.getAddress().getPort() + ": Received: Query request.");
                 outgoingMessage = new Message(node.getLocalPeers());
                 oout.writeObject(outgoingMessage);
                 oout.flush();
                 break;
-            case REQUEST_BLOCK:
             case ADD_BLOCK:
                 Block proposedBlock = (Block) incomingMessage.getMetadata();
                 node.addBlock(proposedBlock);
             case PING:
-                //System.out.println("Node " + node.getAddress().getPort() + ": Received: Ping.");
                 outgoingMessage = new Message(Message.Request.PING);
                 oout.writeObject(outgoingMessage);
                 oout.flush();
-                break;
-            case REQUEST_QUORUM_CONNECTION:
                 break;
             case ADD_TRANSACTION:
                 Transaction transaction = (Transaction) incomingMessage.getMetadata();
@@ -82,12 +77,18 @@ public class ServerConnection extends Thread {
                 node.receiveMempool(memPoolHashes, oout, oin);
                 break;
             case QUORUM_READY:
-                node.receiveQuorumReady();
+                node.receiveQuorumReady(oout, oin);
                 break;
-            case VOTE_BLOCK:
-                BlockContainer blockContainer = (BlockContainer) incomingMessage.getMetadata();
-                node.receiveBlockForVoting(blockContainer);
+            case RECEIVE_SIGNATURE:
+                BlockSignature blockSignature = (BlockSignature) incomingMessage.getMetadata();
+                node.receiveQuorumSignature(blockSignature);
                 break;
+            case RECEIVE_SKELETON:
+                BlockSkeleton blockSkeleton = (BlockSkeleton) incomingMessage.getMetadata();
+                node.receiveSkeleton(blockSkeleton);
+                break;
+            case REQUEST_BLOCK:
+
         }
     }
 }
