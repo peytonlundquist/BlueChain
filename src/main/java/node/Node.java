@@ -151,8 +151,7 @@ public class Node  {
      */
     public void requestConnections(ArrayList<Address> globalPeers){
         try {
-            initializeBlockchain();
-
+            this.globalPeers = globalPeers;
             if(globalPeers.size() > 0){
                 /* Begin seeking connections */
                 ClientConnection connect = new ClientConnection(this, globalPeers);
@@ -162,6 +161,9 @@ public class Node  {
                 Thread.sleep(10000);
                 HeartBeatMonitor heartBeatMonitor = new HeartBeatMonitor(this);
                 heartBeatMonitor.start();
+
+                /* Begin protocol */
+                initializeBlockchain();
             }
         } catch (SocketException e) {
             throw new RuntimeException(e);
@@ -293,6 +295,7 @@ public class Node  {
         }
         Block currentBlock = blockchain.get(blockchain.size() - 1);
         ArrayList<Address> quorum = deriveQuorum(currentBlock, 0);
+
         for(Address quorumAddress : quorum){
             if(!myAddress.equals(quorumAddress)) {
                 try {
@@ -305,7 +308,7 @@ public class Node  {
                     oout.writeObject(new Message(Message.Request.QUORUM_READY));
                     oout.flush();
                     Message messageReceived = (Message) oin.readObject();
-                    Message reply;
+                    Message reply = new Message(Message.Request.PING);;
                     if(messageReceived.getRequest().name().equals("RECONCILE_BLOCK")){
                         Object[] blockData = (Object[]) messageReceived.getMetadata();
                         int blockId = (Integer) blockData[0];
@@ -324,6 +327,9 @@ public class Node  {
                             reply = new Message(Message.Request.PING);
                             blockCatchUp();
                         }
+
+                        oout.writeObject(reply);
+                        oout.flush();
 
                     }
 
@@ -351,6 +357,9 @@ public class Node  {
 
             try {
                 if(!inQuorum()){
+                    if(DEBUG_LEVEL == 1) {
+                        System.out.println("Node " + myAddress.getPort() + ": not in quorum? q: " + quorum + " my addr: " + myAddress);
+                    }
                     oout.writeObject(new Message(Message.Request.RECONCILE_BLOCK, new Object[]{currentBlock.getBlockId(), getBlockHash(currentBlock, 0)}));
                     oout.flush();
                     Message reply = (Message) oin.readObject();
@@ -565,6 +574,10 @@ public class Node  {
             if (hashVotes.get(winningHash) == quorum.size()) {
                 if (quorumBlockHash.equals(winningHash)) {
                     addBlock(quorumBlock);
+                    if(quorumBlock == null){
+                        System.out.println("Node " + myAddress.getPort() + ": tallyQuorumSigs quorum null");
+
+                    }
                     sendSkeleton();
 
                 } else {
@@ -583,6 +596,10 @@ public class Node  {
             }
             BlockSkeleton skeleton = null;
             try {
+                if(quorumBlock == null){
+                    System.out.println("Node " + myAddress.getPort() + ": sendSkeleton quorum null");
+
+                }
                 skeleton = new BlockSkeleton(quorumBlock.getBlockId(),
                         new ArrayList(quorumBlock.getTxList().keySet()), quorumSigs, getBlockHash(quorumBlock, 0));
             } catch (NoSuchAlgorithmException e) {
@@ -720,20 +737,19 @@ public class Node  {
         if(block != null && block.getPrevBlockHash() != null){
             try {
                 ArrayList<Address> quorum = new ArrayList<>();
-                ArrayList<Integer> portsAdded = new ArrayList<>();
-
                 blockHash = Hashing.getBlockHash(block, nonce);
                 BigInteger bigInt = new BigInteger(blockHash, 16);
                 bigInt = bigInt.mod(BigInteger.valueOf(NUM_NODES));
                 int seed = bigInt.intValue();
                 Random random = new Random(seed);
-                for(int i = 0; i < QUORUM_SIZE; i++){
-                    int port = STARTING_PORT + random.nextInt(NUM_NODES);
-                    while(portsAdded.contains(port)){
-                        port = STARTING_PORT + random.nextInt(NUM_NODES);
+                int quorumNodeIndex;
+                Address quorumNode;
+                while(quorum.size() < QUORUM_SIZE){
+                    quorumNodeIndex = random.nextInt(NUM_NODES);
+                    quorumNode = globalPeers.get(quorumNodeIndex);
+                    if(!containsAddress(quorum, quorumNode)){
+                        quorum.add(globalPeers.get(quorumNodeIndex));
                     }
-                    portsAdded.add(port);
-                    quorum.add(new Address(port, "localhost"));
                 }
                 return quorum;
             } catch (NoSuchAlgorithmException e) {
@@ -830,6 +846,7 @@ public class Node  {
     private final int MAX_PEERS, NUM_NODES, QUORUM_SIZE, STARTING_PORT, MIN_CONNECTIONS, DEBUG_LEVEL;
     private final Object lock, quorumLock, memPoolLock, quorumReadyVotesLock, memPoolRoundsLock, sigRoundsLock, blockLock;
     private int quorumReadyVotes, memPoolRounds, sigRounds;
+    private ArrayList<Address> globalPeers;
     private ArrayList<Address> localPeers;
     private HashMap<String, Transaction> mempool;
     private ArrayList<BlockSignature> quorumSigs;
