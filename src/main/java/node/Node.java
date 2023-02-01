@@ -292,11 +292,13 @@ public class Node  {
     public void sendQuorumReady(){
         state = 1;
         quorumSigs = new ArrayList<>();
-        if(DEBUG_LEVEL == 1){
-            System.out.println("Node " + myAddress.getPort() + " sent quorum is ready");
-        }
+
         Block currentBlock = blockchain.get(blockchain.size() - 1);
         ArrayList<Address> quorum = deriveQuorum(currentBlock, 0);
+
+        if(DEBUG_LEVEL == 1){
+            System.out.println("Node " + myAddress.getPort() + " sent quorum is ready for q: " + quorum);
+        }
 
         for(Address quorumAddress : quorum){
             if(!myAddress.equals(quorumAddress)) {
