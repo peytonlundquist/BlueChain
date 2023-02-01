@@ -351,7 +351,7 @@ public class Node  {
     //Reconcile blocks
     public void receiveQuorumReady(ObjectOutputStream oout, ObjectInputStream oin){
         synchronized (quorumReadyVotesLock){
-            if(state > 1) return;
+            //if(state > 1) return;
 
 
             if(DEBUG_LEVEL == 1) {
