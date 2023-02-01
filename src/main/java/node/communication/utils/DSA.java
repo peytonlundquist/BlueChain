@@ -51,7 +51,7 @@ public class DSA {
 
     public static boolean verifySignature(String hash, byte[] signature, Address address){
         try {
-            String path = ".\\src\\main\\java\\node\\nodeRegistry\\";
+            String path = "./src/main/java/node/nodeRegistry/";
             String file = path + address.getHost() + "_" + String.valueOf(address.getPort()) + ".txt";
             FileInputStream keyfis = new FileInputStream(file);
             byte[] encKey = new byte[keyfis.available()];  //byte array converted into the encoded public key bytes
