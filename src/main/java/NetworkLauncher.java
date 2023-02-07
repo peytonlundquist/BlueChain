@@ -101,7 +101,7 @@ public class NetworkLauncher {
     /* Gives each node a thread to start node connections */
     public void startNetworkClients(ArrayList<Address> globalPeers, ArrayList<Node> nodes){
         for(int i = 0; i < nodes.size(); i++){
-            Collections.shuffle(globalPeers);
+            //Collections.shuffle(globalPeers);
             new NodeLauncher(nodes.get(i), globalPeers).start();
         }
     }
