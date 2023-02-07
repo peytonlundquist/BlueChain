@@ -65,6 +65,13 @@ public class NetworkLauncher {
                 nodes.add(new Node(i, maxConnections, minConnections, numNodes, quorumSize, startingPort, debugLevel));
             }
 
+
+            try {
+                Thread.sleep(timedWaitDelay);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
             StringTokenizer st;
             String path = "./src/main/java/node/nodeRegistry/";
             File folder = new File(path);
@@ -79,11 +86,6 @@ public class NetworkLauncher {
                 globalPeers.add(new Address(port, host));
             }
 
-            try {
-                Thread.sleep(timedWaitDelay);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
 
             NetworkLauncher n = new NetworkLauncher();
             n.startNetworkClients(globalPeers, nodes); // Begins network connections
