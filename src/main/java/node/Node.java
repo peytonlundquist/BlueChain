@@ -686,13 +686,14 @@ public class Node  {
             }
             if (hashVotes.get(winningHash) == quorum.size()) {
                 if (quorumBlockHash.equals(winningHash)) {
+                    sendSkeleton();
                     addBlock(quorumBlock);
                     if(quorumBlock == null){
                         System.out.println("Node " + myAddress.getPort() + ": tallyQuorumSigs quorum null");
 
                     }
-                    sendSkeleton();
-
+                    System.out.println("Node " + myAddress.getPort() + ": about to send skeleton");
+                    
                 } else {
                     System.out.println("Node " + myAddress.getPort() + ": tallyQuorumSigs: quorumBlockHash does not equals(winningHash)");
                 }
@@ -745,16 +746,19 @@ public class Node  {
     }
 
     public void receiveSkeleton(BlockSkeleton blockSkeleton){
-        synchronized (blockLock){
-
-            while(state != 0){
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+        while(state != 0){
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
+        }
 
+        validateSkeleton(blockSkeleton);
+    }
+
+    public void validateSkeleton(BlockSkeleton blockSkeleton){
+        synchronized (blockLock){
             if(DEBUG_LEVEL == 1) {
                 System.out.println("Node " + myAddress.getPort() + ": receiveSkeleton(local) invoked");
             }
