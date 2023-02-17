@@ -290,7 +290,7 @@ public class Node  {
 
     //Reconcile blocks
     public void sendQuorumReady(){
-        // state = 1;
+        state = 1;
         quorumSigs = new ArrayList<>();
 
         Block currentBlock = blockchain.get(blockchain.size() - 1);
@@ -354,7 +354,15 @@ public class Node  {
     public void receiveQuorumReady(ObjectOutputStream oout, ObjectInputStream oin){
         synchronized (quorumReadyVotesLock){
             //if(state > 1) return;
-            state = 1;
+
+            while(state != 1){
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
 
 
             Block currentBlock = blockchain.get(blockchain.size() - 1);
@@ -366,9 +374,9 @@ public class Node  {
 
             try {
 
-                if(!inQuorum()){
-                    Thread.sleep(5000);
-                }
+                // if(!inQuorum()){
+                //     Thread.sleep(5000);
+                // }
 
                 if(!inQuorum()){
                     if(DEBUG_LEVEL == 1) {
@@ -385,9 +393,10 @@ public class Node  {
                     oout.writeObject(new Message(Message.Request.PING));
                     oout.flush();
                     quorumReadyVotes++;
-
                     if(quorumReadyVotes == quorum.size() - 1){
                         quorumReadyVotes = 0;
+                        System.out.println("Node " + myAddress.getPort() + ": about to send");
+
                         sendMempoolHashes();
                     }
 
@@ -399,124 +408,124 @@ public class Node  {
                 throw new RuntimeException(e);
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);
-            } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
             }
         }
     }
-    
+
     public void sendMempoolHashes() {
-        
-        state = 2;
+        synchronized (memPoolLock){
+            state = 2;
 
-        if(DEBUG_LEVEL == 1) {
-            System.out.println("Node " + myAddress.getPort() + ": sendMempoolHashes invoked");
-        }
-        HashSet<String> keys = new HashSet(mempool.keySet());
-        ArrayList<Address> quorum = deriveQuorum(blockchain.get(blockchain.size() - 1), 0);
-        
-        
-  
-        for (Address quorumAddress : quorum) {
-            if (!myAddress.equals(quorumAddress)) {
-                Socket s = null;
-                try {
-                    s = new Socket(quorumAddress.getHost(), quorumAddress.getPort());
-                    InputStream in = s.getInputStream();
-                    ObjectInputStream oin = new ObjectInputStream(in);
-                    OutputStream out = s.getOutputStream();
-                    ObjectOutputStream oout = new ObjectOutputStream(out);
-                    oout.writeObject(new Message(Message.Request.RECEIVE_MEMPOOL, keys));
-                    oout.flush();
-                    Message messageReceived = (Message) oin.readObject();
-                    if(messageReceived.getRequest().name().equals("REQUEST_TRANSACTION")){
-                        System.out.println("Node " + myAddress.getPort() + ": recieved request for trans");
-                        ArrayList<String> hashesRequested = (ArrayList<String>) messageReceived.getMetadata();
-                        ArrayList<Transaction> transactionsToSend = new ArrayList<>();
-                        for(String hash : keys){
-                            if(mempool.containsKey(hash)){
-                                transactionsToSend.add(mempool.get(hash));
-                            }else{
-                                s.close();
-                                throw new Exception();
-                                // something is wrong
+            if(DEBUG_LEVEL == 1) {
+                System.out.println("Node " + myAddress.getPort() + ": sendMempoolHashes invoked");
+            }
+            HashSet<String> keys = new HashSet(mempool.keySet());
+            ArrayList<Address> quorum = deriveQuorum(blockchain.get(blockchain.size() - 1), 0);
+            
+            for (Address quorumAddress : quorum) {
+                if (!myAddress.equals(quorumAddress)) {
+                    Socket s = null;
+                    try {
+                        s = new Socket(quorumAddress.getHost(), quorumAddress.getPort());
+                        InputStream in = s.getInputStream();
+                        ObjectInputStream oin = new ObjectInputStream(in);
+                        OutputStream out = s.getOutputStream();
+                        ObjectOutputStream oout = new ObjectOutputStream(out);
+                        oout.writeObject(new Message(Message.Request.RECEIVE_MEMPOOL, keys));
+                        oout.flush();
+                        Message messageReceived = (Message) oin.readObject();
+                        if(messageReceived.getRequest().name().equals("REQUEST_TRANSACTION")){
+                            System.out.println("Node " + myAddress.getPort() + ": recieved request for trans");
+                            ArrayList<String> hashesRequested = (ArrayList<String>) messageReceived.getMetadata();
+                            ArrayList<Transaction> transactionsToSend = new ArrayList<>();
+                            for(String hash : keys){
+                                if(mempool.containsKey(hash)){
+                                    transactionsToSend.add(mempool.get(hash));
+                                }else{
+                                    s.close();
+                                    throw new Exception();
+                                    // something is wrong
+                                }
                             }
+                            oout.writeObject(new Message(Message.Request.RECEIVE_MEMPOOL, transactionsToSend));
+                        }else{
                         }
-                        oout.writeObject(new Message(Message.Request.RECEIVE_MEMPOOL, transactionsToSend));
-                    }else{
-                    }
-                    s.close();
-                } catch (IOException e) {
-                    System.out.println(e);
-                    //throw new RuntimeException(e);
-                } catch (ClassNotFoundException e) {
-                    //throw new RuntimeException(e);
-                } catch (Exception e){
+                        s.close();
+                    } catch (IOException e) {
+                        System.out.println(e);
+                        //throw new RuntimeException(e);
+                    } catch (ClassNotFoundException e) {
+                        //throw new RuntimeException(e);
+                    } catch (Exception e){
 
+                    }
                 }
             }
         }
     }
 
     public void receiveMempool(Set<String> keys, ObjectOutputStream oout, ObjectInputStream oin) {
-        synchronized (memPoolLock) {
-            while(state == 0){
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            if(state > 2) return;
-
-            if(DEBUG_LEVEL == 1) {
-                System.out.println("Node " + myAddress.getPort() + ": receiveMempool invoked");
-            }
-            ArrayList<Address> quorum = deriveQuorum(blockchain.get(blockchain.size() - 1), 0);
-            ArrayList<String> keysAbsent = new ArrayList<>();
-            for (String key : keys) {
-                if (!mempool.containsKey(key)) {
-                    keysAbsent.add(key);
-                }
-            }
+        while(state != 2){
             try {
-                if (keysAbsent.isEmpty()) {
-                    oout.writeObject(new Message(Message.Request.PING));
-                    oout.flush();
-                } else {
-                    oout.writeObject(new Message(Message.Request.REQUEST_TRANSACTION, keysAbsent));
-                    oout.flush();
-                    Message message = (Message) oin.readObject();
-                    ArrayList<Transaction> transactionsReturned = (ArrayList<Transaction>) message.getMetadata();
-                    for(Transaction transaction : transactionsReturned){
-                        try {
-                            mempool.put(getSHAString(transaction.getData()), transaction);
-                        } catch (NoSuchAlgorithmException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-                }
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
-            } catch (IOException e) {
-                System.out.println(e);
-                throw new RuntimeException(e);
-            }
-
-            memPoolRounds++;
-            int i = quorum.size() - 1;
-            if(memPoolRounds == quorum.size() - 1){
-                memPoolRounds = 0;
-                constructBlock();
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
+
+        resolveMempool(keys, oout, oin);
     }
 
 
+    public void resolveMempool(Set<String> keys, ObjectOutputStream oout, ObjectInputStream oin) {
+
+        //if(state > 2) return;
+
+        if(DEBUG_LEVEL == 1) {
+            System.out.println("Node " + myAddress.getPort() + ": receiveMempool invoked");
+        }
+        ArrayList<Address> quorum = deriveQuorum(blockchain.get(blockchain.size() - 1), 0);
+        ArrayList<String> keysAbsent = new ArrayList<>();
+        for (String key : keys) {
+            if (!mempool.containsKey(key)) {
+                keysAbsent.add(key);
+            }
+        }
+        try {
+            if (keysAbsent.isEmpty()) {
+                oout.writeObject(new Message(Message.Request.PING));
+                oout.flush();
+            } else {
+                oout.writeObject(new Message(Message.Request.REQUEST_TRANSACTION, keysAbsent));
+                oout.flush();
+                Message message = (Message) oin.readObject();
+                ArrayList<Transaction> transactionsReturned = (ArrayList<Transaction>) message.getMetadata();
+                for(Transaction transaction : transactionsReturned){
+                    try {
+                        mempool.put(getSHAString(transaction.getData()), transaction);
+                    } catch (NoSuchAlgorithmException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            System.out.println(e);
+            throw new RuntimeException(e);
+        }
+
+        memPoolRounds++;
+        int i = quorum.size() - 1;
+        if(memPoolRounds == quorum.size() - 1){
+            memPoolRounds = 0;
+            constructBlock();
+        }
+    }
+    
+
+
     public void constructBlock(){
-        synchronized (memPoolLock){
             state = 3;
 
             if(DEBUG_LEVEL == 1) {
@@ -532,7 +541,6 @@ public class Node  {
             } catch (NoSuchAlgorithmException e) {
                 throw new RuntimeException(e);
             }
-        }
     }
 
     public void sendSigOfBlockHash(){
@@ -555,7 +563,7 @@ public class Node  {
         synchronized (sigRoundsLock){
             System.out.println("Node " + myAddress.getPort() + ": 1st part receiveQuorumSignature invoked. state: " + state);
 
-            while(state < 3){
+            while(state != 3){
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
@@ -699,6 +707,8 @@ public class Node  {
 
     public void sendSkeleton(){
         synchronized (lock){
+            state = 0;
+
             if(DEBUG_LEVEL == 1) {
                 System.out.println("Node " + myAddress.getPort() + ": sendSkeleton invoked. qSigs " + quorumSigs);
             }
@@ -736,6 +746,15 @@ public class Node  {
 
     public void receiveSkeleton(BlockSkeleton blockSkeleton){
         synchronized (blockLock){
+
+            while(state != 0){
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
             if(DEBUG_LEVEL == 1) {
                 System.out.println("Node " + myAddress.getPort() + ": receiveSkeleton(local) invoked");
             }
