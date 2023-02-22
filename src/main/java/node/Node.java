@@ -950,7 +950,7 @@ public class Node  {
                         s.close();
 
                         /* Use heartbeat to also output the block chain of the node */
-                        System.out.println("Node " + node.getAddress().getPort() + ": " + chainString(blockchain));
+                        System.out.println("Node " + node.getAddress().getPort() + ": " + chainString(blockchain) + " MP: " + mempool);
 
                     } catch (IOException e) {
                         System.out.println("Node " + myAddress.getPort() + ": HeartBeatMonitor: Received IO Exception from node " + address.getPort());
