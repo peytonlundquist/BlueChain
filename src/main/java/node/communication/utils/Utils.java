@@ -23,10 +23,14 @@ public class Utils {
     }
 
     public static String chainString(ArrayList<Block> blockChain){
-        String hash;
+        String hash = null;
         String chainString = "Chain: [";
         for(Block block : blockChain){
-            hash = block.getPrevBlockHash().substring(0, 4);
+            try {
+                hash = getBlockHash(block, 0).substring(0, 4);
+            } catch (NoSuchAlgorithmException e) {
+                e.printStackTrace();
+            }
             if(block.getTxList().size() > 0){
                 hash = hash.concat(" tx{" + block.getTxList().keySet().toString().substring(0, 4) + "}");
             }

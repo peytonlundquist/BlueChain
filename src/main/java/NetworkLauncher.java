@@ -82,7 +82,6 @@ public class NetworkLauncher {
                 st = new StringTokenizer(name, "_");
                 String host = st.nextToken();
                 int port = Integer.parseInt(st.nextToken().replaceFirst(".txt", ""));
-                System.out.println("Port: " + port + ", host: " + host);
                 globalPeers.add(new Address(port, host));
             }
 
