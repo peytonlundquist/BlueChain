@@ -190,7 +190,7 @@ public class Node  {
         return false;
     }
 
-    public boolean containsTransaction(Transaction transaction){
+    public boolean containsTransactionInMempool(Transaction transaction){
         Set<Transaction> values = new HashSet<>();
         for(Map.Entry<String, Transaction> entry : mempool.entrySet()){
             if (entry.getValue().equals(transaction)) {
@@ -287,20 +287,20 @@ public class Node  {
     public void verifyTransaction(Transaction transaction){
         synchronized(memPoolLock){
             try {
-
+                if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + ": verifyTransaction: " + 
+                transaction.getData() + ", blockchain size: " + blockchain.size());}
                 for(Block block : blockchain){
                     if(block.getTxList().containsKey(getSHAString(transaction.getData()))){
                         // We have this transaction in a block
+                        if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + ": trans :" + transaction.getData() + " found in prev block " + block.getBlockId());}
                         return;
                     }
                 }
 
-                if(!containsTransaction(transaction)){    
+                if(!containsTransactionInMempool(transaction)){    
                     mempool.put(getSHAString(transaction.getData()), transaction);
                     gossipTransaction(transaction);
-                    if(DEBUG_LEVEL == 1){
-                        System.out.println("Node " + myAddress.getPort() + ": mempool :" + mempool.values());
-                    }
+                    if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + ": mempool :" + mempool.values());}
                 }
             } catch (NoSuchAlgorithmException e) {
                 throw new RuntimeException(e);
@@ -506,6 +506,7 @@ public class Node  {
                 oout.writeObject(new Message(Message.Request.PING));
                 oout.flush();
             } else {
+                if(DEBUG_LEVEL == 1) {System.out.println("Node " + myAddress.getPort() + ": receiveMempool requesting transactions for: " + keysAbsent); }
                 oout.writeObject(new Message(Message.Request.REQUEST_TRANSACTION, keysAbsent));
                 oout.flush();
                 Message message = (Message) oin.readObject();
@@ -513,6 +514,7 @@ public class Node  {
                 for(Transaction transaction : transactionsReturned){
                     try {
                         mempool.put(getSHAString(transaction.getData()), transaction);
+                        if(DEBUG_LEVEL == 1) {System.out.println("Node " + myAddress.getPort() + ": recieved transactions: " + keysAbsent); }
                     } catch (NoSuchAlgorithmException e) {
                         throw new RuntimeException(e);
                     }
@@ -537,8 +539,8 @@ public class Node  {
             if(DEBUG_LEVEL == 1) {System.out.println("Node " + myAddress.getPort() + ": constructBlock invoked");}
             state = 3;
             HashMap<String, Transaction> blockTransactions = deepCloneHashmap(mempool);
+            if(DEBUG_LEVEL == 1) { System.out.println("Node " + myAddress.getPort() + " constructBlock: mempool: " + mempool + " blockTrans: " + blockTransactions);}
             mempool = new HashMap<>();
-            if(DEBUG_LEVEL == 1) { System.out.println("Node " + myAddress.getPort() + ": mempool should be empty. mempool: " + mempool);}
 
             try {
                 quorumBlock = new Block(blockTransactions,

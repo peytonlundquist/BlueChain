@@ -32,7 +32,7 @@ public class Utils {
                 e.printStackTrace();
             }
             if(block.getTxList().size() > 0){
-                hash = hash.concat(" tx{" + block.getTxList().keySet().toString().substring(0, 4) + "}");
+                hash = hash.concat(" tx{" + block.getTxList().values().toString() + "}");
             }
             chainString = chainString.concat(block.getBlockId() + " " + hash + ", ");
         }
