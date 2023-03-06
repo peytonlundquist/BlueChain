@@ -1,6 +1,9 @@
-# **BlueChain**
-  - A java-implemented distributed, decentralized blockchain network
+<p align="center">
+  <img src="https://github.com/peytonlundquist/network/blob/readme-image-1/BlueChain-1.png?raw=true"  width="300" height="300">
+</p>
 
+
+# A java-implemented distributed, decentralized blockchain network
 ## Description
 This network is being developed for the purpose of student researchers, interested in developing blockchain solutions. We provide an alternate blockchain network option to expirement with, without the burden of high learning curves associated with softwares such as HyperLedger, Ethereum, etc. 
 
