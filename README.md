@@ -36,14 +36,14 @@ This software is not a public network costing gas fees to expirement with, nor i
     mvn clean install
   
   4. Running the NetworkLauncher
+
   - For this step, since we plan to run our network across multiple hosts, please ensure that the networking and firewall permissions / setting allow TCP/IP connections from the ports and hosts you will specify
   - Using the NetworkLauncher java program in this context works by running the program on each host you plan on using. 
-  - Each program needs to know the host name and port range we plan on using for each other network
-  - We use '-o' to tell the program we would like to specify some amount of other hosts. Please refer to the program instructions for more details by entering an argument '-h' or '-help'
+  - Every node on each host is required to submit it's public key to the Node Registry, a directory intended to be shared across hosts. This allows each node in the network to properly use DSA with one another in addition to local peer discovery.
   - It is suggested to specify a '-t <timedWaitDelayMilliseconds> for each program in order for the networks to bind but wait to connect until you have every host setup
-  - An example for our first host to run:
+  - An example for our first host to run
 
-  ```java -cp target/network-1.0-SNAPSHOT.jar NetworkLauncher -t 60000 -o 8000 8033 8034 8067 hostName2 8068 8010 hostName```
+    `java -cp target/network-1.0-SNAPSHOT.jar NetworkLauncher`
     
   - In this example we specified our host needs to wait 60 seconds before trying to connect to any nodes. We then gave it the port ranges and host names of the other nodes that we will want to connect with.
   - We would run a similar argument for each other host with slightly different ordering of the arguments
