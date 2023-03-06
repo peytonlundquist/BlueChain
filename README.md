@@ -1,4 +1,4 @@
-# **JDDB Network**
+# **BlueChain**
   - A java-implemented distributed, decentralized blockchain network
 
 ## Description
