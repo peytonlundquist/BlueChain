@@ -229,6 +229,7 @@ public class Node  {
                     System.out.println("Node " + myAddress.getPort() + ": gossipTransaction: Received IO Exception from node " + address.getPort());
                     //removeAddress(address);
                 } catch (ConcurrentModificationException e){
+                    System.out.println(e);
                     break;
                 }
             }
@@ -452,14 +453,16 @@ public class Node  {
                         Message messageReceived = (Message) oin.readObject();
                         if(messageReceived.getRequest().name().equals("REQUEST_TRANSACTION")){
                             ArrayList<String> hashesRequested = (ArrayList<String>) messageReceived.getMetadata();
+                            if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + ": sendMempoolHashes: requested trans: " + hashesRequested);
                             ArrayList<Transaction> transactionsToSend = new ArrayList<>();
                             for(String hash : keys){
                                 if(mempool.containsKey(hash)){
                                     transactionsToSend.add(mempool.get(hash));
                                 }else{
-                                    s.close();
-                                    throw new Exception();
+                                    //s.close();
+                                    //throw new Exception();
                                     // something is wrong
+                                    if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + ": sendMempoolHashes: requested trans not in mempool. MP: " + mempool);
                                 }
                             }
                             oout.writeObject(new Message(Message.Request.RECEIVE_MEMPOOL, transactionsToSend));
@@ -471,8 +474,9 @@ public class Node  {
                         //throw new RuntimeException(e);
                     } catch (ClassNotFoundException e) {
                         //throw new RuntimeException(e);
+                        System.out.println(e);
                     } catch (Exception e){
-
+                        System.out.println(e);
                     }
                 }
             }
@@ -493,45 +497,47 @@ public class Node  {
 
 
     public void resolveMempool(Set<String> keys, ObjectOutputStream oout, ObjectInputStream oin) {
-        if(DEBUG_LEVEL == 1) {System.out.println("Node " + myAddress.getPort() + ": receiveMempool invoked"); }
-        ArrayList<Address> quorum = deriveQuorum(blockchain.get(blockchain.size() - 1), 0);
-        ArrayList<String> keysAbsent = new ArrayList<>();
-        for (String key : keys) {
-            if (!mempool.containsKey(key)) {
-                keysAbsent.add(key);
-            }
-        }
-        try {
-            if (keysAbsent.isEmpty()) {
-                oout.writeObject(new Message(Message.Request.PING));
-                oout.flush();
-            } else {
-                if(DEBUG_LEVEL == 1) {System.out.println("Node " + myAddress.getPort() + ": receiveMempool requesting transactions for: " + keysAbsent); }
-                oout.writeObject(new Message(Message.Request.REQUEST_TRANSACTION, keysAbsent));
-                oout.flush();
-                Message message = (Message) oin.readObject();
-                ArrayList<Transaction> transactionsReturned = (ArrayList<Transaction>) message.getMetadata();
-                for(Transaction transaction : transactionsReturned){
-                    try {
-                        mempool.put(getSHAString(transaction.getData()), transaction);
-                        if(DEBUG_LEVEL == 1) {System.out.println("Node " + myAddress.getPort() + ": recieved transactions: " + keysAbsent); }
-                    } catch (NoSuchAlgorithmException e) {
-                        throw new RuntimeException(e);
-                    }
+        synchronized(memPoolRoundsLock){
+            if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + ": receiveMempool invoked"); 
+            ArrayList<Address> quorum = deriveQuorum(blockchain.get(blockchain.size() - 1), 0);
+            ArrayList<String> keysAbsent = new ArrayList<>();
+            for (String key : keys) {
+                if (!mempool.containsKey(key)) {
+                    keysAbsent.add(key);
                 }
             }
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        } catch (IOException e) {
-            System.out.println(e);
-            throw new RuntimeException(e);
-        }
+            try {
+                if (keysAbsent.isEmpty()) {
+                    oout.writeObject(new Message(Message.Request.PING));
+                    oout.flush();
+                } else {
+                    if(DEBUG_LEVEL == 1) {System.out.println("Node " + myAddress.getPort() + ": receiveMempool requesting transactions for: " + keysAbsent); }
+                    oout.writeObject(new Message(Message.Request.REQUEST_TRANSACTION, keysAbsent));
+                    oout.flush();
+                    Message message = (Message) oin.readObject();
+                    ArrayList<Transaction> transactionsReturned = (ArrayList<Transaction>) message.getMetadata();
+                    for(Transaction transaction : transactionsReturned){
+                        try {
+                            mempool.put(getSHAString(transaction.getData()), transaction);
+                            if(DEBUG_LEVEL == 1) {System.out.println("Node " + myAddress.getPort() + ": recieved transactions: " + keysAbsent); }
+                        } catch (NoSuchAlgorithmException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            } catch (IOException e) {
+                System.out.println(e);
+                throw new RuntimeException(e);
+            }
 
-        memPoolRounds++;
-        int i = quorum.size() - 1;
-        if(memPoolRounds == quorum.size() - 1){
-            memPoolRounds = 0;
-            constructBlock();
+            memPoolRounds++;
+            if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + ": receiveMempool invoked: mempoolRounds: " + memPoolRounds); 
+            if(memPoolRounds == quorum.size() - 1){
+                memPoolRounds = 0;
+                constructBlock();
+            }
         }
     }
 
@@ -540,7 +546,6 @@ public class Node  {
             state = 3;
             HashMap<String, Transaction> blockTransactions = deepCloneHashmap(mempool);
             if(DEBUG_LEVEL == 1) { System.out.println("Node " + myAddress.getPort() + " constructBlock: mempool: " + mempool + " blockTrans: " + blockTransactions);}
-            mempool = new HashMap<>();
 
             try {
                 quorumBlock = new Block(blockTransactions,
@@ -613,6 +618,8 @@ public class Node  {
 
     public void tallyQuorumSigs(){
         synchronized (blockLock) {
+            resetMempool();
+
             if (DEBUG_LEVEL == 1) {System.out.println("Node " + myAddress.getPort() + ": tallyQuorumSigs invoked");}
 
             state = 4;
@@ -680,6 +687,12 @@ public class Node  {
             } 
             hashVotes.clear();
             quorumSigs.clear();
+        }
+    }
+
+    private void resetMempool(){
+        synchronized(memPoolLock){
+            mempool = new HashMap<>();
         }
     }
 
