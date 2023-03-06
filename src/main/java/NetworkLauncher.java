@@ -65,6 +65,13 @@ public class NetworkLauncher {
                 nodes.add(new Node(i, maxConnections, minConnections, numNodes, quorumSize, startingPort, debugLevel));
             }
 
+
+            try {
+                Thread.sleep(timedWaitDelay);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
             StringTokenizer st;
             String path = "./src/main/java/node/nodeRegistry/";
             File folder = new File(path);
@@ -75,15 +82,9 @@ public class NetworkLauncher {
                 st = new StringTokenizer(name, "_");
                 String host = st.nextToken();
                 int port = Integer.parseInt(st.nextToken().replaceFirst(".txt", ""));
-                System.out.println("Port: " + port + ", host: " + host);
                 globalPeers.add(new Address(port, host));
             }
 
-            try {
-                Thread.sleep(timedWaitDelay);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
 
             NetworkLauncher n = new NetworkLauncher();
             n.startNetworkClients(globalPeers, nodes); // Begins network connections
@@ -101,7 +102,7 @@ public class NetworkLauncher {
     /* Gives each node a thread to start node connections */
     public void startNetworkClients(ArrayList<Address> globalPeers, ArrayList<Node> nodes){
         for(int i = 0; i < nodes.size(); i++){
-            Collections.shuffle(globalPeers);
+            //Collections.shuffle(globalPeers);
             new NodeLauncher(nodes.get(i), globalPeers).start();
         }
     }

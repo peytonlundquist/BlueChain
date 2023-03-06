@@ -26,4 +26,8 @@ public class BlockSignature implements Serializable {
     public Address getAddress() {
         return address;
     }
+
+    public String toString(){
+        return hash.substring(0, 4) + ", " + address.toString();
+    }
 }
