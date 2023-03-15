@@ -151,9 +151,12 @@ public class Client {
             Message message = new Message(Message.Request.ADD_TRANSACTION, new Transaction(transaction));
             oout.writeObject(message);
             oout.flush();
+            Thread.sleep(2000);
             s.close();
         } catch (IOException e) {
-            //System.out.println("Error occurred");
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 }

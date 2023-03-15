@@ -290,7 +290,8 @@ public class Node  {
             try {
                 if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + ": verifyTransaction: " + 
                 transaction.getData() + ", blockchain size: " + blockchain.size());}
-                for(Block block : blockchain){
+                ArrayList<Block> clonedBlockchain = deepCloneBlockChain(blockchain, blockLock);
+                for(Block block : clonedBlockchain){
                     if(block.getTxList().containsKey(getSHAString(transaction.getData()))){
                         // We have this transaction in a block
                         if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + ": trans :" + transaction.getData() + " found in prev block " + block.getBlockId());}

@@ -15,11 +15,22 @@ import static node.communication.utils.Hashing.getBlockHash;
 public class Utils {
 
     public static HashMap<String, Transaction> deepCloneHashmap(HashMap<String, Transaction> givenHashMap){
-        HashMap newHashMap = new HashMap<>();
+        HashMap<String, Transaction> newHashMap = new HashMap<>();
         for(Map.Entry<String, Transaction> entry : givenHashMap.entrySet()){
             newHashMap.put(entry.getKey(), entry.getValue());
         }
         return newHashMap;
+    }
+
+
+    public static ArrayList<Block> deepCloneBlockChain(ArrayList<Block> blockchain, Object blockLock){
+        synchronized(blockLock){
+            ArrayList<Block> newBlockchain = new ArrayList<>();
+            for(Block block : blockchain){
+                newBlockchain.add(block);
+            }
+            return newBlockchain;
+        }
     }
 
     public static String chainString(ArrayList<Block> blockChain){
