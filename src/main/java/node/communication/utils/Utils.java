@@ -36,17 +36,33 @@ public class Utils {
     public static String chainString(ArrayList<Block> blockChain){
         String hash = null;
         String chainString = "Chain: [";
-        for(Block block : blockChain){
-            try {
-                hash = getBlockHash(block, 0).substring(0, 4);
-            } catch (NoSuchAlgorithmException e) {
-                e.printStackTrace();
+
+
+        if(blockChain.size() > 6){
+            for(int i = blockChain.size() - 6; i < blockChain.size(); i++){
+                try {
+                    hash = getBlockHash(blockChain.get(i), 0).substring(0, 4);
+                } catch (NoSuchAlgorithmException e) {
+                    e.printStackTrace();
+                }
+                if(blockChain.get(i).getTxList().size() > 0){
+                    hash = hash.concat(" tx{" + blockChain.get(i).getTxList().values().toString() + "}");
+                }
+                chainString = chainString.concat(blockChain.get(i).getBlockId() + " " + hash + ", ");
             }
-            if(block.getTxList().size() > 0){
-                hash = hash.concat(" tx{" + block.getTxList().values().toString() + "}");
+        }else{
+            for(Block block : blockChain){
+                try {
+                    hash = getBlockHash(block, 0).substring(0, 4);
+                } catch (NoSuchAlgorithmException e) {
+                    e.printStackTrace();
+                }
+                if(block.getTxList().size() > 0){
+                    hash = hash.concat(" tx{" + block.getTxList().values().toString() + "}");
+                }
+                chainString = chainString.concat(block.getBlockId() + " " + hash + ", ");
             }
-            chainString = chainString.concat(block.getBlockId() + " " + hash + ", ");
-        }
+        }    
         return chainString.concat("]");
     }
 }

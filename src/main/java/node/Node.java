@@ -290,7 +290,9 @@ public class Node  {
             try {
                 if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + ": verifyTransaction: " + 
                 transaction.getData() + ", blockchain size: " + blockchain.size());}
-                ArrayList<Block> clonedBlockchain = deepCloneBlockChain(blockchain, blockLock);
+                // ArrayList<Block> clonedBlockchain = deepCloneBlockChain(blockchain, blockLock);
+                ArrayList<Block> clonedBlockchain = new ArrayList<>();
+                clonedBlockchain.addAll(blockchain);
                 for(Block block : clonedBlockchain){
                     if(block.getTxList().containsKey(getSHAString(transaction.getData()))){
                         // We have this transaction in a block
@@ -314,7 +316,8 @@ public class Node  {
 
     //Reconcile blocks
     public void sendQuorumReady(){
-        state = 1;
+        //state = 1;
+        stateChangeRequest(1);
         quorumSigs = new ArrayList<>();
 
         Block currentBlock = blockchain.get(blockchain.size() - 1);
@@ -432,7 +435,8 @@ public class Node  {
 
     public void sendMempoolHashes() {
         synchronized (memPoolLock){
-            state = 2;
+            stateChangeRequest(2);
+            //state = 2;
 
             if(DEBUG_LEVEL == 1) {
                 System.out.println("Node " + myAddress.getPort() + ": sendMempoolHashes invoked");
@@ -544,7 +548,8 @@ public class Node  {
 
     public void constructBlock(){
             if(DEBUG_LEVEL == 1) {System.out.println("Node " + myAddress.getPort() + ": constructBlock invoked");}
-            state = 3;
+            //state = 3;
+            stateChangeRequest(3);
             HashMap<String, Transaction> blockTransactions = deepCloneHashmap(mempool);
             if(DEBUG_LEVEL == 1) { System.out.println("Node " + myAddress.getPort() + " constructBlock: mempool: " + mempool + " blockTrans: " + blockTransactions);}
 
@@ -623,7 +628,8 @@ public class Node  {
 
             if (DEBUG_LEVEL == 1) {System.out.println("Node " + myAddress.getPort() + ": tallyQuorumSigs invoked");}
 
-            state = 4;
+            //state = 4;
+            stateChangeRequest(4);
             ArrayList<Address> quorum = deriveQuorum(blockchain.get(blockchain.size() - 1), 0);
 
             if(!inQuorum()){
@@ -699,7 +705,7 @@ public class Node  {
 
     public void sendSkeleton(){
         synchronized (lock){
-            state = 0;
+            //state = 0;
 
             if(DEBUG_LEVEL == 1) {
                 System.out.println("Node " + myAddress.getPort() + ": sendSkeleton invoked. qSigs " + quorumSigs);
@@ -753,10 +759,10 @@ public class Node  {
             Block currentBlock = blockchain.get(blockchain.size() - 1);
 
             if(currentBlock.getBlockId() + 1 != blockSkeleton.getBlockId()){
-                if(DEBUG_LEVEL == 1) { System.out.println("Node " + myAddress.getPort() + ": receiveSkeleton(local) currentblock not synced with skeleton. current id: " + currentBlock.getBlockId() + " new: " + blockSkeleton.getBlockId()); }
+                //if(DEBUG_LEVEL == 1) { System.out.println("Node " + myAddress.getPort() + ": receiveSkeleton(local) currentblock not synced with skeleton. current id: " + currentBlock.getBlockId() + " new: " + blockSkeleton.getBlockId()); }
                 return;
             }else{
-                if(DEBUG_LEVEL == 1) { System.out.println("Node " + myAddress.getPort() + ": receiveSkeleton(local) invoked");}
+                if(DEBUG_LEVEL == 1) { System.out.println("Node " + myAddress.getPort() + ": receiveSkeleton(local) invoked. Hash: " + blockSkeleton.getHash());}
             }
 
             ArrayList<Address> quorum = deriveQuorum(currentBlock, 0);
@@ -825,11 +831,20 @@ public class Node  {
         }
     }
 
+    private Object stateLock = new Object();
+    private void stateChangeRequest(int statetoChange){
+        synchronized(stateLock){
+            state = statetoChange;
+        }
+    }
+
     /**
      * Adds a block
      * @param block Block to add
      */
     public void addBlock(Block block){
+        stateChangeRequest(0);
+        state = 0;
         blockchain.add(block);
         ArrayList<Address> quorum = deriveQuorum(blockchain.get(blockchain.size() - 1), 0);
         if(DEBUG_LEVEL == 1) {
