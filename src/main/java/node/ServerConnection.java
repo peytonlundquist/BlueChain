@@ -32,9 +32,10 @@ public class ServerConnection extends Thread {
             ObjectInputStream oin = new ObjectInputStream(in);
             Message incomingMessage = (Message) oin.readObject();
             handleRequest(incomingMessage, oout, oin);
-            client.close();
+            // client.close();
         } catch (IOException e) {
-            System.out.println("I/O error " + e);
+            System.out.println(node.getAddress().getPort() + ": IO Error. Port exhausted likely. " + e);
+            e.printStackTrace();
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
