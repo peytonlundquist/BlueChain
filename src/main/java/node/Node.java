@@ -114,7 +114,16 @@ public class Node  {
      */
     public void initializeBlockchain(){
         blockchain = new ArrayList<Block>();
-        addBlock(new Block(new HashMap<String, Transaction>(), "000000", 0));
+        Transaction genesisTransaction = new Transaction("Bob", "Alice", 100, "0");
+        HashMap<String, Transaction> genesisTransactions = new HashMap<String, Transaction>();
+        String hashOfTransaction = "";
+        try {
+            hashOfTransaction = getSHAString(genesisTransaction.toString());
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+        genesisTransactions.put(hashOfTransaction, genesisTransaction);
+        addBlock(new Block(genesisTransactions, "000000", 0));
 
     }
 
@@ -299,6 +308,12 @@ public class Node  {
                         if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + ": trans :" + transaction.getData() + " found in prev block " + block.getBlockId());}
                         return;
                     }
+                }
+
+                TransactionValidator tv = new TransactionValidator(clonedBlockchain);
+                if(!tv.validate(transaction)){
+                    if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + "Transaction not valid");}
+                    return;
                 }
 
                 if(!containsTransactionInMempool(transaction)){    

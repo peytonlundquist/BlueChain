@@ -95,22 +95,13 @@ public class Client {
 //                jsonWriter.close();
             }else if(args[0].equals("trans")){
                 port = Integer.parseInt(args[1]);
-                submitTransaction(port, args[2]);
-                System.out.println("Submitted transaction");
-            }else if(args[0].equals("transEx")){
-                port = 8000;
-                for(int i = 0; i < 10; i++){
-                    port = port + i;
+                String toAccount = args[2];
+                String fromAccount = args[3];
+                int amount = Integer.parseInt(args[4]);
 
-                    submitTransaction(port, String.valueOf(i));
-                    System.out.println("Submitted transaction");
-                    try {
-                        Thread.sleep(5000);
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            }else{
+                submitTransaction(port, toAccount, fromAccount, amount);
+                System.out.println("Submitted transaction");
+            }else {
                 System.out.println("Usage: <[graph] [query <portNum>] [trans <portNum> <Transaction String Id>]>");
             }
         }else{
@@ -143,12 +134,12 @@ public class Client {
         return null;
     }
 
-    private static void submitTransaction(int port, String transaction){
+    private static void submitTransaction(int port, String toAccount, String fromAccount, int amount){
         try {
             Socket s = new Socket("localhost", port);
             OutputStream out = s.getOutputStream();
             ObjectOutputStream oout = new ObjectOutputStream(out);
-            Message message = new Message(Message.Request.ADD_TRANSACTION, new Transaction(transaction));
+            Message message = new Message(Message.Request.ADD_TRANSACTION, new Transaction(toAccount, fromAccount, amount, String.valueOf(System.currentTimeMillis())));
             oout.writeObject(message);
             oout.flush();
             Thread.sleep(2000);
