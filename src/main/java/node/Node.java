@@ -297,9 +297,10 @@ public class Node  {
     public void verifyTransaction(Transaction transaction){
         synchronized(memPoolLock){
             try {
+                if(containsTransactionInMempool(transaction)) return;
+
                 if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + ": verifyTransaction: " + 
                 transaction.getData() + ", blockchain size: " + blockchain.size());}
-                // ArrayList<Block> clonedBlockchain = deepCloneBlockChain(blockchain, blockLock);
                 ArrayList<Block> clonedBlockchain = new ArrayList<>();
                 clonedBlockchain.addAll(blockchain);
                 for(Block block : clonedBlockchain){
@@ -310,17 +311,16 @@ public class Node  {
                     }
                 }
 
-                TransactionValidator tv = new TransactionValidator(clonedBlockchain);
+                TransactionValidator tv = new TransactionValidator(clonedBlockchain, mempool);
                 if(!tv.validate(transaction)){
                     if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + "Transaction not valid");}
                     return;
                 }
 
-                if(!containsTransactionInMempool(transaction)){    
-                    mempool.put(getSHAString(transaction.getData()), transaction);
-                    gossipTransaction(transaction);
-                    if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + ": mempool :" + mempool.values());}
-                }
+                mempool.put(getSHAString(transaction.getData()), transaction);
+                gossipTransaction(transaction);
+
+                if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + ": Added transaction. MP:" + mempool.values());}
             } catch (NoSuchAlgorithmException e) {
                 throw new RuntimeException(e);
             }
@@ -536,10 +536,11 @@ public class Node  {
                     oout.flush();
                     Message message = (Message) oin.readObject();
                     ArrayList<Transaction> transactionsReturned = (ArrayList<Transaction>) message.getMetadata();
+                    
                     for(Transaction transaction : transactionsReturned){
                         try {
                             mempool.put(getSHAString(transaction.getData()), transaction);
-                            if(DEBUG_LEVEL == 1) {System.out.println("Node " + myAddress.getPort() + ": recieved transactions: " + keysAbsent); }
+                            if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + ": recieved transactions: " + keysAbsent);
                         } catch (NoSuchAlgorithmException e) {
                             throw new RuntimeException(e);
                         }
@@ -562,20 +563,29 @@ public class Node  {
     }
 
     public void constructBlock(){
+        synchronized(memPoolLock){
             if(DEBUG_LEVEL == 1) {System.out.println("Node " + myAddress.getPort() + ": constructBlock invoked");}
-            //state = 3;
             stateChangeRequest(3);
-            HashMap<String, Transaction> blockTransactions = deepCloneHashmap(mempool);
-            if(DEBUG_LEVEL == 1) { System.out.println("Node " + myAddress.getPort() + " constructBlock: mempool: " + mempool + " blockTrans: " + blockTransactions);}
+            
+            /* Make sure compiled transactions don't conflict */
+            HashMap<String, Transaction> blockTransactions = new HashMap<>();
+            for(String key : mempool.keySet()){
+                TransactionValidator tv = new TransactionValidator(deepCloneBlockChain(blockchain, blockLock), blockTransactions);
+                Transaction transaction = mempool.get(key);
+                if(tv.validate(transaction)){
+                    blockTransactions.put(key, transaction);
+                }
+            }
 
             try {
                 quorumBlock = new Block(blockTransactions,
-                        getBlockHash(blockchain.get(blockchain.size() - 1), 0),
-                                blockchain.size());
+                              getBlockHash(blockchain.get(blockchain.size() - 1), 0),
+                              blockchain.size());                        
                 sendSigOfBlockHash();
             } catch (NoSuchAlgorithmException e) {
                 throw new RuntimeException(e);
             }
+        }
     }
 
     public void sendSigOfBlockHash(){
