@@ -49,7 +49,9 @@ public class NetworkLauncher {
             int minConnections = Integer.parseInt(prop.getProperty("MIN_CONNECTIONS"));
             int startingPort = Integer.parseInt(prop.getProperty("STARTING_PORT"));
             int quorumSize = Integer.parseInt(prop.getProperty("QUORUM"));
+            int minimumTransactions = Integer.parseInt(prop.getProperty("MINIMUM_TRANSACTIONS"));
             int debugLevel = Integer.parseInt(prop.getProperty("DEBUG_LEVEL"));
+
 
 
             /* List of node objects for the launcher to start*/
@@ -62,7 +64,7 @@ public class NetworkLauncher {
             }
 
             for (int i = startingPort; i < startingPort + numNodes; i++) {
-                nodes.add(new Node(i, maxConnections, minConnections, numNodes, quorumSize, startingPort, debugLevel));
+                nodes.add(new Node(i, maxConnections, minConnections, numNodes, quorumSize, minimumTransactions, debugLevel));
             }
 
 

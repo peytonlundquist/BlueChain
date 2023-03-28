@@ -45,15 +45,15 @@ public class Node  {
      * @param maxPeers           Maximum amount of peer connections to maintain
      * @param initialConnections How many nodes we want to attempt to connect to on start
      */
-    public Node(int port, int maxPeers, int initialConnections, int numNodes, int quorumSize, int startingPort, int debugLevel) {
+    public Node(int port, int maxPeers, int initialConnections, int numNodes, int quorumSize, int minimumTransaction, int debugLevel) {
 
         /* Configurations */
         MIN_CONNECTIONS = initialConnections;
         MAX_PEERS = maxPeers;
         NUM_NODES = numNodes;
         QUORUM_SIZE = quorumSize;
-        STARTING_PORT = startingPort;
         DEBUG_LEVEL = debugLevel;
+        MINIMUM_TRANSACTIONS = minimumTransaction;
 
         /* Locks for Multithreading */
         lock =  new Object();
@@ -876,6 +876,13 @@ public class Node  {
             System.out.println("Node " + myAddress.getPort() + ": Added block " + block.getBlockId() + ". Next quorum: " + quorum);
         }
         if(inQuorum()){
+            while(mempool.size() < MINIMUM_TRANSACTIONS){
+                try {
+                    Thread.sleep(3000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
             sendQuorumReady();
         }
     }
@@ -1030,7 +1037,7 @@ public class Node  {
         }
     }
 
-    private final int MAX_PEERS, NUM_NODES, QUORUM_SIZE, STARTING_PORT, MIN_CONNECTIONS, DEBUG_LEVEL;
+    private final int MAX_PEERS, NUM_NODES, QUORUM_SIZE, MIN_CONNECTIONS, DEBUG_LEVEL, MINIMUM_TRANSACTIONS;
     private final Object lock, quorumLock, memPoolLock, quorumReadyVotesLock, memPoolRoundsLock, sigRoundsLock, blockLock;
     private int quorumReadyVotes, memPoolRounds, sigRounds;
     private ArrayList<Address> globalPeers;
