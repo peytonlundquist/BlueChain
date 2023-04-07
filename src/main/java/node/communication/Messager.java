@@ -8,6 +8,8 @@ public class Messager{
     public static void sendOneWayMessage(Address address, Message message, Address myAddress) {
         try {
             Socket s = new Socket(address.getHost(), address.getPort());
+            InputStream in = s.getInputStream();
+            ObjectInputStream oin = new ObjectInputStream(in);
             OutputStream out = s.getOutputStream();
             ObjectOutputStream oout = new ObjectOutputStream(out);
             oout.writeObject(message);
