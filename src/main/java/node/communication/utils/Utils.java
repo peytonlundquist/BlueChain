@@ -65,4 +65,28 @@ public class Utils {
         }    
         return chainString.concat("]");
     }
+
+    /**
+     * Returns true if the provided address is in the list, otherwise false
+     * @param list
+     * @param address
+     * @return
+     */
+    public static boolean containsAddress(ArrayList<Address> list, Address address){
+        for (Address existingAddress : list) {
+            if (existingAddress.equals(address)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean containsTransactionInMap(Transaction transaction, HashMap<String, Transaction> mempool){
+        for(Map.Entry<String, Transaction> entry : mempool.entrySet()){
+            if (entry.getValue().equals(transaction)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

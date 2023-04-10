@@ -125,7 +125,7 @@ public class Node  {
      */
     public boolean eligibleConnection(Address address, boolean connectIfEligible){
         synchronized(lock) {
-            if (localPeers.size() < MAX_PEERS - 1 && (!address.equals(this.getAddress()) && !this.containsAddress(localPeers, address))) {
+            if (localPeers.size() < MAX_PEERS - 1 && (!address.equals(this.getAddress()) && !containsAddress(localPeers, address))) {
                 if(connectIfEligible){
                     establishConnection(address);
                 }
@@ -172,30 +172,6 @@ public class Node  {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    /**
-     * Returns true if the provided address is in the list, otherwise false
-     * @param list
-     * @param address
-     * @return
-     */
-    public boolean containsAddress(ArrayList<Address> list, Address address){
-        for (Address existingAddress : list) {
-            if (existingAddress.equals(address)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public boolean containsTransactionInMempool(Transaction transaction){
-        for(Map.Entry<String, Transaction> entry : mempool.entrySet()){
-            if (entry.getValue().equals(transaction)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     public Address removeAddress(Address address){
@@ -245,7 +221,7 @@ public class Node  {
                     }
                 }
 
-                if(!containsTransactionInMempool(transaction)){    
+                if(!containsTransactionInMap(transaction, mempool)){    
                     mempool.put(getSHAString(transaction.getData()), transaction);
                     gossipTransaction(transaction);
                     if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + ": mempool :" + mempool.values());}
