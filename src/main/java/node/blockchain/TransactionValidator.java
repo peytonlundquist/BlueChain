@@ -5,26 +5,55 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 public class TransactionValidator{
-    ArrayList<Block> blockchain;
-    HashMap<String, Transaction> mempool;
-    HashMap<String, Integer> accounts;
 
-    public TransactionValidator(ArrayList<Block> blockchain, HashMap<String, Transaction> mempool){
-        this.blockchain = blockchain;
-        this.mempool = mempool;
-        accounts = new HashMap<String, Integer>();
+    /**
+     * Validates a transaction throughout blockchain and mempool
+     * @param transaction
+     * @return
+     */
+    public static boolean validate(Transaction transaction, HashMap<String, Integer> accounts, HashMap<String, Transaction> assumedTransactions){
+        // System.out.println("Validator: starting");
+
+        /* Two contexts to validate. Non quorum node need to validate against their mempool. Quorum node needs to validate against compiled mempool */
+
+        /* We want to assume transactions added to our mempool are valid and take priority. 
+        If there is a conflict from a new transaction and existing ones we choose existing ones */
+
+        HashMap<String, Integer> tempAccounts = new HashMap<>(accounts); // We make a temp set of accounts which contain all previous accounts
+        updateAccounts(assumedTransactions, tempAccounts); // We updated the temp accounts with the mempool, creating a "what-if" scenario where each transaction in mempool is valid
+
+        /* Check mempool also for double dipping */
+        System.out.println("Accounts: " + accounts);
+
+        /* Validate Transaction */
+        String fromAccount = transaction.getFrom();
+        int amount = transaction.getAmount();
+
+        if(amount < 0) return false; // No negatives
+
+        if(!tempAccounts.containsKey(fromAccount)) return false; // We don't have the account youre spending from
+        
+        int balance = tempAccounts.get(fromAccount);
+        if(amount > balance) return false; // Too much money trying to be spent
+        
+        return true;
     }
 
-    private void tallyBalance(HashMap<String, Transaction> hashMap){
+    /**
+     * Update the provided accounts hashmap with already validated transactions
+     * @param blockTxList
+     * @param accounts
+     */
+    public static void updateAccounts(HashMap<String, Transaction> blockTxList, HashMap<String, Integer> accounts){
+        HashSet<String> keys = new HashSet<>(blockTxList.keySet());
 
-        HashSet<String> keys = new HashSet<>(hashMap.keySet());
-
-        /* Looking at each transaction of the block */
+        // For each hash of a transaction
         for(String key : keys){
-
-            String fromAccount = hashMap.get(key).getFrom();
-            String toAccount = hashMap.get(key).getTo();
-            int amount = hashMap.get(key).getAmount();
+            Transaction transaction = blockTxList.get(key); // Grabbing the first transaction from our list of tx using hash
+            
+            String fromAccount = transaction.getFrom();
+            String toAccount = transaction.getTo();
+            int amount = transaction.getAmount();
 
             /* Update our accounts based on this transaction */
             if(accounts.containsKey(toAccount)){
@@ -43,39 +72,5 @@ public class TransactionValidator{
                 accounts.put(fromAccount, 0); // Not sure yet if we have spent from an account that doesnt exist ie genesis
             }
         }
-    }
-
-    /**
-     * Validates a transaction throughout blockchain and mempool
-     * @param transaction
-     * @return
-     */
-    public boolean validate(Transaction transaction){
-        // System.out.println("Validator: starting");
-
-        if(blockchain == null) return false;
-
-        /* First, we need to find the state of the ledger */
-        
-        /* Crawling the chain from beginning to get history */
-        for(Block block : blockchain){
-            HashMap<String, Transaction> hashMap = block.getTxList();
-            tallyBalance(hashMap);
-        }
-
-        /* Check mempool also for double dipping */
-        tallyBalance(mempool);
-        System.out.println("Accounts: " + accounts);
-
-        /* Validate Transaction */
-        String fromAccount = transaction.getFrom();
-        int amount = transaction.getAmount();
-
-        if(!accounts.containsKey(fromAccount)) return false; // We don't have the account youre spending from
-        
-        int balance = accounts.get(fromAccount);
-        if(amount > balance) return false; // Too much money trying to be spent
-        
-        return true;
     }
 }

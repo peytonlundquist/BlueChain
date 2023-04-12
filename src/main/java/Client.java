@@ -142,11 +142,8 @@ public class Client {
             Message message = new Message(Message.Request.ADD_TRANSACTION, new Transaction(toAccount, fromAccount, amount, String.valueOf(System.currentTimeMillis())));
             oout.writeObject(message);
             oout.flush();
-            Thread.sleep(2000);
             s.close();
         } catch (IOException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
             e.printStackTrace();
         }
     }

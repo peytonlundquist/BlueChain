@@ -114,6 +114,7 @@ public class Node  {
      */
     public void initializeBlockchain(){
         blockchain = new ArrayList<Block>();
+        accounts = new HashMap<>();
         Transaction genesisTransaction = new Transaction("Bob", "Alice", 100, "0");
         HashMap<String, Transaction> genesisTransactions = new HashMap<String, Transaction>();
         String hashOfTransaction = "";
@@ -311,8 +312,7 @@ public class Node  {
                     }
                 }
 
-                TransactionValidator tv = new TransactionValidator(clonedBlockchain, mempool);
-                if(!tv.validate(transaction)){
+                if(!TransactionValidator.validate(transaction, accounts, mempool)){
                     if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + "Transaction not valid");}
                     return;
                 }
@@ -569,10 +569,10 @@ public class Node  {
             
             /* Make sure compiled transactions don't conflict */
             HashMap<String, Transaction> blockTransactions = new HashMap<>();
+
             for(String key : mempool.keySet()){
-                TransactionValidator tv = new TransactionValidator(deepCloneBlockChain(blockchain, blockLock), blockTransactions);
                 Transaction transaction = mempool.get(key);
-                if(tv.validate(transaction)){
+                if(TransactionValidator.validate(transaction, accounts, blockTransactions)){
                     blockTransactions.put(key, transaction);
                 }
             }
@@ -871,6 +871,10 @@ public class Node  {
         stateChangeRequest(0);
         state = 0;
         blockchain.add(block);
+
+        HashMap<String, Transaction> hashMap = block.getTxList();
+        TransactionValidator.updateAccounts(hashMap, accounts);        
+
         ArrayList<Address> quorum = deriveQuorum(blockchain.get(blockchain.size() - 1), 0);
         if(DEBUG_LEVEL == 1) {
             System.out.println("Node " + myAddress.getPort() + ": Added block " + block.getBlockId() + ". Next quorum: " + quorum);
@@ -1043,6 +1047,7 @@ public class Node  {
     private ArrayList<Address> globalPeers;
     private ArrayList<Address> localPeers;
     private HashMap<String, Transaction> mempool;
+    HashMap<String, Integer> accounts;
     private ArrayList<BlockSignature> quorumSigs;
     private ArrayList<Block> blockchain;
     private final Address myAddress;

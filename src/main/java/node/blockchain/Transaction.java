@@ -16,7 +16,7 @@ public class Transaction implements Serializable {
     }
 
     public String getData(){
-        return timestamp + to + from + amount;
+        return timestamp + toString();
     }
 
     public String getTimestamp(){
@@ -43,6 +43,6 @@ public class Transaction implements Serializable {
     }
 
     public String toString(){
-        return getData();
+        return to + from + amount;
     }
 }
