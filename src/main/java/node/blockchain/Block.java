@@ -4,6 +4,8 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import node.defi.Transaction;
+
 public class Block implements Serializable {
     private final HashMap<String, Transaction> txList;
 

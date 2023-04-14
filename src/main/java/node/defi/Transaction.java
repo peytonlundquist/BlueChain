@@ -1,21 +1,39 @@
-package node.blockchain;
+package node.defi;
 
 import java.io.Serializable;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+
+import node.communication.utils.*;
 
 public class Transaction implements Serializable {
     private String timestamp;
-    private String to;
-    private String from;
+    private String to; //  Public key of reciever
+    private String from; // Public key of sender
     private int amount;
+    private String UID;
+    private byte[] sigUID;
 
     public Transaction(String to, String from, int amount, String timestamp){
-        this.timestamp = timestamp;
         this.to = to;
         this.from = from;
         this.amount = amount;
+        this.timestamp = timestamp;
+
+        try {
+            UID = Hashing.getSHAString(to + from + amount + timestamp);
+        } catch (NoSuchAlgorithmException e) {}
     }
 
-    public String getData(){
+    public void setSigUID(byte[] sig){
+        sigUID = sig;
+    }
+
+    public byte[] getSigUID(){
+        return sigUID;
+    }
+
+    public String getUID(){
         return timestamp + toString();
     }
 
@@ -36,7 +54,7 @@ public class Transaction implements Serializable {
     }
 
     public boolean equals(Transaction transaction){
-        if(transaction.getData().equals(this.getData())){
+        if(transaction.getUID().equals(this.getUID())){
             return true;
         }
         return false;

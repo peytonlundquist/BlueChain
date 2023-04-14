@@ -3,6 +3,8 @@ package node;
 import node.blockchain.*;
 import node.communication.*;
 import node.communication.utils.Hashing;
+import node.defi.Transaction;
+import node.defi.TransactionValidator;
 
 import java.io.*;
 import java.math.BigInteger;
@@ -301,13 +303,13 @@ public class Node  {
                 if(containsTransactionInMempool(transaction)) return;
 
                 if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + ": verifyTransaction: " + 
-                transaction.getData() + ", blockchain size: " + blockchain.size());}
+                transaction.getUID() + ", blockchain size: " + blockchain.size());}
                 ArrayList<Block> clonedBlockchain = new ArrayList<>();
                 clonedBlockchain.addAll(blockchain);
                 for(Block block : clonedBlockchain){
-                    if(block.getTxList().containsKey(getSHAString(transaction.getData()))){
+                    if(block.getTxList().containsKey(getSHAString(transaction.getUID()))){
                         // We have this transaction in a block
-                        if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + ": trans :" + transaction.getData() + " found in prev block " + block.getBlockId());}
+                        if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + ": trans :" + transaction.getUID() + " found in prev block " + block.getBlockId());}
                         return;
                     }
                 }
@@ -317,7 +319,7 @@ public class Node  {
                     return;
                 }
 
-                mempool.put(getSHAString(transaction.getData()), transaction);
+                mempool.put(getSHAString(transaction.getUID()), transaction);
                 gossipTransaction(transaction);
 
                 if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + ": Added transaction. MP:" + mempool.values());}
@@ -539,7 +541,7 @@ public class Node  {
                     
                     for(Transaction transaction : transactionsReturned){
                         try {
-                            mempool.put(getSHAString(transaction.getData()), transaction);
+                            mempool.put(getSHAString(transaction.getUID()), transaction);
                             if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + ": recieved transactions: " + keysAbsent);
                         } catch (NoSuchAlgorithmException e) {
                             throw new RuntimeException(e);
@@ -593,7 +595,7 @@ public class Node  {
         byte[] sig;
 
         try {blockHash = getBlockHash(quorumBlock, 0);
-            sig = signBlockHash(blockHash, privateKey);
+            sig = signHash(blockHash, privateKey);
         } catch (NoSuchAlgorithmException e) {throw new RuntimeException(e);}
 
         BlockSignature blockSignature = new BlockSignature(sig, blockHash, myAddress);
@@ -676,7 +678,7 @@ public class Node  {
                 throw new RuntimeException(e);
             }
             for (BlockSignature sig : quorumSigs) {
-                if (verifySignature(sig.getHash(), sig.getSignature(), sig.getAddress())) {
+                if (verifySignatureFromRegistry(sig.getHash(), sig.getSignature(), sig.getAddress())) {
                     if (hashVotes.containsKey(sig.getHash())) {
                         int votes = hashVotes.get(sig.getHash());
                         votes++;
@@ -802,7 +804,7 @@ public class Node  {
             for(BlockSignature blockSignature : blockSkeleton.getSignatures()){
                 Address address = blockSignature.getAddress();
                 if(containsAddress(quorum, address)){
-                    if(verifySignature(hash, blockSignature.getSignature(), address)){
+                    if(verifySignatureFromRegistry(hash, blockSignature.getSignature(), address)){
                         verifiedSignatures++;
                     }else{
                         if(DEBUG_LEVEL == 1) { System.out.println("Node " + myAddress.getPort() + ": Failed to validate signature. blockskeletonID: " + blockSkeleton.getBlockId() + ". CurrentBlockID: " + currentBlock.getBlockId()); };

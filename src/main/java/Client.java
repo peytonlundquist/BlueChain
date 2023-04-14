@@ -1,8 +1,8 @@
 import graphing.Graph;
 import graphing.GraphNode;
-import node.blockchain.Transaction;
 import node.communication.Address;
 import node.communication.Message;
+import node.defi.Transaction;
 
 import java.io.*;
 import java.net.Socket;

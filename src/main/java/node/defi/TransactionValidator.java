@@ -1,8 +1,10 @@
-package node.blockchain;
+package node.defi;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+
+import node.communication.utils.DSA;
 
 public class TransactionValidator{
 
@@ -35,7 +37,15 @@ public class TransactionValidator{
         
         int balance = tempAccounts.get(fromAccount);
         if(amount > balance) return false; // Too much money trying to be spent
-        
+
+        /* Let's validate the signature */
+        String publicKeyString = transaction.getFrom(); // We get the public key in string format
+        byte[] publicKeyBytes = DSA.stringToBytes(publicKeyString); // Convert back to bytes for DSA
+        byte[] sigOfUID = transaction.getSigUID(); // Get signature of UID
+        String UID = transaction.getUID();    // Get UID
+
+        if(!DSA.verifySignature(UID, sigOfUID, publicKeyBytes)) return false; // Validate that the sender signed the transaction
+
         return true;
     }
 

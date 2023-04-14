@@ -2,8 +2,9 @@ package node;
 
 import node.blockchain.Block;
 import node.blockchain.BlockSkeleton;
-import node.blockchain.Transaction;
 import node.communication.*;
+import node.defi.Transaction;
+
 import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;

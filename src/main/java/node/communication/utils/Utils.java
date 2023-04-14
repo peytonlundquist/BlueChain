@@ -1,8 +1,8 @@
 package node.communication.utils;
 
 import node.blockchain.Block;
-import node.blockchain.Transaction;
 import node.communication.Address;
+import node.defi.Transaction;
 
 import java.security.*;
 import java.util.ArrayList;
