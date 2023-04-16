@@ -25,7 +25,7 @@ public class TransactionValidator{
         updateAccounts(assumedTransactions, tempAccounts); // We updated the temp accounts with the mempool, creating a "what-if" scenario where each transaction in mempool is valid
 
         /* Check mempool also for double dipping */
-        System.out.println("Accounts: " + accounts);
+        // System.out.println("Accounts: " + accounts);
 
         /* Validate Transaction */
         String fromAccount = transaction.getFrom();
@@ -33,11 +33,15 @@ public class TransactionValidator{
 
         if(amount < 0) return false; // No negatives
 
-        if(!tempAccounts.containsKey(fromAccount)) return false; // We don't have the account youre spending from
+        if(!tempAccounts.containsKey(fromAccount)) {
+            if(amount != 10){
+                return false;
+            }
+        }else{
+            int balance = tempAccounts.get(fromAccount);
+            if(amount > balance) return false; // Too much money trying to be spent
+        }
         
-        int balance = tempAccounts.get(fromAccount);
-        if(amount > balance) return false; // Too much money trying to be spent
-
         /* Let's validate the signature */
         String publicKeyString = transaction.getFrom(); // We get the public key in string format
         byte[] publicKeyBytes = DSA.stringToBytes(publicKeyString); // Convert back to bytes for DSA

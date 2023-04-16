@@ -61,6 +61,6 @@ public class Transaction implements Serializable {
     }
 
     public String toString(){
-        return to + from + amount;
+        return to.substring(0, 1) + from.substring(0, 1) + amount;
     }
 }

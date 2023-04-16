@@ -873,6 +873,8 @@ public class Node  {
         stateChangeRequest(0);
         state = 0;
         blockchain.add(block);
+        System.out.println("Node " + myAddress.getPort() + ": " + chainString(blockchain) + " MP: " + mempool.values());
+
 
         HashMap<String, Transaction> hashMap = block.getTxList();
         TransactionValidator.updateAccounts(hashMap, accounts);        
@@ -1019,7 +1021,6 @@ public class Node  {
                         s.close();
 
                         /* Use heartbeat to also output the block chain of the node */
-                        System.out.println("Node " + node.getAddress().getPort() + ": " + chainString(blockchain) + " MP: " + mempool.values());
 
                     } catch (IOException e) {
                         System.out.println("Node " + myAddress.getPort() + ": HeartBeatMonitor: Received IO Exception from node " + address.getPort());

@@ -23,7 +23,8 @@ public class Wallet {
     }
 
     public static void main(String[] args) throws IOException{
-        
+        System.out.println("============ BlueChain Wallet =============");
+
         BufferedReader mainReader = new BufferedReader(
             new InputStreamReader(System.in));
  
@@ -32,6 +33,7 @@ public class Wallet {
         Wallet wallet = new Wallet();
 
         while(!input.equals("exit") | !input.equals("e")){
+            System.out.print(">");
             input = mainReader.readLine();
             wallet.interpretInput(input);
         }
@@ -44,7 +46,10 @@ public class Wallet {
                     addAccount();
                     break;
                 case("t"):
-                    addAccount();
+                    submitTransaction();
+                    break;
+                case("p"):
+                    printAccounts();
                     break;
             }
         } catch (IOException e) {
@@ -60,7 +65,7 @@ public class Wallet {
         Account newAccount = new Account(input, newKeyPair);
         accounts.add(newAccount);
         System.out.println("===============================");
-        System.out.println("Account: " + newAccount.getNickname() + "\n pubkey: " + newAccount.getKeyPair().getPublic().toString());
+        System.out.println("Account: " + newAccount.getNickname() + "\n\n Pubkey: " + DSA.bytesToString(newAccount.getKeyPair().getPublic().getEncoded()));
         System.out.println("===============================");
     }
 
@@ -88,7 +93,7 @@ public class Wallet {
         submitTransaction(newTransaction, 8001);
     }
 
-    private static void submitTransaction(Transaction transaction, int port){
+    private void submitTransaction(Transaction transaction, int port){
         try {
             Socket s = new Socket("localhost", port);
             OutputStream out = s.getOutputStream();
@@ -96,9 +101,21 @@ public class Wallet {
             Message message = new Message(Message.Request.ADD_TRANSACTION, transaction);
             oout.writeObject(message);
             oout.flush();
+            Thread.sleep(3000);
             s.close();
         } catch (IOException e) {
             e.printStackTrace();
+        } catch (InterruptedException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
+
+    private void printAccounts(){
+        System.out.println("=============== Accounts ================");
+        for(Account account :  accounts){
+            System.out.println(account.getNickname() + " balance: " + account.getBalance());
+            System.out.println("Pubkey: " + DSA.bytesToString(account.getKeyPair().getPublic().getEncoded()) + "\n");
         }
     }
 }

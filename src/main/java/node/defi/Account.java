@@ -25,4 +25,12 @@ public class Account {
     public KeyPair getKeyPair(){
         return keyPair;
     }
+
+    public int getBalance(){
+        return balance;
+    }
+
+    public String toString(){
+        return nickname + ": " + balance;
+    }
 }
