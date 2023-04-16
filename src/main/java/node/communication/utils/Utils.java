@@ -7,6 +7,7 @@ import node.communication.Address;
 import java.security.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 
@@ -33,7 +34,7 @@ public class Utils {
         }
     }
 
-    public static String chainString(ArrayList<Block> blockChain){
+    public static String chainString(LinkedList<Block> blockChain){
         String hash = null;
         String chainString = "Chain: [";
 
