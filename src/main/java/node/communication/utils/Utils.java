@@ -7,6 +7,7 @@ import node.defi.Transaction;
 import java.security.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 
@@ -33,7 +34,7 @@ public class Utils {
         }
     }
 
-    public static String chainString(ArrayList<Block> blockChain){
+    public static String chainString(LinkedList<Block> blockChain){
         String hash = null;
         String chainString = "Chain: [";
 
@@ -64,5 +65,29 @@ public class Utils {
             }
         }    
         return chainString.concat("]");
+    }
+
+    /**
+     * Returns true if the provided address is in the list, otherwise false
+     * @param list
+     * @param address
+     * @return
+     */
+    public static boolean containsAddress(ArrayList<Address> list, Address address){
+        for (Address existingAddress : list) {
+            if (existingAddress.equals(address)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean containsTransactionInMap(Transaction transaction, HashMap<String, Transaction> mempool){
+        for(Map.Entry<String, Transaction> entry : mempool.entrySet()){
+            if (entry.getValue().equals(transaction)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

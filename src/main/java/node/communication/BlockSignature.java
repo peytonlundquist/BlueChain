@@ -1,7 +1,4 @@
 package node.communication;
-
-import node.blockchain.BlockSkeleton;
-
 import java.io.Serializable;
 
 public class BlockSignature implements Serializable {
