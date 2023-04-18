@@ -3,6 +3,7 @@ package node;
 import node.blockchain.*;
 import node.communication.*;
 import node.communication.utils.Hashing;
+import node.communication.utils.Utils;
 import node.defi.Transaction;
 import node.defi.TransactionValidator;
 
@@ -220,7 +221,7 @@ public class Node  {
     public void verifyTransaction(Transaction transaction){
         synchronized(memPoolLock){
             try {
-                if(containsTransactionInMempool(transaction)) return;
+                if(Utils.containsTransactionInMap(transaction, mempool)) return;
 
                 if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + ": verifyTransaction: " + 
 
@@ -901,14 +902,6 @@ public class Node  {
 
                         /* Use heartbeat to also output the block chain of the node */
 
-                    } catch (IOException e) {
-                        System.out.println("Node " + myAddress.getPort() + ": HeartBeatMonitor: Received IO Exception from node " + address.getPort());
-                        //removeAddress(address);
-                        System.out.println("Removing address");
-                        System.out.println(e);
-                        break;
-                    } catch (ClassNotFoundException e) {
-                        throw new RuntimeException(e);
                     } catch (InterruptedException e) {
                         System.out.println("Received Interrupted Exception from node " + address.getPort());
                         throw new RuntimeException(e);
