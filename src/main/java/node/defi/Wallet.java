@@ -83,7 +83,8 @@ public class Wallet {
                     printAccounts();
                     break;
                 case("u"):
-
+                    updateFullNode();
+                    break;
             }
         } catch (IOException e) {
             e.printStackTrace();
