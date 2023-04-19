@@ -86,6 +86,7 @@ public class Node  {
         myAddress = new Address(port, host);
         localPeers = new ArrayList<>();
         mempool = new HashMap<>();
+        accountsToAlert = new HashMap<>();
 
         /* Public-Private (DSA) Keys*/
         KeyPair keys = generateDSAKeyPair();
@@ -765,15 +766,24 @@ public class Node  {
         blockchain.add(block);
 
         System.out.println("Node " + myAddress.getPort() + ": " + chainString(blockchain) + " MP: " + mempool.values());
-        HashMap<String, Transaction> hashMap = block.getTxList();
-        TransactionValidator.updateAccounts(hashMap, accounts);
+        HashMap<String, Transaction> blockTxList = block.getTxList();
+        TransactionValidator.updateAccounts(blockTxList, accounts);
+        
+        for(String account : accountsToAlert.keySet()){
+            for(String transHash : blockTxList.keySet()){
+                if(blockTxList.get(transHash).getFrom().equals(account) ||
+                blockTxList.get(transHash).getTo().equals(account)){
+                    Messager.sendOneWayMessage(accountsToAlert.get(account), 
+                    new Message(Message.Request.ALERT_WALLET, blockTxList.get(transHash)), myAddress);
+                }
+            }
+        }
+
         ArrayList<Address> quorum = deriveQuorum(blockchain.getLast(), 0);
 
         if(DEBUG_LEVEL == 1) {
             System.out.println("Node " + myAddress.getPort() + ": Added block " + block.getBlockId() + ". Next quorum: " + quorum);
         }
-
-        System.out.println("Node " + myAddress.getPort() + ": " + chainString(blockchain) + " MP: " + mempool.values());
 
         if(inQuorum()){
             while(mempool.size() < MINIMUM_TRANSACTIONS){
@@ -853,6 +863,12 @@ public class Node  {
         return null;
     }
 
+    private HashMap<String, Address> accountsToAlert;
+
+    public void alertWallet(String accountPubKey, Address address){
+        accountsToAlert.put(accountPubKey, address);
+    }
+
 
     /**
      * Acceptor is a thread responsible for maintaining the server socket by
@@ -860,7 +876,7 @@ public class Node  {
      * thread for each request. Requests terminate in a finite amount of steps, so
      * threads return upon completion.
      */
-    class Acceptor extends Thread {
+  class Acceptor extends Thread {
         Node node;
 
         Acceptor(Node node){
@@ -879,7 +895,7 @@ public class Node  {
                 }
             }
         }
-    }
+    }  
 
 
     /**

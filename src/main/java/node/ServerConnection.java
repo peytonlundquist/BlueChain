@@ -89,8 +89,10 @@ public class ServerConnection extends Thread {
                 BlockSkeleton blockSkeleton = (BlockSkeleton) incomingMessage.getMetadata();
                 node.receiveSkeleton(blockSkeleton);
                 break;
-            case REQUEST_BLOCK:
-
+            case ALERT_WALLET:
+                Object[] data = (Object[]) incomingMessage.getMetadata();
+                node.alertWallet((String) data[0], (Address) data[1]);
+                break;
         }
     }
 }
