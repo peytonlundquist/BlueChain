@@ -910,6 +910,11 @@ public class Node  {
         }
 
         public void run() {
+            try {
+                Thread.sleep(10000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             while (true) {
                 for(Address address : localPeers){
                     try {                 
