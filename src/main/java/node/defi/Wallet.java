@@ -23,15 +23,23 @@ public class Wallet {
     ArrayList<Account> accounts;
     ServerSocket ss;
     Address myAddress;
+    ArrayList<Address> fullNodes;
     Address fullNodeAddress;
     ArrayList<Transaction> seenTransactions;
     Object updateLock;
 
     public Wallet(int port){
+        fullNodes = new ArrayList<>();
+
+        Address fullNodeAddress1 = new Address(8001, "localhost"); fullNodes.add(fullNodeAddress1);
+        Address fullNodeAddress2 = new Address(8002, "localhost"); fullNodes.add(fullNodeAddress2);
+        Address fullNodeAddress3 = new Address(8003, "localhost"); fullNodes.add(fullNodeAddress3);
+
         reader = new BufferedReader(new InputStreamReader(System.in));
         accounts = new ArrayList<>();
         seenTransactions = new ArrayList<>();
         updateLock = new Object();
+
         try {
             ss = new ServerSocket(port);
         } catch (IOException e) {
@@ -42,9 +50,8 @@ public class Wallet {
 
         System.out.println("Wallet bound to " + myAddress);
 
-        fullNodeAddress = new Address(8001, "localhost");
-        System.out.println("Full Node to connect to by default: " + fullNodeAddress + 
-        "\nTo update Full Node address use 'u' command.");
+        System.out.println("Full Nodes to connect to by default: \n" + fullNodes + 
+        "\nTo update Full Nodes address use 'u' command.");
 
         Acceptor acceptor = new Acceptor(this);
         acceptor.start();
@@ -91,18 +98,27 @@ public class Wallet {
                     break;
             }
         } catch (IOException e) {
-            e.printStackTrace();
-        }
+            System.out.println("Input malformed. Try again.");
+        } 
     }
 
     public void updateFullNode() throws IOException{
-        System.out.println("Updating Full Node. \nFull Node host?: ");
-        String hostname = reader.readLine();
-
-        System.out.println("Full Node port?: ");
-        String port = reader.readLine();
-
-        fullNodeAddress = new Address(Integer.valueOf(port), hostname);
+        System.out.println("Updating Full Nodes. \nAdd or remove? ('a' or 'r'): ");
+        String response = reader.readLine();
+        if(response.equals("a")){
+            System.out.println("Full Node host?: ");
+            String hostname = reader.readLine();
+            System.out.println("Full Node port?: ");
+            String port = reader.readLine();
+            fullNodes.add(new Address(Integer.valueOf(port), hostname));
+        }else if(response.equals("r")){
+            System.out.println("Full Node index to remove?: \n" + fullNodes);
+            int index = Integer.parseInt(reader.readLine());
+            Address removedAddress = fullNodes.remove(index);
+            System.out.println("Removed full node: " + removedAddress);
+        }else{
+            System.out.println("Invalid option");
+        }
     }
 
     public void addAccount() throws IOException{
@@ -165,7 +181,11 @@ public class Wallet {
         String UID = newTransaction.getUID();
         byte[] signedUID = DSA.signHash(UID, pk);
         newTransaction.setSigUID(signedUID);
-        submitTransaction(newTransaction, fullNodeAddress);
+
+        System.out.println("Submitting transaction to nodes: ");
+        for(Address address : fullNodes){
+            submitTransaction(newTransaction, address);
+        }
     }
 
     private void submitTransaction(Transaction transaction, Address address){
@@ -176,11 +196,11 @@ public class Wallet {
             Message message = new Message(Message.Request.ADD_TRANSACTION, transaction);
             oout.writeObject(message);
             oout.flush();
-            Thread.sleep(3000);
+            Thread.sleep(1000);
             s.close();
-            System.out.println("Submitted transaction. Awaiting verification...");
+            System.out.println("Full node: " + address);
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Full node at " + address + " appears down.");
         } catch (InterruptedException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -193,6 +213,7 @@ public class Wallet {
             System.out.println(account.getNickname() + " balance: " + account.getBalance());
             System.out.println("Pubkey: " + DSA.bytesToString(account.getKeyPair().getPublic().getEncoded()) + "\n");
         }
+        System.out.print(">");
     }
 
     private void updateAccounts(Transaction transaction){

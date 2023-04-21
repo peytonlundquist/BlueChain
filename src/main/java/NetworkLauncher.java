@@ -81,10 +81,13 @@ public class NetworkLauncher {
 
             for (int i = 0; i < registeredNodes.length; i++) {
                 String name = registeredNodes[i].getName();
-                st = new StringTokenizer(name, "_");
-                String host = st.nextToken();
-                int port = Integer.parseInt(st.nextToken().replaceFirst(".txt", ""));
-                globalPeers.add(new Address(port, host));
+
+                if(!name.contains("keep")){
+                    st = new StringTokenizer(name, "_");
+                    String host = st.nextToken();
+                    int port = Integer.parseInt(st.nextToken().replaceFirst(".txt", ""));
+                    globalPeers.add(new Address(port, host));
+                }
             }
 
 
