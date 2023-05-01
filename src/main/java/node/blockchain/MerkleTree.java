@@ -81,8 +81,8 @@ public class MerkleTree {
         Node leftNode = searchNode.getParent().getLeftChild();
         Node rightNode = searchNode.getParent().getRightChild();
         ArrayList<String> retHashes = new ArrayList<>();
-        retHashes.add(leftNode.getHash());
-        retHashes.add(rightNode.getHash()); 
+        retHashes.add("1" + leftNode.getHash()); // Pad 1 lead char. "1" for left
+        retHashes.add("0" + rightNode.getHash()); // Pad 1 lead char. "0" for right
 
         nodeQueue.clear();
         nodeQueue.addLast(searchNode.getParent());
@@ -97,14 +97,17 @@ public class MerkleTree {
             }
 
             Node complimentNode;
+            String rightLeftPad;
 
             if(parentNode.getLeftChild().equals(node)){
                 complimentNode = parentNode.getRightChild(); // I am left need right
+                rightLeftPad = "1";
             }else{
                 complimentNode = parentNode.getLeftChild();
+                rightLeftPad = "0";
             }
 
-            retHashes.add(complimentNode.getHash());
+            retHashes.add(rightLeftPad + complimentNode.getHash());
             nodeQueue.addLast(parentNode);
         }
 

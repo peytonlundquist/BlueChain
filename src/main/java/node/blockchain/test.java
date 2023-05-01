@@ -22,24 +22,16 @@ public class test {
 
         MerkleTree mt = new MerkleTree(txList);
         mt.printTree();
+
         MerkleTreeProof mtp = mt.getProof(myTransaction);
         ArrayList<String> hashList = mtp.getHashes();
-        String myHash = Hashing.getSHAString(myTransaction.getUID());
+        String rootHash = mtp.getRootHash();
 
-        if(!hashList.get(0).equals(myHash) && !hashList.get(1).equals(myHash)){
-            System.out.println("my hash not where expected");
-        }
+        if(MerkleTreeProof.confirmMembership(hashList, myTransaction, rootHash)){
+            System.out.println("Membership confirmed.");
+        }else{
+            System.out.println("Membership NOT confirmed.");
 
-
-        String hash1 = hashList.get(0);
-        String hash2 = hashList.get(1);    
-        String growingHash = Hashing.getSHAString(hash1 + hash2);
-
-        for(int i = 2; i < hashList.size(); i++){
-            String hash = hashList.get(i);
-            growingHash = Hashing.getSHAString(growingHash + hash);
-
-            Hashing.getSHAString(hash1 + hash2);
         }
     }
 }
