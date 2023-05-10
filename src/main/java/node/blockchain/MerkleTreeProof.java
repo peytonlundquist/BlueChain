@@ -9,10 +9,12 @@ import node.defi.Transaction;
 public class MerkleTreeProof implements Serializable{
     private ArrayList<String> hashes;
     private String rootHash;
+    private Transaction transaction;
 
-    public MerkleTreeProof(ArrayList<String> hashes, String rootHash) {
+    public MerkleTreeProof(ArrayList<String> hashes, Transaction transaction, String rootHash) {
         this.hashes = hashes;
         this.rootHash = rootHash;
+        this.transaction = transaction;
     }
 
     public ArrayList<String> getHashes() {
@@ -23,10 +25,14 @@ public class MerkleTreeProof implements Serializable{
         return rootHash;
     }
 
-    public static boolean confirmMembership(ArrayList<String> hashList, Transaction myTransaction, String rootHash){
-        String myHash = Hashing.getSHAString(myTransaction.getUID());
-        String hash1 = hashList.get(0).substring(1, hashList.get(0).length());  // Remove padding
-        String hash2 = hashList.get(1).substring(1, hashList.get(1).length());  // Remove padding
+    public Transaction getTransaction(){
+        return transaction;
+    }
+
+    public boolean confirmMembership(){
+        String myHash = Hashing.getSHAString(transaction.getUID());
+        String hash1 = hashes.get(0).substring(1, hashes.get(0).length());  // Remove padding
+        String hash2 = hashes.get(1).substring(1, hashes.get(1).length());  // Remove padding
 
         if(!hash1.equals(myHash) && !hash2.equals(myHash)){
             System.out.println("My TX hash not given in proof");
@@ -34,10 +40,10 @@ public class MerkleTreeProof implements Serializable{
 
         String growingHash = Hashing.getSHAString(hash2 + hash1);
 
-        for(int i = 2; i < hashList.size(); i++){
+        for(int i = 2; i < hashes.size(); i++){
 
-            String rightLeftPadding = hashList.get(i).substring(0, 1); // get padding to determine left or right hash
-            String hash = hashList.get(i).substring(1, hashList.get(i).length()); // Remove padding
+            String rightLeftPadding = hashes.get(i).substring(0, 1); // get padding to determine left or right hash
+            String hash = hashes.get(i).substring(1, hashes.get(i).length()); // Remove padding
 
             if(rightLeftPadding.equals("0")){
                 // This is left hash

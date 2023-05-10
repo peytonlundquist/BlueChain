@@ -20,9 +20,7 @@ public class Transaction implements Serializable {
         this.amount = amount;
         this.timestamp = timestamp;
 
-        try {
-            UID = Hashing.getSHAString(to + from + amount + timestamp);
-        } catch (NoSuchAlgorithmException e) {}
+        UID = Hashing.getSHAString(to + from + amount + timestamp);
     }
 
     public void setSigUID(byte[] sig){

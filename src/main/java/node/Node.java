@@ -121,11 +121,7 @@ public class Node  {
         Transaction genesisTransaction = new Transaction("Bob", "Alice", 100, "0");
         HashMap<String, Transaction> genesisTransactions = new HashMap<String, Transaction>();
         String hashOfTransaction = "";
-        try {
-            hashOfTransaction = getSHAString(genesisTransaction.toString());
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        }
+        hashOfTransaction = getSHAString(genesisTransaction.toString());
         genesisTransactions.put(hashOfTransaction, genesisTransaction);
         addBlock(new Block(genesisTransactions, "000000", 0));
     }
@@ -221,36 +217,32 @@ public class Node  {
 
     public void verifyTransaction(Transaction transaction){
         synchronized(memPoolLock){
-            try {
-                if(Utils.containsTransactionInMap(transaction, mempool)) return;
+            if(Utils.containsTransactionInMap(transaction, mempool)) return;
 
-                if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + ": verifyTransaction: " + 
+            if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + ": verifyTransaction: " + 
 
-                transaction.getUID() + ", blockchain size: " + blockchain.size());}
-                LinkedList<Block> clonedBlockchain = new LinkedList<>();
+            transaction.getUID() + ", blockchain size: " + blockchain.size());}
+            LinkedList<Block> clonedBlockchain = new LinkedList<>();
 
-                clonedBlockchain.addAll(blockchain);
-                for(Block block : clonedBlockchain){
-                    if(block.getTxList().containsKey(getSHAString(transaction.getUID()))){
-                        // We have this transaction in a block
-                        if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + ": trans :" + transaction.getUID() + " found in prev block " + block.getBlockId());}
-                        return;
-                    }
-                }
-
-                if(!TransactionValidator.validate(transaction, accounts, mempool)){
-                    if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + "Transaction not valid");}
+            clonedBlockchain.addAll(blockchain);
+            for(Block block : clonedBlockchain){
+                if(block.getTxList().containsKey(getSHAString(transaction.getUID()))){
+                    // We have this transaction in a block
+                    if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + ": trans :" + transaction.getUID() + " found in prev block " + block.getBlockId());}
                     return;
-
                 }
-
-                mempool.put(getSHAString(transaction.getUID()), transaction);
-                gossipTransaction(transaction);
-
-                if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + ": Added transaction. MP:" + mempool.values());}
-            } catch (NoSuchAlgorithmException e) {
-                throw new RuntimeException(e);
             }
+
+            if(!TransactionValidator.validate(transaction, accounts, mempool)){
+                if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + "Transaction not valid");}
+                return;
+
+            }
+
+            mempool.put(getSHAString(transaction.getUID()), transaction);
+            gossipTransaction(transaction);
+
+            if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + ": Added transaction. MP:" + mempool.values());}
         }         
     }
 
@@ -431,12 +423,8 @@ public class Node  {
                     ArrayList<Transaction> transactionsReturned = (ArrayList<Transaction>) message.getMetadata();
                     
                     for(Transaction transaction : transactionsReturned){
-                        try {
-                            mempool.put(getSHAString(transaction.getUID()), transaction);
-                            if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + ": recieved transactions: " + keysAbsent);
-                        } catch (NoSuchAlgorithmException e) {
-                            throw new RuntimeException(e);
-                        }
+                        mempool.put(getSHAString(transaction.getUID()), transaction);
+                        if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + ": recieved transactions: " + keysAbsent);
                     }
                 }
             } catch (ClassNotFoundException e) {
@@ -766,15 +754,20 @@ public class Node  {
         blockchain.add(block);
 
         System.out.println("Node " + myAddress.getPort() + ": " + chainString(blockchain) + " MP: " + mempool.values());
-        HashMap<String, Transaction> blockTxList = block.getTxList();
-        TransactionValidator.updateAccounts(blockTxList, accounts);
-        
+        HashMap<String, Transaction> txMap = block.getTxList();
+        TransactionValidator.updateAccounts(txMap, accounts);
+        ArrayList<Transaction> txList = new ArrayList<>();
+        for(String hash : txMap.keySet()){
+            txList.add(txMap.get(hash));
+        }
+
+        MerkleTree mt = new MerkleTree(txList);
         for(String account : accountsToAlert.keySet()){
-            for(String transHash : blockTxList.keySet()){
-                if(blockTxList.get(transHash).getFrom().equals(account) ||
-                blockTxList.get(transHash).getTo().equals(account)){
+            for(String transHash : txMap.keySet()){
+                if(txMap.get(transHash).getFrom().equals(account) ||
+                txMap.get(transHash).getTo().equals(account)){
                     Messager.sendOneWayMessage(accountsToAlert.get(account), 
-                    new Message(Message.Request.ALERT_WALLET, blockTxList.get(transHash)), myAddress);
+                    new Message(Message.Request.ALERT_WALLET, mt.getProof(txMap.get(transHash))), myAddress);
                 }
             }
         }

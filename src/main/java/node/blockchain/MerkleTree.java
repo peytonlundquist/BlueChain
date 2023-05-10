@@ -111,7 +111,7 @@ public class MerkleTree {
             nodeQueue.addLast(parentNode);
         }
 
-        return new MerkleTreeProof(retHashes, rootNode.getHash());
+        return new MerkleTreeProof(retHashes, transaction, rootNode.getHash());
     } 
 
     public void printTree(){
