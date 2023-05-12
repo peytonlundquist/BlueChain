@@ -35,8 +35,13 @@ public class Hashing {
         return hexString.toString();
     }
 
-    public static String getSHAString(String input) throws NoSuchAlgorithmException {
-        return toHexString(getSHA(input));
+    public static String getSHAString(String input) {
+        try {
+            return toHexString(getSHA(input));
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     public static String getBlockHash(Block block, int nonce) throws NoSuchAlgorithmException {

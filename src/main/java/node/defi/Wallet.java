@@ -11,11 +11,15 @@ import java.net.Socket;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.util.ArrayList;
+import java.util.HashSet;
 
+import node.blockchain.MerkleTree;
+import node.blockchain.MerkleTreeProof;
 import node.communication.Address;
 import node.communication.Message;
 import node.communication.Messager;
 import node.communication.utils.DSA;
+import node.communication.utils.Hashing;
 
 public class Wallet {
 
@@ -25,7 +29,7 @@ public class Wallet {
     Address myAddress;
     ArrayList<Address> fullNodes;
     Address fullNodeAddress;
-    ArrayList<Transaction> seenTransactions;
+    HashSet<Transaction> seenTransactions;
     Object updateLock;
 
     public Wallet(int port){
@@ -37,7 +41,7 @@ public class Wallet {
 
         reader = new BufferedReader(new InputStreamReader(System.in));
         accounts = new ArrayList<>();
-        seenTransactions = new ArrayList<>();
+        seenTransactions = new HashSet<>();
         updateLock = new Object();
 
         try {
@@ -216,14 +220,39 @@ public class Wallet {
         System.out.print(">");
     }
 
-    private void updateAccounts(Transaction transaction){
+    private void updateAccounts(MerkleTreeProof mtp){
         synchronized(updateLock){
+
+            String leafHash1 = mtp.getHashes().get(0).substring(1, mtp.getHashes().get(0).length());
+            String leafHash2 = mtp.getHashes().get(1).substring(1, mtp.getHashes().get(1).length());
+            Transaction transaction = mtp.getTransaction();
+            
+
+            // for(Transaction transaction : seenTransactions){
+            //     if(leafHash1.equals(Hashing.getSHAString(transaction.getUID()))
+            //     || leafHash2.equals(Hashing.getSHAString(transaction.getUID()))){
+            //         myTransaction = transaction;
+            //     }
+            // }
 
             for(Transaction existingTransaction : seenTransactions){
                 if(existingTransaction.equals(transaction)) return;
             }
 
+            /* Make sure transaction is about accounts we have */
+            for(Account account : accounts){
+                if(!DSA.bytesToString(account.getKeyPair().getPublic().getEncoded()).equals(transaction.getFrom())
+                && !DSA.bytesToString(account.getKeyPair().getPublic().getEncoded()).equals(transaction.getTo())){
+                    return;
+                }
+            }
+
             seenTransactions.add(transaction);
+
+            if(!mtp.confirmMembership()){
+                System.out.println("Could not validate tx in MerkleTreeProof" );
+                return;
+            }
     
             System.out.println("\nFull node has update. Updating accounts..." );
             for(Account account : accounts){
@@ -257,8 +286,8 @@ public class Wallet {
                     Message incomingMessage = (Message) oin.readObject();
                     
                     if(incomingMessage.getRequest().name().equals("ALERT_WALLET")){
-                        Transaction transaction = (Transaction) incomingMessage.getMetadata();
-                        updateAccounts(transaction);
+                        MerkleTreeProof mtp = (MerkleTreeProof) incomingMessage.getMetadata();
+                        updateAccounts(mtp);
                     }
                 } catch (IOException e) {
                     System.out.println(e);
