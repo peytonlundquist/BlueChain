@@ -1,12 +1,9 @@
 package node.blockchain;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.HashMap;
 
-import node.defi.Transaction;
-
-public class Block implements Serializable {
+public abstract class Block implements Serializable {
     private final HashMap<String, Transaction> txList;
 
     public String getPrevBlockHash() {
@@ -31,9 +28,4 @@ public class Block implements Serializable {
         this.prevBlockHash = prevBlockHash;
         this.blockId = blockId;
     }
-
-    private String calcHash(ArrayList<Transaction> txList){
-        return "";
-    }
-
 }

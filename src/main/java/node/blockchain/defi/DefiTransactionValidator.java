@@ -1,19 +1,21 @@
-package node.defi;
+package node.blockchain.defi;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
+import node.blockchain.Transaction;
+import node.blockchain.TransactionValidator;
 import node.communication.utils.DSA;
 
-public class TransactionValidator{
+public class DefiTransactionValidator extends TransactionValidator{
 
     /**
      * Validates a transaction throughout blockchain and mempool
      * @param transaction
      * @return
      */
-    public static boolean validate(Transaction transaction, HashMap<String, Integer> accounts, HashMap<String, Transaction> assumedTransactions){
+    public boolean validate(Transaction transaction, HashMap<String, Integer> accounts, HashMap<String, Transaction> assumedTransactions){
         // System.out.println("Validator: starting");
 
         /* Two contexts to validate. Non quorum node need to validate against their mempool. Quorum node needs to validate against compiled mempool */

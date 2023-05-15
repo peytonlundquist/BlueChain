@@ -1,4 +1,4 @@
-package node.defi;
+package node.blockchain.defi;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -15,6 +15,7 @@ import java.util.HashSet;
 
 import node.blockchain.MerkleTree;
 import node.blockchain.MerkleTreeProof;
+import node.blockchain.Transaction;
 import node.communication.Address;
 import node.communication.Message;
 import node.communication.Messager;
@@ -181,7 +182,7 @@ public class Wallet {
             return;
         }
 
-        Transaction newTransaction = new Transaction(to, myPublicKeyString, amount, String.valueOf(System.currentTimeMillis()));
+        Transaction newTransaction = new DefiTransaction(to, myPublicKeyString, amount, String.valueOf(System.currentTimeMillis()));
         String UID = newTransaction.getUID();
         byte[] signedUID = DSA.signHash(UID, pk);
         newTransaction.setSigUID(signedUID);

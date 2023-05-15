@@ -1,11 +1,11 @@
 package node;
 
 import node.blockchain.*;
+import node.blockchain.defi.DefiTransaction;
+import node.blockchain.defi.DefiTransactionValidator;
 import node.communication.*;
 import node.communication.utils.Hashing;
 import node.communication.utils.Utils;
-import node.defi.Transaction;
-import node.defi.TransactionValidator;
 
 import java.io.*;
 import java.math.BigInteger;
@@ -48,9 +48,10 @@ public class Node  {
      * @param maxPeers           Maximum amount of peer connections to maintain
      * @param initialConnections How many nodes we want to attempt to connect to on start
      */
-    public Node(int port, int maxPeers, int initialConnections, int numNodes, int quorumSize, int minimumTransaction, int debugLevel) {
+    public Node(String use, int port, int maxPeers, int initialConnections, int numNodes, int quorumSize, int minimumTransaction, int debugLevel) {
 
         /* Configurations */
+        USE = use;
         MIN_CONNECTIONS = initialConnections;
         MAX_PEERS = maxPeers;
         NUM_NODES = numNodes;
@@ -117,13 +118,18 @@ public class Node  {
      */
     public void initializeBlockchain(){
         blockchain = new LinkedList<Block>();
-        accounts = new HashMap<>();
-        Transaction genesisTransaction = new Transaction("Bob", "Alice", 100, "0");
-        HashMap<String, Transaction> genesisTransactions = new HashMap<String, Transaction>();
-        String hashOfTransaction = "";
-        hashOfTransaction = getSHAString(genesisTransaction.toString());
-        genesisTransactions.put(hashOfTransaction, genesisTransaction);
-        addBlock(new Block(genesisTransactions, "000000", 0));
+
+        if(USE.equals("Defi")){
+            accounts = new HashMap<>();
+            Transaction genesisTransaction = new DefiTransaction("Bob", "Alice", 100, "0");
+            HashMap<String, Transaction> genesisTransactions = new HashMap<String, Transaction>();
+            String hashOfTransaction = "";
+            hashOfTransaction = getSHAString(genesisTransaction.toString());
+            genesisTransactions.put(hashOfTransaction, genesisTransaction);
+            addBlock(new Block(genesisTransactions, "000000", 0));
+        }else{
+
+        }
     }
 
     /**
@@ -224,6 +230,8 @@ public class Node  {
             transaction.getUID() + ", blockchain size: " + blockchain.size());}
             LinkedList<Block> clonedBlockchain = new LinkedList<>();
 
+            TransactionValidator tv = new DefiTransactionValidator();
+
             clonedBlockchain.addAll(blockchain);
             for(Block block : clonedBlockchain){
                 if(block.getTxList().containsKey(getSHAString(transaction.getUID()))){
@@ -233,7 +241,7 @@ public class Node  {
                 }
             }
 
-            if(!TransactionValidator.validate(transaction, accounts, mempool)){
+            if(!tv.validate(transaction, accounts, mempool)){
                 if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + "Transaction not valid");}
                 return;
 
@@ -450,10 +458,10 @@ public class Node  {
             
             /* Make sure compiled transactions don't conflict */
             HashMap<String, Transaction> blockTransactions = new HashMap<>();
-
+            TransactionValidator tv = new DefiTransactionValidator();
             for(String key : mempool.keySet()){
                 Transaction transaction = mempool.get(key);
-                if(TransactionValidator.validate(transaction, accounts, blockTransactions)){
+                if(tv.validate(transaction, accounts, blockTransactions)){
                     blockTransactions.put(key, transaction);
                 }
             }
@@ -754,20 +762,23 @@ public class Node  {
         blockchain.add(block);
 
         System.out.println("Node " + myAddress.getPort() + ": " + chainString(blockchain) + " MP: " + mempool.values());
-        HashMap<String, Transaction> txMap = block.getTxList();
-        TransactionValidator.updateAccounts(txMap, accounts);
-        ArrayList<Transaction> txList = new ArrayList<>();
-        for(String hash : txMap.keySet()){
-            txList.add(txMap.get(hash));
-        }
 
-        MerkleTree mt = new MerkleTree(txList);
-        for(String account : accountsToAlert.keySet()){
-            for(String transHash : txMap.keySet()){
-                if(txMap.get(transHash).getFrom().equals(account) ||
-                txMap.get(transHash).getTo().equals(account)){
-                    Messager.sendOneWayMessage(accountsToAlert.get(account), 
-                    new Message(Message.Request.ALERT_WALLET, mt.getProof(txMap.get(transHash))), myAddress);
+        if(USE.equals("Defi")){
+            HashMap<String, DefiTransaction> txMap = block.getTxList();
+        
+            ArrayList<Transaction> txList = new ArrayList<>();
+            for(String hash : txMap.keySet()){
+                txList.add(txMap.get(hash));
+            }
+    
+            MerkleTree mt = new MerkleTree(txList);
+            for(String account : accountsToAlert.keySet()){
+                for(String transHash : txMap.keySet()){
+                    if(txMap.get(transHash).getFrom().equals(account) ||
+                    txMap.get(transHash).getTo().equals(account)){
+                        Messager.sendOneWayMessage(accountsToAlert.get(account), 
+                        new Message(Message.Request.ALERT_WALLET, mt.getProof(txMap.get(transHash))), myAddress);
+                    }
                 }
             }
         }
@@ -944,6 +955,7 @@ public class Node  {
     private Block quorumBlock;
     private PrivateKey privateKey;
     private int state;
+    private final String USE;
 
 }
 
