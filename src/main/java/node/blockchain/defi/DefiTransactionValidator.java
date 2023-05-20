@@ -37,7 +37,7 @@ public class DefiTransactionValidator extends TransactionValidator{
         updateAccounts(assumedTransactions, tempAccounts); // We updated the temp accounts with the mempool, creating a "what-if" scenario where each transaction in mempool is valid
 
         /* Check mempool also for double dipping */
-        System.out.println("Accounts: " + accounts);
+        //System.out.println("Accounts: " + accounts);
 
         /* Validate Transaction */
         String fromAccount = transaction.getFrom();
@@ -59,7 +59,7 @@ public class DefiTransactionValidator extends TransactionValidator{
         byte[] publicKeyBytes = DSA.stringToBytes(publicKeyString); // Convert back to bytes for DSA
         byte[] sigOfUID = transaction.getSigUID(); // Get signature of UID
         String UID = transaction.getUID();    // Get UID
-        System.out.println(publicKeyString.toString() + publicKeyBytes.toString() + sigOfUID.toString() + UID.toString());
+        //System.out.println(publicKeyString.toString() + publicKeyBytes.toString() + sigOfUID.toString() + UID.toString());
 
 
         if(!DSA.verifySignature(UID, sigOfUID, publicKeyBytes)) return false; // Validate that the sender signed the transaction
@@ -104,7 +104,7 @@ public class DefiTransactionValidator extends TransactionValidator{
 
     @Override
     public boolean validate(Transaction transaction, HashMap<String, Integer> accounts, HashMap<String, Transaction> assumedTransactions) {
-        System.out.println(transaction.getSigUID().toString());
+        //System.out.println(transaction.getSigUID().toString());
         return isValid(transaction, accounts, assumedTransactions);
     }
 }

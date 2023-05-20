@@ -32,6 +32,7 @@ public class Wallet {
     Address fullNodeAddress;
     HashSet<DefiTransaction> seenTransactions;
     Object updateLock;
+    boolean test;
 
     public Wallet(int port){
         fullNodes = new ArrayList<>();
@@ -55,30 +56,68 @@ public class Wallet {
 
         System.out.println("Wallet bound to " + myAddress);
 
-        System.out.println("Full Nodes to connect to by default: \n" + fullNodes + 
+        if(!this.test) System.out.println("Full Nodes to connect to by default: \n" + fullNodes + 
         "\nTo update Full Nodes address use 'u' command.");
 
         Acceptor acceptor = new Acceptor(this);
         acceptor.start();
     }
 
+    private void testNetwork(int j){
+
+        System.out.println("Beginning Test");
+
+        try {
+            testAddAccount("Satoshi");
+            int expectedBalance = j * 10;
+
+            System.out.print("[");
+            for(int i = 0; i < j; i++){
+                    testAddAccount(String.valueOf(i));
+                    Thread.sleep(2000);
+                    testSubmitTransaction(String.valueOf(i), DSA.bytesToString(accounts.get(0).getKeyPair().getPublic().getEncoded()), 10);
+                    System.out.print("#");
+            }
+            System.out.print("]");
+            System.out.println("Sleeping wallet for last minute updates...");
+            Thread.sleep(50000);
+            if(accounts.get(0).getBalance() == expectedBalance){
+                System.out.println("*********************Test passed.*********************");
+            }else{
+                System.out.println("*********************Test Failed*********************");
+            }
+
+            System.out.println("Satoshi expected balance: " + expectedBalance + ". Actual: " + accounts.get(0).getBalance());
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void main(String[] args) throws IOException{
 
         System.out.println("============ BlueChain Wallet =============");
 
-        BufferedReader mainReader = new BufferedReader(
-            new InputStreamReader(System.in));
+        BufferedReader mainReader = new BufferedReader(new InputStreamReader(System.in));
  
         // Reading data using readLine
         String input = "";
-        int port;
+        int port = 7999;
         if(args.length > 0){
-            port = Integer.valueOf(args[0]);
-        }else{
-            port = 7999;
+            if(args[0].equals("-port")){
+                port = Integer.valueOf(args[0]);
+            }else if(args[0].equals("-test")){
+                Wallet wallet = new Wallet(port);
+                wallet.test = true;
+                wallet.testNetwork(Integer.valueOf(args[1]));
+                return;
+            }
         }
 
         Wallet wallet = new Wallet(port);
+        wallet.test = false;
 
         while(!input.equals("exit") | !input.equals("e")){
             System.out.print(">");
@@ -86,6 +125,7 @@ public class Wallet {
             wallet.interpretInput(input);
         }
     }
+
 
     public void interpretInput(String input){
         try {
@@ -128,32 +168,34 @@ public class Wallet {
     }
 
     public void addAccount() throws IOException{
-        System.out.println("Adding account. Account NickName?: ");
-        String input = "unnamed";
-        input = reader.readLine();
-        KeyPair newKeyPair = DSA.generateDSAKeyPair();
-        Account newAccount = new Account(input, newKeyPair);
-        
-        for(Account account : accounts){
-            if(account.getNickname().equals(input)){
-                System.out.println("An account with this nickname already exists. Try a new one.");
-                return;
+        synchronized(updateLock){
+            System.out.println("Adding account. Account NickName?: ");
+            String input = "unnamed";
+            input = reader.readLine();
+            KeyPair newKeyPair = DSA.generateDSAKeyPair();
+            Account newAccount = new Account(input, newKeyPair);
+            
+            for(Account account : accounts){
+                if(account.getNickname().equals(input)){
+                    System.out.println("An account with this nickname already exists. Try a new one.");
+                    return;
+                }
             }
+
+            accounts.add(newAccount);
+
+            String pubKeyString = DSA.bytesToString(newAccount.getKeyPair().getPublic().getEncoded());
+
+            Object[] data = new Object[2];
+            data[0] = pubKeyString;
+            data[1] = myAddress;
+            Messager.sendOneWayMessage(new Address(8001, "localhost"), 
+            new Message(Message.Request.ALERT_WALLET, data), myAddress);
+
+            System.out.println("===============================");
+            System.out.println("Account: " + newAccount.getNickname() + "\n\n Pubkey: " + pubKeyString);
+            System.out.println("===============================");
         }
-
-        accounts.add(newAccount);
-
-        String pubKeyString = DSA.bytesToString(newAccount.getKeyPair().getPublic().getEncoded());
-
-        Object[] data = new Object[2];
-        data[0] = pubKeyString;
-        data[1] = myAddress;
-        Messager.sendOneWayMessage(new Address(8001, "localhost"), 
-        new Message(Message.Request.ALERT_WALLET, data), myAddress);
-
-        System.out.println("===============================");
-        System.out.println("Account: " + newAccount.getNickname() + "\n\n Pubkey: " + pubKeyString);
-        System.out.println("===============================");
     }
 
     public void submitTransaction() throws IOException{
@@ -190,7 +232,6 @@ public class Wallet {
         newTransaction.setSigUID(signedUID);
         System.out.println(newTransaction.getSigUID().toString() + " sig not null from wallet");
 
-
         System.out.println("Submitting transaction to nodes: ");
         for(Address address : fullNodes){
             submitTransaction(newTransaction, address);
@@ -207,7 +248,7 @@ public class Wallet {
             oout.flush();
             Thread.sleep(1000);
             s.close();
-            System.out.println("Full node: " + address);
+            if(!this.test) System.out.println("Full node: " + address);
         } catch (IOException e) {
             System.out.println("Full node at " + address + " appears down.");
         } catch (InterruptedException e) {
@@ -227,22 +268,30 @@ public class Wallet {
 
     private void updateAccounts(MerkleTreeProof mtp){
         synchronized(updateLock){
-            // System.out.println("\nFull node has update. Updating accounts..." );
+            if (!this.test) System.out.println("\nFull node has update. Updating accounts..." );
 
             DefiTransaction transaction = (DefiTransaction) mtp.getTransaction();
 
             for(DefiTransaction existingTransaction : seenTransactions){
-                if(existingTransaction.equals(transaction)) return;
-            }
-
-            /* Make sure transaction is about accounts we have */
-            for(Account account : accounts){
-                if(!DSA.bytesToString(account.getKeyPair().getPublic().getEncoded()).equals(transaction.getFrom())
-                && !DSA.bytesToString(account.getKeyPair().getPublic().getEncoded()).equals(transaction.getTo())){
+                if(existingTransaction.equals(transaction)){
                     return;
                 }
             }
 
+            boolean interested = false;
+            /* Make sure transaction is about accounts we have */
+            for(Account account : accounts){
+                if(!DSA.bytesToString(account.getKeyPair().getPublic().getEncoded()).equals(transaction.getFrom())
+                && !DSA.bytesToString(account.getKeyPair().getPublic().getEncoded()).equals(transaction.getTo())){
+                    interested = true;
+                }
+            }
+
+            if(interested == false){ 
+                System.out.println("\nOur accounts isn't in this transaction I guess..." );
+                return;
+            }
+            
             seenTransactions.add(transaction);
 
             if(!mtp.confirmMembership()){
@@ -250,7 +299,7 @@ public class Wallet {
                 return;
             }
     
-            System.out.println("\nFull node has update. Updating accounts..." );
+            //System.out.println("\nFull node has update. Updating accounts..." );
             for(Account account : accounts){
                 if(DSA.bytesToString(account.getKeyPair().getPublic().getEncoded()).equals(transaction.getFrom())){
                     account.updateBalance(-(transaction.getAmount()));
@@ -259,7 +308,62 @@ public class Wallet {
                     account.updateBalance(transaction.getAmount());
                 }
             }
-            printAccounts();
+            if(!this.test) printAccounts();
+        }
+    }
+
+
+    public void testAddAccount(String nickname) throws IOException{
+        synchronized(updateLock){
+
+            KeyPair newKeyPair = DSA.generateDSAKeyPair();
+            Account newAccount = new Account(nickname, newKeyPair);
+            
+            for(Account account : accounts){
+                if(account.getNickname().equals(nickname)){
+                    System.out.println("An account with this nickname already exists. Try a new one.");
+                    return;
+                }
+            }
+
+            accounts.add(newAccount);
+
+            String pubKeyString = DSA.bytesToString(newAccount.getKeyPair().getPublic().getEncoded());
+
+            Object[] data = new Object[2];
+            data[0] = pubKeyString;
+            data[1] = myAddress;
+            Messager.sendOneWayMessage(new Address(8001, "localhost"), 
+            new Message(Message.Request.ALERT_WALLET, data), myAddress);
+        }
+    }
+
+    public void testSubmitTransaction(String nickname, String to, int amount) throws IOException{
+        Account chosenAccount = null;
+        for(Account account : accounts){
+            if(account.getNickname().equals(nickname)) chosenAccount = account;
+        }
+
+        if(chosenAccount == null){
+            System.out.println("Account with the nickname " + nickname + " is not found.");
+            return;
+        } 
+
+        PrivateKey pk = chosenAccount.getKeyPair().getPrivate();
+        String myPublicKeyString = DSA.bytesToString(chosenAccount.getKeyPair().getPublic().getEncoded());
+
+        if(myPublicKeyString.equals(to)){
+            System.out.println("Cannot send to self.");
+            return;
+        }
+
+        DefiTransaction newTransaction = new DefiTransaction(to, myPublicKeyString, amount, String.valueOf(System.currentTimeMillis()));
+        String UID = newTransaction.getUID();
+        byte[] signedUID = DSA.signHash(UID, pk);
+        newTransaction.setSigUID(signedUID);
+
+        for(Address address : fullNodes){
+            submitTransaction(newTransaction, address);
         }
     }
 

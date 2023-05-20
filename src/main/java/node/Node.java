@@ -272,9 +272,7 @@ public class Node  {
         Block currentBlock = blockchain.getLast();
         ArrayList<Address> quorum = deriveQuorum(currentBlock, 0);
 
-        if(DEBUG_LEVEL == 1){
-            System.out.println("Node " + myAddress.getPort() + " sent quorum is ready for q: " + quorum);
-        }
+        if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + " sent quorum is ready for q: " + quorum);
 
         for(Address quorumAddress : quorum){
             if(!myAddress.equals(quorumAddress)) {
@@ -461,7 +459,7 @@ public class Node  {
 
     public void constructBlock(){
         synchronized(memPoolLock){
-            if(DEBUG_LEVEL == 1) {System.out.println("Node " + myAddress.getPort() + ": constructBlock invoked");}
+            if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + ": constructBlock invoked");
             stateChangeRequest(3);
             
             /* Make sure compiled transactions don't conflict */
@@ -529,12 +527,12 @@ public class Node  {
             ArrayList<Address> quorum = deriveQuorum(blockchain.getLast(), 0);
 
             if(!containsAddress(quorum, signature.getAddress())){
-                System.out.println("Node " + myAddress.getPort() + ": false sig from " + signature.getAddress());
+                if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + ": false sig from " + signature.getAddress());
                 return;
             }
 
             if(!inQuorum()){
-                System.out.println("Node " + myAddress.getPort() + ": not in quorum? q: " + quorum + " my addr: " + myAddress); 
+                if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + ": not in quorum? q: " + quorum + " my addr: " + myAddress); 
                 return;
             } 
 
@@ -825,7 +823,7 @@ public class Node  {
                     dtx.getTo().equals(account)){
                         Messager.sendOneWayMessage(accountsToAlert.get(account), 
                         new Message(Message.Request.ALERT_WALLET, mt.getProof(txMap.get(transHash))), myAddress);
-                        // System.out.println("sent update");
+                        //System.out.println("sent update");
                     }
                 }
             }
