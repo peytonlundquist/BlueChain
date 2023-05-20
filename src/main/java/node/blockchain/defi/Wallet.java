@@ -30,7 +30,7 @@ public class Wallet {
     Address myAddress;
     ArrayList<Address> fullNodes;
     Address fullNodeAddress;
-    HashSet<Transaction> seenTransactions;
+    HashSet<DefiTransaction> seenTransactions;
     Object updateLock;
 
     public Wallet(int port){
@@ -63,6 +63,7 @@ public class Wallet {
     }
 
     public static void main(String[] args) throws IOException{
+
         System.out.println("============ BlueChain Wallet =============");
 
         BufferedReader mainReader = new BufferedReader(
@@ -182,10 +183,13 @@ public class Wallet {
             return;
         }
 
-        Transaction newTransaction = new DefiTransaction(to, myPublicKeyString, amount, String.valueOf(System.currentTimeMillis()));
+        DefiTransaction newTransaction = new DefiTransaction(to, myPublicKeyString, amount, String.valueOf(System.currentTimeMillis()));
         String UID = newTransaction.getUID();
         byte[] signedUID = DSA.signHash(UID, pk);
+        System.out.println(signedUID.toString() + " sig not null from wallet");
         newTransaction.setSigUID(signedUID);
+        System.out.println(newTransaction.getSigUID().toString() + " sig not null from wallet");
+
 
         System.out.println("Submitting transaction to nodes: ");
         for(Address address : fullNodes){
@@ -193,7 +197,7 @@ public class Wallet {
         }
     }
 
-    private void submitTransaction(Transaction transaction, Address address){
+    private void submitTransaction(DefiTransaction transaction, Address address){
         try {
             Socket s = new Socket(address.getHost(), address.getPort());
             OutputStream out = s.getOutputStream();
@@ -223,20 +227,11 @@ public class Wallet {
 
     private void updateAccounts(MerkleTreeProof mtp){
         synchronized(updateLock){
+            // System.out.println("\nFull node has update. Updating accounts..." );
 
-            String leafHash1 = mtp.getHashes().get(0).substring(1, mtp.getHashes().get(0).length());
-            String leafHash2 = mtp.getHashes().get(1).substring(1, mtp.getHashes().get(1).length());
-            Transaction transaction = mtp.getTransaction();
-            
+            DefiTransaction transaction = (DefiTransaction) mtp.getTransaction();
 
-            // for(Transaction transaction : seenTransactions){
-            //     if(leafHash1.equals(Hashing.getSHAString(transaction.getUID()))
-            //     || leafHash2.equals(Hashing.getSHAString(transaction.getUID()))){
-            //         myTransaction = transaction;
-            //     }
-            // }
-
-            for(Transaction existingTransaction : seenTransactions){
+            for(DefiTransaction existingTransaction : seenTransactions){
                 if(existingTransaction.equals(transaction)) return;
             }
 

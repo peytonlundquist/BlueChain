@@ -1,6 +1,8 @@
 package node.blockchain;
 
-public abstract class Transaction {
+import java.io.Serializable;
+
+public abstract class Transaction implements Serializable{
     protected String timestamp;
     protected String UID;
     protected byte[] sigUID;

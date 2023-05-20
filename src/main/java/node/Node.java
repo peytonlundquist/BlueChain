@@ -1,6 +1,7 @@
 package node;
 
 import node.blockchain.*;
+import node.blockchain.defi.DefiBlock;
 import node.blockchain.defi.DefiTransaction;
 import node.blockchain.defi.DefiTransactionValidator;
 import node.communication.*;
@@ -121,12 +122,12 @@ public class Node  {
 
         if(USE.equals("Defi")){
             accounts = new HashMap<>();
-            Transaction genesisTransaction = new DefiTransaction("Bob", "Alice", 100, "0");
+            DefiTransaction genesisTransaction = new DefiTransaction("Bob", "Alice", 100, "0");
             HashMap<String, Transaction> genesisTransactions = new HashMap<String, Transaction>();
             String hashOfTransaction = "";
             hashOfTransaction = getSHAString(genesisTransaction.toString());
             genesisTransactions.put(hashOfTransaction, genesisTransaction);
-            addBlock(new Block(genesisTransactions, "000000", 0));
+            addBlock(new DefiBlock(genesisTransactions, "000000", 0));
         }else{
 
         }
@@ -230,7 +231,6 @@ public class Node  {
             transaction.getUID() + ", blockchain size: " + blockchain.size());}
             LinkedList<Block> clonedBlockchain = new LinkedList<>();
 
-            TransactionValidator tv = new DefiTransactionValidator();
 
             clonedBlockchain.addAll(blockchain);
             for(Block block : clonedBlockchain){
@@ -239,6 +239,14 @@ public class Node  {
                     if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + ": trans :" + transaction.getUID() + " found in prev block " + block.getBlockId());}
                     return;
                 }
+            }
+
+            TransactionValidator tv;
+            
+            if(USE.equals("Defi")){
+                tv = new DefiTransactionValidator();
+            }else{
+                tv = new DefiTransactionValidator();
             }
 
             if(!tv.validate(transaction, accounts, mempool)){
@@ -458,7 +466,14 @@ public class Node  {
             
             /* Make sure compiled transactions don't conflict */
             HashMap<String, Transaction> blockTransactions = new HashMap<>();
-            TransactionValidator tv = new DefiTransactionValidator();
+
+            TransactionValidator tv;
+            if(USE.equals("USE")){
+                tv = new DefiTransactionValidator();
+            }else{
+                tv = new DefiTransactionValidator();
+            }
+            
             for(String key : mempool.keySet()){
                 Transaction transaction = mempool.get(key);
                 if(tv.validate(transaction, accounts, blockTransactions)){
@@ -467,13 +482,21 @@ public class Node  {
             }
 
             try {
-                quorumBlock = new Block(blockTransactions,
+                if(USE.equals("USE")){
+                    quorumBlock = new DefiBlock(blockTransactions,
                         getBlockHash(blockchain.getLast(), 0),
                                 blockchain.size());
-                sendSigOfBlockHash();
+                }else{
+                    quorumBlock = new DefiBlock(blockTransactions,
+                        getBlockHash(blockchain.getLast(), 0),
+                                blockchain.size());
+                }
+
             } catch (NoSuchAlgorithmException e) {
                 throw new RuntimeException(e);
             }
+
+            sendSigOfBlockHash();
         }
     }
 
@@ -733,13 +756,24 @@ public class Node  {
 
             Block newBlock;
 
-            try {
-                newBlock = new Block(blockTransactions,
-                        getBlockHash(blockchain.getLast(), 0),
-                        blockchain.size());
-            } catch (NoSuchAlgorithmException e) {
-                throw new RuntimeException(e);
+            if(USE.equals("Defi")){
+                try {
+                    newBlock = new DefiBlock(blockTransactions,
+                            getBlockHash(blockchain.getLast(), 0),
+                            blockchain.size());
+                } catch (NoSuchAlgorithmException e) {
+                    throw new RuntimeException(e);
+                }
+            }else{
+                try {
+                    newBlock = new DefiBlock(blockTransactions,
+                            getBlockHash(blockchain.getLast(), 0),
+                            blockchain.size());
+                } catch (NoSuchAlgorithmException e) {
+                    throw new RuntimeException(e);
+                }
             }
+            
 
             return newBlock;
         }
@@ -764,20 +798,34 @@ public class Node  {
         System.out.println("Node " + myAddress.getPort() + ": " + chainString(blockchain) + " MP: " + mempool.values());
 
         if(USE.equals("Defi")){
-            HashMap<String, DefiTransaction> txMap = block.getTxList();
-        
+            HashMap<String, Transaction> txMap = block.getTxList();
+
+            HashMap<String, DefiTransaction> defiTxMap = new HashMap<>();
+
+            HashSet<String> keys = new HashSet<>(txMap.keySet());
+            for(String key : keys){
+                DefiTransaction transactionInList = (DefiTransaction) txMap.get(key);
+                defiTxMap.put(key, transactionInList);
+            }
+
+            DefiTransactionValidator.updateAccounts(defiTxMap, accounts);
             ArrayList<Transaction> txList = new ArrayList<>();
             for(String hash : txMap.keySet()){
                 txList.add(txMap.get(hash));
             }
     
+            // System.out.println("accounts to alert:");
             MerkleTree mt = new MerkleTree(txList);
             for(String account : accountsToAlert.keySet()){
+                // System.out.println(account);
                 for(String transHash : txMap.keySet()){
-                    if(txMap.get(transHash).getFrom().equals(account) ||
-                    txMap.get(transHash).getTo().equals(account)){
+                    DefiTransaction dtx = (DefiTransaction) txMap.get(transHash);
+                    // System.out.println(dtx.getFrom() + "---" + dtx.getTo());
+                    if(dtx.getFrom().equals(account) ||
+                    dtx.getTo().equals(account)){
                         Messager.sendOneWayMessage(accountsToAlert.get(account), 
                         new Message(Message.Request.ALERT_WALLET, mt.getProof(txMap.get(transHash))), myAddress);
+                        // System.out.println("sent update");
                     }
                 }
             }

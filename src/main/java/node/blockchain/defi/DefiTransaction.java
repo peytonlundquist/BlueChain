@@ -5,7 +5,7 @@ import java.io.Serializable;
 import node.blockchain.Transaction;
 import node.communication.utils.*;
 
-public class DefiTransaction extends Transaction implements Serializable{
+public class DefiTransaction extends Transaction {
 
     protected String to; //  Public key of reciever
     protected String from; // Public key of sender

@@ -4,13 +4,15 @@ import java.io.Serializable;
 import java.util.HashMap;
 
 public abstract class Block implements Serializable {
-    private final HashMap<String, Transaction> txList;
+    protected int blockId;
+    protected HashMap<String, Transaction> txList;
+    protected String prevBlockHash;
 
-    public String getPrevBlockHash() {
-        return prevBlockHash;
-    }
-
-    private final String prevBlockHash;
+    // public Block(HashMap<String, Transaction> txList, String prevBlockHash, int blockId){
+    //     this.txList = txList;
+    //     this.prevBlockHash = prevBlockHash;
+    //     this.blockId = blockId;
+    // }
 
     public int getBlockId() {
         return blockId;
@@ -20,12 +22,7 @@ public abstract class Block implements Serializable {
         return txList;
     }
 
-
-    private final int blockId;
-
-    public Block(HashMap<String, Transaction> txList, String prevBlockHash, int blockId){
-        this.txList = txList;
-        this.prevBlockHash = prevBlockHash;
-        this.blockId = blockId;
+    public String getPrevBlockHash() {
+        return prevBlockHash;
     }
 }
