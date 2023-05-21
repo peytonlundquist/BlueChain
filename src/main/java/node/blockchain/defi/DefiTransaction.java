@@ -34,7 +34,7 @@ public class DefiTransaction extends Transaction {
     @Override
     public String toString() {
         if(to.length() > 5){
-            return to.substring(to.length() - 2, to.length() - 1) + from.substring(to.length() - 2, to.length() - 1) + amount;
+            return to.substring(to.length() - 2, to.length() - 1) + from.substring(from.length() - 2, from.length() - 1) + amount;
         }
         return to.substring(0, 1) + from.substring(0, 1) + amount;
     }

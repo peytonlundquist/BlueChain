@@ -63,39 +63,6 @@ public class Wallet {
         acceptor.start();
     }
 
-    private void testNetwork(int j){
-
-        System.out.println("Beginning Test");
-
-        try {
-            testAddAccount("Satoshi");
-            int expectedBalance = j * 10;
-
-            System.out.print("[");
-            for(int i = 0; i < j; i++){
-                    testAddAccount(String.valueOf(i));
-                    Thread.sleep(2000);
-                    testSubmitTransaction(String.valueOf(i), DSA.bytesToString(accounts.get(0).getKeyPair().getPublic().getEncoded()), 10);
-                    System.out.print("#");
-            }
-            System.out.print("]");
-            System.out.println("Sleeping wallet for last minute updates...");
-            Thread.sleep(50000);
-            if(accounts.get(0).getBalance() == expectedBalance){
-                System.out.println("*********************Test passed.*********************");
-            }else{
-                System.out.println("*********************Test Failed*********************");
-            }
-
-            System.out.println("Satoshi expected balance: " + expectedBalance + ". Actual: " + accounts.get(0).getBalance());
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
     public static void main(String[] args) throws IOException{
 
         System.out.println("============ BlueChain Wallet =============");
@@ -112,7 +79,7 @@ public class Wallet {
                 Wallet wallet = new Wallet(port);
                 wallet.test = true;
                 wallet.testNetwork(Integer.valueOf(args[1]));
-                return;
+                System.exit(0);
             }
         }
 
@@ -364,6 +331,39 @@ public class Wallet {
 
         for(Address address : fullNodes){
             submitTransaction(newTransaction, address);
+        }
+    }
+
+    private void testNetwork(int j){
+
+        System.out.println("Beginning Test");
+
+        try {
+            testAddAccount("Satoshi");
+            int expectedBalance = j * 10;
+
+            System.out.print("[");
+            for(int i = 0; i < j; i++){
+                    testAddAccount(String.valueOf(i));
+                    Thread.sleep(2000);
+                    testSubmitTransaction(String.valueOf(i), DSA.bytesToString(accounts.get(0).getKeyPair().getPublic().getEncoded()), 10);
+                    System.out.print("#");
+            }
+            System.out.println("]");
+            System.out.println("Sleeping wallet for last minute updates...");
+            Thread.sleep(50000);
+            if(accounts.get(0).getBalance() == expectedBalance){
+                System.out.println("\n*********************Test passed.*********************");
+            }else{
+                System.out.println("\n*********************Test Failed*********************");
+            }
+
+            System.out.println("Satoshi expected balance: " + expectedBalance + ". Actual: " + accounts.get(0).getBalance());
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 
