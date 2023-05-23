@@ -1,19 +1,18 @@
 package node.blockchain;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.HashMap;
 
-import node.defi.Transaction;
+public abstract class Block implements Serializable {
+    protected int blockId;
+    protected HashMap<String, Transaction> txList;
+    protected String prevBlockHash;
 
-public class Block implements Serializable {
-    private final HashMap<String, Transaction> txList;
-
-    public String getPrevBlockHash() {
-        return prevBlockHash;
-    }
-
-    private final String prevBlockHash;
+    // public Block(HashMap<String, Transaction> txList, String prevBlockHash, int blockId){
+    //     this.txList = txList;
+    //     this.prevBlockHash = prevBlockHash;
+    //     this.blockId = blockId;
+    // }
 
     public int getBlockId() {
         return blockId;
@@ -23,17 +22,7 @@ public class Block implements Serializable {
         return txList;
     }
 
-
-    private final int blockId;
-
-    public Block(HashMap<String, Transaction> txList, String prevBlockHash, int blockId){
-        this.txList = txList;
-        this.prevBlockHash = prevBlockHash;
-        this.blockId = blockId;
+    public String getPrevBlockHash() {
+        return prevBlockHash;
     }
-
-    private String calcHash(ArrayList<Transaction> txList){
-        return "";
-    }
-
 }

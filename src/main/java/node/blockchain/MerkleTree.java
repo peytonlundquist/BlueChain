@@ -8,7 +8,6 @@ import java.util.Queue;
 import java.util.Stack;
 
 import node.communication.utils.Hashing;
-import node.defi.Transaction;
 
 public class MerkleTree {
     Node rootNode;

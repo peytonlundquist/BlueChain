@@ -4,7 +4,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 
 import node.communication.utils.Hashing;
-import node.defi.Transaction;
 
 public class MerkleTreeProof implements Serializable{
     private ArrayList<String> hashes;

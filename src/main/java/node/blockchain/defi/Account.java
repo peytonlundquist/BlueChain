@@ -1,4 +1,4 @@
-package node.defi;
+package node.blockchain.defi;
 
 import java.security.Key;
 import java.security.KeyPair;
