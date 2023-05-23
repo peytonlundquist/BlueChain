@@ -45,19 +45,33 @@ public class Wallet {
         accounts = new ArrayList<>();
         seenTransactions = new HashSet<>();
         updateLock = new Object();
+        boolean boundToPort = false;
+        int portBindingAttempts = 10; // Amount of attempts to bind to a port
 
         try {
             ss = new ServerSocket(port);
+            boundToPort = true;
         } catch (IOException e) {
+            for(int i = 1; i < portBindingAttempts; i++){
+                try {
+                    ss = new ServerSocket(port - i);
+                    boundToPort = true;
+                    port = port - i;
+                } catch (IOException E) {}
+            }
+        }
+
+        if(boundToPort == false){
             System.out.println("Specify a new port in args[0]");
             System.exit(1);
         }
+        
         myAddress = new Address(port, "localhost");
 
         System.out.println("Wallet bound to " + myAddress);
 
         if(!this.test) System.out.println("Full Nodes to connect to by default: \n" + fullNodes + 
-        "\nTo update Full Nodes address use 'u' command.");
+        "\nTo update Full Nodes address use 'u' command. \nUse 'h' command for full list of options");
 
         Acceptor acceptor = new Acceptor(this);
         acceptor.start();
@@ -108,6 +122,9 @@ public class Wallet {
                     break;
                 case("u"):
                     updateFullNode();
+                    break;
+                case("h"):
+                    printUsage();
                     break;
             }
         } catch (IOException e) {
@@ -195,9 +212,7 @@ public class Wallet {
         DefiTransaction newTransaction = new DefiTransaction(to, myPublicKeyString, amount, String.valueOf(System.currentTimeMillis()));
         String UID = newTransaction.getUID();
         byte[] signedUID = DSA.signHash(UID, pk);
-        System.out.println(signedUID.toString() + " sig not null from wallet");
         newTransaction.setSigUID(signedUID);
-        System.out.println(newTransaction.getSigUID().toString() + " sig not null from wallet");
 
         System.out.println("Submitting transaction to nodes: ");
         for(Address address : fullNodes){
@@ -235,7 +250,6 @@ public class Wallet {
 
     private void updateAccounts(MerkleTreeProof mtp){
         synchronized(updateLock){
-            if (!this.test) System.out.println("\nFull node has update. Updating accounts..." );
 
             DefiTransaction transaction = (DefiTransaction) mtp.getTransaction();
 
@@ -246,10 +260,11 @@ public class Wallet {
             }
 
             boolean interested = false;
+
             /* Make sure transaction is about accounts we have */
             for(Account account : accounts){
-                if(!DSA.bytesToString(account.getKeyPair().getPublic().getEncoded()).equals(transaction.getFrom())
-                && !DSA.bytesToString(account.getKeyPair().getPublic().getEncoded()).equals(transaction.getTo())){
+                if(DSA.bytesToString(account.getKeyPair().getPublic().getEncoded()).equals(transaction.getFrom())
+                || DSA.bytesToString(account.getKeyPair().getPublic().getEncoded()).equals(transaction.getTo())){
                     interested = true;
                 }
             }
@@ -266,7 +281,6 @@ public class Wallet {
                 return;
             }
     
-            //System.out.println("\nFull node has update. Updating accounts..." );
             for(Account account : accounts){
                 if(DSA.bytesToString(account.getKeyPair().getPublic().getEncoded()).equals(transaction.getFrom())){
                     account.updateBalance(-(transaction.getAmount()));
@@ -275,6 +289,8 @@ public class Wallet {
                     account.updateBalance(transaction.getAmount());
                 }
             }
+
+            if(!this.test) System.out.println("\nFull node has update. Updating accounts..." );
             if(!this.test) printAccounts();
         }
     }
@@ -365,6 +381,14 @@ public class Wallet {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+    }
+
+    private void printUsage(){
+        System.out.println("BlueChain Wallet Usage:");
+        System.out.println("a: Add a new account");
+        System.out.println("t: Create a transaction");
+        System.out.println("p: Print acccounts and balances");
+        System.out.println("u: Update full nodes");
     }
 
     class Acceptor extends Thread {
