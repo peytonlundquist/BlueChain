@@ -1,5 +1,7 @@
 package node.blockchain.defi;
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -12,6 +14,7 @@ import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.regex.Pattern;
 
 import node.blockchain.MerkleTree;
 import node.blockchain.MerkleTreeProof;
@@ -36,17 +39,27 @@ public class Wallet {
 
     public Wallet(int port){
         fullNodes = new ArrayList<>();
-
-        Address fullNodeAddress1 = new Address(8001, "localhost"); fullNodes.add(fullNodeAddress1);
-        Address fullNodeAddress2 = new Address(8002, "localhost"); fullNodes.add(fullNodeAddress2);
-        Address fullNodeAddress3 = new Address(8003, "localhost"); fullNodes.add(fullNodeAddress3);
-
         reader = new BufferedReader(new InputStreamReader(System.in));
         accounts = new ArrayList<>();
         seenTransactions = new HashSet<>();
         updateLock = new Object();
         boolean boundToPort = false;
         int portBindingAttempts = 10; // Amount of attempts to bind to a port
+        int fullNodeDefaultAmount = 3;
+
+        String path = "./src/main/java/node/nodeRegistry/"; 
+        File folder = new File(path);        
+        File[] listOfFiles = folder.listFiles();
+
+        for (int i = 0; i < listOfFiles.length; i++) {
+            if (listOfFiles[i].isFile() && !listOfFiles[i].getName().contains("keep") && fullNodes.size() < fullNodeDefaultAmount) {
+                String[] addressStrings = listOfFiles[i].getName().split("_");
+                String hostname = addressStrings[0];
+                String portString[] = addressStrings[1].split((Pattern.quote(".")));
+                int fullNodePort = Integer.valueOf(portString[0]);
+                fullNodes.add(new Address(fullNodePort, hostname));
+            }
+        }
 
         try {
             ss = new ServerSocket(port);
@@ -144,6 +157,11 @@ public class Wallet {
         }else if(response.equals("r")){
             System.out.println("Full Node index to remove?: \n" + fullNodes);
             int index = Integer.parseInt(reader.readLine());
+            if(index > fullNodes.size()){
+                System.out.println("Index not in range.");
+                return;
+            } 
+
             Address removedAddress = fullNodes.remove(index);
             System.out.println("Removed full node: " + removedAddress);
         }else{
