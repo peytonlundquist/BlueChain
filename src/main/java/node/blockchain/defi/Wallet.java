@@ -191,7 +191,7 @@ public class Wallet {
             Object[] data = new Object[2];
             data[0] = pubKeyString;
             data[1] = myAddress;
-            Messager.sendOneWayMessage(new Address(8001, "localhost"), 
+            Messager.sendOneWayMessage(new Address(fullNodes.get(0).getPort(), fullNodes.get(0).getHost()), 
             new Message(Message.Request.ALERT_WALLET, data), myAddress);
 
             System.out.println("===============================");
@@ -334,7 +334,7 @@ public class Wallet {
             Object[] data = new Object[2];
             data[0] = pubKeyString;
             data[1] = myAddress;
-            Messager.sendOneWayMessage(new Address(8001, "localhost"), 
+            Messager.sendOneWayMessage(new Address(fullNodes.get(0).getPort(), fullNodes.get(0).getHost()), 
             new Message(Message.Request.ALERT_WALLET, data), myAddress);
         }
     }
