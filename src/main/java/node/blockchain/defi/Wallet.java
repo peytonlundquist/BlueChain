@@ -8,8 +8,10 @@ import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.util.ArrayList;
@@ -78,8 +80,18 @@ public class Wallet {
             System.out.println("Specify a new port in args[0]");
             System.exit(1);
         }
+
+        InetAddress ip;
+
+        try {
+            ip = InetAddress.getLocalHost();
+        } catch (UnknownHostException e) {
+            throw new RuntimeException(e);
+        }
+
+        String host = ip.getHostAddress();
         
-        myAddress = new Address(port, "localhost");
+        myAddress = new Address(port, host);
 
         System.out.println("Wallet bound to " + myAddress);
 
