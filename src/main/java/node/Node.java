@@ -246,7 +246,7 @@ public class Node  {
             if(USE.equals("Defi")){
                 tv = new DefiTransactionValidator();
             }else{
-                tv = new DefiTransactionValidator();
+                tv = new DefiTransactionValidator(); // To be changed to another use case in the future
             }
 
             if(!tv.validate(transaction, accounts, mempool)){
@@ -791,29 +791,30 @@ public class Node  {
     public void addBlock(Block block){
         stateChangeRequest(0);
         state = 0;
-        blockchain.add(block);
+        
+        HashMap<String, Transaction> txMap = block.getTxList();
+        HashSet<String> keys = new HashSet<>(txMap.keySet());
+        ArrayList<Transaction> txList = new ArrayList<>();
+        for(String hash : txMap.keySet()){
+            txList.add(txMap.get(hash));
+        }
 
+        MerkleTree mt = new MerkleTree(txList);
+        block.setMerkleRootHash(mt.getRootNode().getHash());
+
+        blockchain.add(block);
         System.out.println("Node " + myAddress.getPort() + ": " + chainString(blockchain) + " MP: " + mempool.values());
 
         if(USE.equals("Defi")){
-            HashMap<String, Transaction> txMap = block.getTxList();
-
             HashMap<String, DefiTransaction> defiTxMap = new HashMap<>();
 
-            HashSet<String> keys = new HashSet<>(txMap.keySet());
             for(String key : keys){
                 DefiTransaction transactionInList = (DefiTransaction) txMap.get(key);
                 defiTxMap.put(key, transactionInList);
             }
 
             DefiTransactionValidator.updateAccounts(defiTxMap, accounts);
-            ArrayList<Transaction> txList = new ArrayList<>();
-            for(String hash : txMap.keySet()){
-                txList.add(txMap.get(hash));
-            }
-    
-            // System.out.println("accounts to alert:");
-            MerkleTree mt = new MerkleTree(txList);
+
             for(String account : accountsToAlert.keySet()){
                 // System.out.println(account);
                 for(String transHash : txMap.keySet()){

@@ -7,12 +7,11 @@ public abstract class Block implements Serializable {
     protected int blockId;
     protected HashMap<String, Transaction> txList;
     protected String prevBlockHash;
+    protected String merkleRootHash;
 
-    // public Block(HashMap<String, Transaction> txList, String prevBlockHash, int blockId){
-    //     this.txList = txList;
-    //     this.prevBlockHash = prevBlockHash;
-    //     this.blockId = blockId;
-    // }
+    public String getMerkleRootHash() {
+        return merkleRootHash;
+    }
 
     public int getBlockId() {
         return blockId;
@@ -24,5 +23,9 @@ public abstract class Block implements Serializable {
 
     public String getPrevBlockHash() {
         return prevBlockHash;
+    }
+
+    public void setMerkleRootHash(String rootHash){
+        this.merkleRootHash = rootHash;
     }
 }

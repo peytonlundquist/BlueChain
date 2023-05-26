@@ -1,16 +1,13 @@
 package node.blockchain;
 
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedList;
-import java.util.Queue;
-import java.util.Stack;
 
 import node.communication.utils.Hashing;
 
 public class MerkleTree {
-    Node rootNode;
+    protected Node rootNode;
 
     public MerkleTree(ArrayList<Transaction> txList){
         txList.sort(new TransactionComparator());
@@ -143,7 +140,7 @@ public class MerkleTree {
         }
     }
 
-    class Node {
+    public class Node {
         private String hash;
         private Node parent;
         private Node leftChild;
