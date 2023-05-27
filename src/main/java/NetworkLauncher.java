@@ -47,6 +47,7 @@ public class NetworkLauncher {
             int quorumSize = Integer.parseInt(prop.getProperty("QUORUM"));
             int minimumTransactions = Integer.parseInt(prop.getProperty("MINIMUM_TRANSACTIONS"));
             int debugLevel = Integer.parseInt(prop.getProperty("DEBUG_LEVEL"));
+            String use = prop.getProperty("USE");
 
 
 
@@ -60,7 +61,7 @@ public class NetworkLauncher {
             }
 
             for (int i = startingPort; i < startingPort + numNodes; i++) {
-                nodes.add(new Node(i, maxConnections, minConnections, numNodes, quorumSize, minimumTransactions, debugLevel));
+                nodes.add(new Node(use, i, maxConnections, minConnections, numNodes, quorumSize, minimumTransactions, debugLevel));
             }
 
 
@@ -84,7 +85,7 @@ public class NetworkLauncher {
                     int port = Integer.parseInt(st.nextToken().replaceFirst(".txt", ""));
                     globalPeers.add(new Address(port, host));
                 }
-            }
+            }       
 
             NetworkLauncher n = new NetworkLauncher();
             n.startNetworkClients(globalPeers, nodes); // Begins network connections

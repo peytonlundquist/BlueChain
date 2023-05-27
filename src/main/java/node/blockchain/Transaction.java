@@ -2,25 +2,33 @@ package node.blockchain;
 
 import java.io.Serializable;
 
-public class Transaction implements Serializable {
-    private final String data;
+public abstract class Transaction implements Serializable{
+    protected String timestamp;
+    protected String UID;
+    protected byte[] sigUID;
 
-    public Transaction(String data){
-        this.data = data;
+    public void setSigUID(byte[] sig){
+        sigUID = sig;
     }
 
-    public String getData(){
-        return data;
+    public byte[] getSigUID(){
+        return sigUID;
+    }
+
+    public String getUID(){
+        return timestamp + toString();
+    }
+
+    public String getTimestamp(){
+        return timestamp;
     }
 
     public boolean equals(Transaction transaction){
-        if(transaction.getData().equals(this.getData())){
+        if(transaction.getUID().equals(this.getUID())){
             return true;
         }
         return false;
     }
 
-    public String toString(){
-        return getData();
-    }
+    abstract public String toString();
 }

@@ -3,7 +3,9 @@ package node;
 import node.blockchain.Block;
 import node.blockchain.BlockSkeleton;
 import node.blockchain.Transaction;
+import node.blockchain.defi.DefiTransaction;
 import node.communication.*;
+
 import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
@@ -88,8 +90,10 @@ public class ServerConnection extends Thread {
                 BlockSkeleton blockSkeleton = (BlockSkeleton) incomingMessage.getMetadata();
                 node.receiveSkeleton(blockSkeleton);
                 break;
-            case REQUEST_BLOCK:
-
+            case ALERT_WALLET:
+                Object[] data = (Object[]) incomingMessage.getMetadata();
+                node.alertWallet((String) data[0], (Address) data[1]);
+                break;
         }
     }
 }

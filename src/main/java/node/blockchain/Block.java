@@ -1,17 +1,17 @@
 package node.blockchain;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.HashMap;
 
-public class Block implements Serializable {
-    private final HashMap<String, Transaction> txList;
+public abstract class Block implements Serializable {
+    protected int blockId;
+    protected HashMap<String, Transaction> txList;
+    protected String prevBlockHash;
+    protected String merkleRootHash;
 
-    public String getPrevBlockHash() {
-        return prevBlockHash;
+    public String getMerkleRootHash() {
+        return merkleRootHash;
     }
-
-    private final String prevBlockHash;
 
     public int getBlockId() {
         return blockId;
@@ -21,17 +21,11 @@ public class Block implements Serializable {
         return txList;
     }
 
-
-    private final int blockId;
-
-    public Block(HashMap<String, Transaction> txList, String prevBlockHash, int blockId){
-        this.txList = txList;
-        this.prevBlockHash = prevBlockHash;
-        this.blockId = blockId;
+    public String getPrevBlockHash() {
+        return prevBlockHash;
     }
 
-    private String calcHash(ArrayList<Transaction> txList){
-        return "";
+    public void setMerkleRootHash(String rootHash){
+        this.merkleRootHash = rootHash;
     }
-
 }

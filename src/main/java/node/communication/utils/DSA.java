@@ -7,6 +7,8 @@ import java.io.*;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.Arrays;
+import java.util.Base64;
 
 public class DSA {
     /* Used https://www.javatpoint.com/java-digital-signature */
@@ -37,7 +39,7 @@ public class DSA {
         }
     }
 
-    public static byte[] signBlockHash(String hash, PrivateKey key) {
+    public static byte[] signHash(String hash, PrivateKey key) {
         try {
             byte[] hashBytes = hash.getBytes();
             Signature dsa = Signature.getInstance("SHA1withDSA", "SUN");
@@ -49,7 +51,23 @@ public class DSA {
         }
     }
 
-    public static boolean verifySignature(String hash, byte[] signature, Address address){
+    public static boolean verifySignature(String hash, byte[] signature, byte[] publicKey){
+        try {
+            X509EncodedKeySpec pubKeySpec = new X509EncodedKeySpec(publicKey);
+            KeyFactory keyFactory = KeyFactory.getInstance("DSA", "SUN");
+            PublicKey pubKey = keyFactory.generatePublic(pubKeySpec);
+            Signature sig = Signature.getInstance("SHA1withDSA", "SUN");
+            sig.initVerify(pubKey);
+            byte[] hashBytes = hash.getBytes();
+            sig.update(hashBytes);
+            return sig.verify(signature);
+        } catch ( NoSuchAlgorithmException | InvalidKeySpecException | NoSuchProviderException |
+                 InvalidKeyException | SignatureException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static boolean verifySignatureFromRegistry(String hash, byte[] signature, Address address){
         try {
             String path = "./src/main/java/node/nodeRegistry/";
             String file = path + address.getHost() + "_" + String.valueOf(address.getPort()) + ".txt";
@@ -70,6 +88,13 @@ public class DSA {
                  InvalidKeyException | SignatureException e) {
             throw new RuntimeException(e);
         }
+    }
 
+    public static byte[] stringToBytes(String byteString){
+        return Base64.getDecoder().decode(byteString);
+    }
+
+    public static String bytesToString(byte[] bytes){
+        return Base64.getEncoder().encodeToString(bytes);
     }
 }
