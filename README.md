@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/peytonlundquist/network/blob/master/BlueChain-1.png"  width="300" height="300">
+  <img src="https://github.com/peytonlundquist/network/blob/master/bluechainlogo.png"  width="300" height="300">
 </p>
 
 
