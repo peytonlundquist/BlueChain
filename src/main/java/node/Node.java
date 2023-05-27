@@ -66,6 +66,7 @@ public class Node  {
         quorumReadyVotesLock = new Object();
         memPoolRoundsLock = new Object();
         sigRoundsLock = new Object();
+        accountsLock = new Object();
         memPoolLock = new Object();
         blockLock = new Object();
 
@@ -815,16 +816,18 @@ public class Node  {
 
             DefiTransactionValidator.updateAccounts(defiTxMap, accounts);
 
-            for(String account : accountsToAlert.keySet()){
-                // System.out.println(account);
-                for(String transHash : txMap.keySet()){
-                    DefiTransaction dtx = (DefiTransaction) txMap.get(transHash);
-                    // System.out.println(dtx.getFrom() + "---" + dtx.getTo());
-                    if(dtx.getFrom().equals(account) ||
-                    dtx.getTo().equals(account)){
-                        Messager.sendOneWayMessage(accountsToAlert.get(account), 
-                        new Message(Message.Request.ALERT_WALLET, mt.getProof(txMap.get(transHash))), myAddress);
-                        //System.out.println("sent update");
+            synchronized(accountsLock){
+                for(String account : accountsToAlert.keySet()){
+                    // System.out.println(account);
+                    for(String transHash : txMap.keySet()){
+                        DefiTransaction dtx = (DefiTransaction) txMap.get(transHash);
+                        // System.out.println(dtx.getFrom() + "---" + dtx.getTo());
+                        if(dtx.getFrom().equals(account) ||
+                        dtx.getTo().equals(account)){
+                            Messager.sendOneWayMessage(accountsToAlert.get(account), 
+                            new Message(Message.Request.ALERT_WALLET, mt.getProof(txMap.get(transHash))), myAddress);
+                            //System.out.println("sent update");
+                        }
                     }
                 }
             }
@@ -917,7 +920,9 @@ public class Node  {
     private HashMap<String, Address> accountsToAlert;
 
     public void alertWallet(String accountPubKey, Address address){
-        accountsToAlert.put(accountPubKey, address);
+        synchronized(accountsLock){
+            accountsToAlert.put(accountPubKey, address);
+        }
     }
 
 
@@ -989,7 +994,7 @@ public class Node  {
     }
 
     private final int MAX_PEERS, NUM_NODES, QUORUM_SIZE, MIN_CONNECTIONS, DEBUG_LEVEL, MINIMUM_TRANSACTIONS;
-    private final Object lock, quorumLock, memPoolLock, quorumReadyVotesLock, memPoolRoundsLock, sigRoundsLock, blockLock;
+    private final Object lock, quorumLock, memPoolLock, quorumReadyVotesLock, memPoolRoundsLock, sigRoundsLock, blockLock, accountsLock;
     private int quorumReadyVotes, memPoolRounds;
     private ArrayList<Address> globalPeers;
     private ArrayList<Address> localPeers;
