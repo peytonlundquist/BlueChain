@@ -1,17 +1,12 @@
 import node.Node;
 import node.communication.Address;
+import node.communication.utils.Utils;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.security.*;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Properties;
 import java.util.StringTokenizer;
 
@@ -22,6 +17,7 @@ public class NetworkLauncher {
 
     /* Make a list of the entirety of each node's address */
     private static final ArrayList<Address> globalPeers = new ArrayList<Address>();
+
 
     public static void main(String[] args) {
         String usage = "Usage: NetworkLauncher " +
@@ -89,8 +85,7 @@ public class NetworkLauncher {
                     int port = Integer.parseInt(st.nextToken().replaceFirst(".txt", ""));
                     globalPeers.add(new Address(port, host));
                 }
-            }
-
+            }       
 
             NetworkLauncher n = new NetworkLauncher();
             n.startNetworkClients(globalPeers, nodes); // Begins network connections
