@@ -4,7 +4,11 @@ import node.blockchain.*;
 import node.blockchain.defi.DefiBlock;
 import node.blockchain.defi.DefiTransaction;
 import node.blockchain.defi.DefiTransactionValidator;
+import node.blockchain.merkletree.MerkleTree;
 import node.communication.*;
+import node.communication.messaging.Message;
+import node.communication.messaging.Messager;
+import node.communication.messaging.MessagerPack;
 import node.communication.utils.Hashing;
 import node.communication.utils.Utils;
 
@@ -123,12 +127,12 @@ public class Node  {
 
         if(USE.equals("Defi")){
             accounts = new HashMap<>();
-            DefiTransaction genesisTransaction = new DefiTransaction("Bob", "Alice", 100, "0");
-            HashMap<String, Transaction> genesisTransactions = new HashMap<String, Transaction>();
-            String hashOfTransaction = "";
-            hashOfTransaction = getSHAString(genesisTransaction.toString());
-            genesisTransactions.put(hashOfTransaction, genesisTransaction);
-            addBlock(new DefiBlock(genesisTransactions, "000000", 0));
+            // DefiTransaction genesisTransaction = new DefiTransaction("Bob", "Alice", 100, "0");
+            // HashMap<String, Transaction> genesisTransactions = new HashMap<String, Transaction>();
+            // String hashOfTransaction = "";
+            // hashOfTransaction = getSHAString(genesisTransaction.toString());
+            // genesisTransactions.put(hashOfTransaction, genesisTransaction);
+            addBlock(new DefiBlock(new HashMap<String, Transaction>(), "000000", 0));
         }else{
 
         }
@@ -263,8 +267,6 @@ public class Node  {
         }         
     }
 
-    public void blockCatchUp(){}
-
     //Reconcile blocks
     public void sendQuorumReady(){
         //state = 1;
@@ -299,7 +301,8 @@ public class Node  {
                         }else if (blockId > currentBlock.getBlockId()){
                             // we are behind, quorum already happened / failed
                             reply = new Message(Message.Request.PING);
-                            blockCatchUp();
+                            //blockCatchUp();
+
                         }
                         mp.getOout().writeObject(reply);
                         mp.getOout().flush();
@@ -342,7 +345,7 @@ public class Node  {
                     Message reply = (Message) oin.readObject();
 
                     if(reply.getRequest().name().equals("RECONCILE_BLOCK")){
-                        blockCatchUp();
+                        //blockCatchUp();
                     }
                 }else{
                     oout.writeObject(new Message(Message.Request.PING));
@@ -791,7 +794,7 @@ public class Node  {
      */
     public void addBlock(Block block){
         stateChangeRequest(0);
-        state = 0;
+        // state = 0;
         
         HashMap<String, Transaction> txMap = block.getTxList();
         HashSet<String> keys = new HashSet<>(txMap.keySet());
@@ -801,7 +804,7 @@ public class Node  {
         }
 
         MerkleTree mt = new MerkleTree(txList);
-        block.setMerkleRootHash(mt.getRootNode().getHash());
+        if(mt.getRootNode() != null) block.setMerkleRootHash(mt.getRootNode().getHash());
 
         blockchain.add(block);
         System.out.println("Node " + myAddress.getPort() + ": " + chainString(blockchain) + " MP: " + mempool.values());

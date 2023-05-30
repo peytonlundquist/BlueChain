@@ -1,7 +1,7 @@
 package node.blockchain.defi;
+
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -17,44 +17,48 @@ import java.security.PrivateKey;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.regex.Pattern;
-
-import node.blockchain.MerkleTree;
-import node.blockchain.MerkleTreeProof;
-import node.blockchain.Transaction;
+import node.blockchain.merkletree.MerkleTreeProof;
 import node.communication.Address;
-import node.communication.Message;
-import node.communication.Messager;
+import node.communication.messaging.Message;
+import node.communication.messaging.Messager;
 import node.communication.utils.DSA;
-import node.communication.utils.Hashing;
 
 public class Wallet {
 
-    BufferedReader reader;
-    ArrayList<Account> accounts;
+    BufferedReader reader; // To read user input
+    ArrayList<Account> accounts; // Our defi account list
     ServerSocket ss;
     Address myAddress;
-    ArrayList<Address> fullNodes;
-    Address fullNodeAddress;
-    HashSet<DefiTransaction> seenTransactions;
-    Object updateLock;
-    boolean test;
+    ArrayList<Address> fullNodes; // List of full nodes we want to use
+    HashSet<DefiTransaction> seenTransactions; // Transactions we've seen from full nodes
+    Object updateLock; // Lock for multithreading
+    boolean test; // Boolean for test vs normal output
 
     public Wallet(int port){
+
+        /* Initializations */
         fullNodes = new ArrayList<>();
         reader = new BufferedReader(new InputStreamReader(System.in));
         accounts = new ArrayList<>();
         seenTransactions = new HashSet<>();
         updateLock = new Object();
+
+
         boolean boundToPort = false;
         int portBindingAttempts = 10; // Amount of attempts to bind to a port
-        int fullNodeDefaultAmount = 3;
+        int fullNodeDefaultAmount = 3; // Full nodes we will try to connect to by default
 
         String path = "./src/main/java/node/nodeRegistry/"; 
         File folder = new File(path);        
         File[] listOfFiles = folder.listFiles();
 
+        /* Iterate through each file in the nodeRegistry dir in order to derive our full nodes dynamically */
         for (int i = 0; i < listOfFiles.length; i++) {
+
+            /* Make sure each item is in fact a file, isn't the special '.keep' file */
             if (listOfFiles[i].isFile() && !listOfFiles[i].getName().contains("keep") && fullNodes.size() < fullNodeDefaultAmount) {
+
+                /* Extracting address from file name */
                 String[] addressStrings = listOfFiles[i].getName().split("_");
                 String hostname = addressStrings[0];
                 String portString[] = addressStrings[1].split((Pattern.quote(".")));
@@ -63,11 +67,12 @@ public class Wallet {
             }
         }
 
+        /* Binding to our Server Socket so full nodes can hit us up */
         try {
             ss = new ServerSocket(port);
             boundToPort = true;
         } catch (IOException e) {
-            for(int i = 1; i < portBindingAttempts; i++){
+            for(int i = 1; i < portBindingAttempts; i++){ // We will try several attempts to find a port we can bind too
                 try {
                     ss = new ServerSocket(port - i);
                     boundToPort = true;
@@ -90,7 +95,6 @@ public class Wallet {
         }
 
         String host = ip.getHostAddress();
-        
         myAddress = new Address(port, host);
 
         System.out.println("Wallet bound to " + myAddress);
@@ -118,12 +122,12 @@ public class Wallet {
                 Wallet wallet = new Wallet(port);
                 wallet.test = true;
                 wallet.testNetwork(Integer.valueOf(args[1]));
-                System.exit(0);
+                System.exit(0); // We just test then exit
             }
         }
 
         Wallet wallet = new Wallet(port);
-        wallet.test = false;
+        wallet.test = false; // This is not a test
 
         while(!input.equals("exit") | !input.equals("e")){
             System.out.print(">");
@@ -132,7 +136,11 @@ public class Wallet {
         }
     }
 
-
+    /**
+     * Interpret the string input
+     * 
+     * @param input the string to interpret
+     */
     public void interpretInput(String input){
         try {
             switch(input){

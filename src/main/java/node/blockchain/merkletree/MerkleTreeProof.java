@@ -1,8 +1,9 @@
-package node.blockchain;
+package node.blockchain.merkletree;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 
+import node.blockchain.Transaction;
 import node.communication.utils.Hashing;
 
 public class MerkleTreeProof implements Serializable{

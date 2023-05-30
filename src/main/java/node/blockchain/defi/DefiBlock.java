@@ -2,18 +2,23 @@ package node.blockchain.defi;
 
 import java.util.HashMap;
 import java.util.HashSet;
-
 import node.blockchain.Block;
 import node.blockchain.Transaction;
 
+/**
+ * A block implemented for the Defi use case
+ */
 public class DefiBlock extends Block{
 
     public DefiBlock(HashMap<String, Transaction> txList, String prevBlockHash, int blockId) {
-        HashSet<String> keys = new HashSet<>(txList.keySet());
+
+        /* Setting variables inherited from Block class */
         this.txList = new HashMap<>();
         this.prevBlockHash = prevBlockHash;
         this.blockId = blockId;
-        // For each hash of a transaction
+
+        /* Converting the transaction from Block to DefiTransactions*/
+        HashSet<String> keys = new HashSet<>(txList.keySet());
         for(String key : keys){
             DefiTransaction transactionInList = (DefiTransaction) txList.get(key);
             this.txList.put(key, transactionInList);

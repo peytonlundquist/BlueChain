@@ -1,6 +1,9 @@
-package node;
+package node.communication;
 
+import node.Node;
 import node.communication.*;
+import node.communication.messaging.Message;
+
 import java.io.*;
 import java.net.ConnectException;
 import java.net.Socket;
@@ -14,7 +17,7 @@ public class ClientConnection extends Thread {
     private final Node node;
     private final ArrayList<Address> globalPeers;
 
-    ClientConnection(Node node, ArrayList<Address> globalPeers) throws SocketException {
+    public ClientConnection(Node node, ArrayList<Address> globalPeers) throws SocketException {
         this.node = node;
         this.globalPeers = globalPeers;
         setPriority(NORM_PRIORITY - 1);

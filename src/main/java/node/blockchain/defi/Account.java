@@ -1,8 +1,10 @@
 package node.blockchain.defi;
 
-import java.security.Key;
 import java.security.KeyPair;
 
+/**
+ * An account for the Defi Client
+ */
 public class Account {
     private String nickname;
     private KeyPair keyPair;

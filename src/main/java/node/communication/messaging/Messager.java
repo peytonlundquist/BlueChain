@@ -1,7 +1,9 @@
-package node.communication;
+package node.communication.messaging;
 
 import java.io.*;
 import java.net.Socket;
+
+import node.communication.Address;
 
 public class Messager{
     
