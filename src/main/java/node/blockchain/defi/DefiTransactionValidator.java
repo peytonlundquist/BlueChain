@@ -1,43 +1,47 @@
 package node.blockchain.defi;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-
 import node.blockchain.Transaction;
 import node.blockchain.TransactionValidator;
 import node.communication.utils.DSA;
 
+/**
+ * An implementation of a TransactionValidator for the Defi use case
+ */
 public class DefiTransactionValidator extends TransactionValidator{
+    
     /**
      * Validates a transaction throughout blockchain and mempool
-     * @param transaction
+     * @param transaction The transaction we are deciding the validity of
+     * @param accounts Our current accounts which are represented by their public key hash string and their balance in a Map
+     * @param assumedT The transactions we assume to valid so far
      * @return
      */
     public static boolean isValid(Transaction t, HashMap<String, Integer> accounts, HashMap<String, Transaction> assumedT){
-        DefiTransaction transaction = (DefiTransaction) t;
+        DefiTransaction transaction = (DefiTransaction) t; // Convert the generic transaction to be a DefiTransaction
+        
         HashMap<String, DefiTransaction> assumedTransactions = new HashMap<>();
-
         HashSet<String> keys = new HashSet<>(assumedT.keySet());
 
-        // For each hash of a transaction
+        /* Converting each Transaction to DefiTransaction */
         for(String key : keys){
             DefiTransaction transactionInList = (DefiTransaction) assumedT.get(key);
             assumedTransactions.put(key, transactionInList);
         }
         
-        // System.out.println("Validator: starting");
+        /* Two contexts to validate. Non quorum node need to validate 
+        against their mempool. Quorum node needs to validate against 
+        compiled mempool */
 
-        /* Two contexts to validate. Non quorum node need to validate against their mempool. Quorum node needs to validate against compiled mempool */
-
-        /* We want to assume transactions added to our mempool are valid and take priority. 
-        If there is a conflict from a new transaction and existing ones we choose existing ones */
+        /* We want to assume transactions added to our mempool are valid 
+        and take priority. If there is a conflict from a new transaction 
+        and existing ones we choose existing ones */
 
         HashMap<String, Integer> tempAccounts = new HashMap<>(accounts); // We make a temp set of accounts which contain all previous accounts
         updateAccounts(assumedTransactions, tempAccounts); // We updated the temp accounts with the mempool, creating a "what-if" scenario where each transaction in mempool is valid
 
         /* Check mempool also for double dipping */
-        //System.out.println("Accounts: " + accounts);
 
         /* Validate Transaction */
         String fromAccount = transaction.getFrom();
@@ -46,7 +50,7 @@ public class DefiTransactionValidator extends TransactionValidator{
         if(amount < 0) return false; // No negatives
 
         if(!tempAccounts.containsKey(fromAccount)) {
-            if(amount != 10){
+            if(amount != 10){ // This is our cheat for now
                 return false;
             }
         }else{
@@ -59,8 +63,6 @@ public class DefiTransactionValidator extends TransactionValidator{
         byte[] publicKeyBytes = DSA.stringToBytes(publicKeyString); // Convert back to bytes for DSA
         byte[] sigOfUID = transaction.getSigUID(); // Get signature of UID
         String UID = transaction.getUID();    // Get UID
-        //System.out.println(publicKeyString.toString() + publicKeyBytes.toString() + sigOfUID.toString() + UID.toString());
-
 
         if(!DSA.verifySignature(UID, sigOfUID, publicKeyBytes)) return false; // Validate that the sender signed the transaction
 
@@ -69,7 +71,7 @@ public class DefiTransactionValidator extends TransactionValidator{
 
     /**
      * Update the provided accounts hashmap with already validated transactions
-     * @param blockTxList
+     * @param blockTxList DefiTransaction list from the block and their associated hash strings
      * @param accounts
      */
     public static void updateAccounts(HashMap<String, DefiTransaction> blockTxList, HashMap<String, Integer> accounts){
@@ -103,8 +105,10 @@ public class DefiTransactionValidator extends TransactionValidator{
     }
 
     @Override
-    public boolean validate(Transaction transaction, HashMap<String, Integer> accounts, HashMap<String, Transaction> assumedTransactions) {
-        //System.out.println(transaction.getSigUID().toString());
+    public boolean validate(Object[] objects) {
+        Transaction transaction = (Transaction) objects[0];
+        HashMap<String, Integer> accounts = (HashMap<String, Integer>) objects[1];
+        HashMap<String, Transaction> assumedTransactions = (HashMap<String, Transaction>) objects[2];
         return isValid(transaction, accounts, assumedTransactions);
     }
 }

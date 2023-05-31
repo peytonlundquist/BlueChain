@@ -247,17 +247,22 @@ public class Node  {
             }
 
             TransactionValidator tv;
-            
+            Object[] validatorObjects = new Object[3];
+
             if(USE.equals("Defi")){
                 tv = new DefiTransactionValidator();
+            
+                validatorObjects[0] = transaction;
+                validatorObjects[1] = accounts;
+                validatorObjects[2] = mempool;
+
             }else{
                 tv = new DefiTransactionValidator(); // To be changed to another use case in the future
             }
 
-            if(!tv.validate(transaction, accounts, mempool)){
+            if(!tv.validate(validatorObjects)){
                 if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + "Transaction not valid");}
                 return;
-
             }
 
             mempool.put(getSHAString(transaction.getUID()), transaction);
@@ -470,25 +475,35 @@ public class Node  {
             HashMap<String, Transaction> blockTransactions = new HashMap<>();
 
             TransactionValidator tv;
-            if(USE.equals("USE")){
+            if(USE.equals("Defi")){
                 tv = new DefiTransactionValidator();
             }else{
+                // Room to enable another use case 
                 tv = new DefiTransactionValidator();
             }
             
             for(String key : mempool.keySet()){
                 Transaction transaction = mempool.get(key);
-                if(tv.validate(transaction, accounts, blockTransactions)){
-                    blockTransactions.put(key, transaction);
+                Object[] validatorObjects = new Object[3];
+                if(USE.equals("Defi")){
+                    validatorObjects[0] = transaction;
+                    validatorObjects[1] = accounts;
+                    validatorObjects[2] = blockTransactions;
+                }else{
+                    // Validator objects will change according to another use case
                 }
+                tv.validate(validatorObjects);
+                blockTransactions.put(key, transaction);
             }
 
             try {
-                if(USE.equals("USE")){
+                if(USE.equals("Defi")){
                     quorumBlock = new DefiBlock(blockTransactions,
                         getBlockHash(blockchain.getLast(), 0),
                                 blockchain.size());
                 }else{
+
+                    // Room to enable another use case 
                     quorumBlock = new DefiBlock(blockTransactions,
                         getBlockHash(blockchain.getLast(), 0),
                                 blockchain.size());
