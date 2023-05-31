@@ -1,10 +1,12 @@
-package node;
+package node.communication;
 
+import node.Node;
 import node.blockchain.Block;
 import node.blockchain.BlockSkeleton;
 import node.blockchain.Transaction;
 import node.blockchain.defi.DefiTransaction;
 import node.communication.*;
+import node.communication.messaging.Message;
 
 import java.io.*;
 import java.net.Socket;
@@ -20,7 +22,7 @@ public class ServerConnection extends Thread {
     private final Socket client;
     private final Node node;
 
-    ServerConnection(Socket client, Node node) throws SocketException {
+    public ServerConnection(Socket client, Node node) throws SocketException {
         this.client = client;
         this.node = node;
         setPriority(NORM_PRIORITY - 1);

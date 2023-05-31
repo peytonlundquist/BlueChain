@@ -4,7 +4,11 @@ import node.blockchain.*;
 import node.blockchain.defi.DefiBlock;
 import node.blockchain.defi.DefiTransaction;
 import node.blockchain.defi.DefiTransactionValidator;
+import node.blockchain.merkletree.MerkleTree;
 import node.communication.*;
+import node.communication.messaging.Message;
+import node.communication.messaging.Messager;
+import node.communication.messaging.MessagerPack;
 import node.communication.utils.Hashing;
 import node.communication.utils.Utils;
 
@@ -123,12 +127,12 @@ public class Node  {
 
         if(USE.equals("Defi")){
             accounts = new HashMap<>();
-            DefiTransaction genesisTransaction = new DefiTransaction("Bob", "Alice", 100, "0");
-            HashMap<String, Transaction> genesisTransactions = new HashMap<String, Transaction>();
-            String hashOfTransaction = "";
-            hashOfTransaction = getSHAString(genesisTransaction.toString());
-            genesisTransactions.put(hashOfTransaction, genesisTransaction);
-            addBlock(new DefiBlock(genesisTransactions, "000000", 0));
+            // DefiTransaction genesisTransaction = new DefiTransaction("Bob", "Alice", 100, "0");
+            // HashMap<String, Transaction> genesisTransactions = new HashMap<String, Transaction>();
+            // String hashOfTransaction = "";
+            // hashOfTransaction = getSHAString(genesisTransaction.toString());
+            // genesisTransactions.put(hashOfTransaction, genesisTransaction);
+            addBlock(new DefiBlock(new HashMap<String, Transaction>(), "000000", 0));
         }else{
 
         }
@@ -243,17 +247,22 @@ public class Node  {
             }
 
             TransactionValidator tv;
-            
+            Object[] validatorObjects = new Object[3];
+
             if(USE.equals("Defi")){
                 tv = new DefiTransactionValidator();
+            
+                validatorObjects[0] = transaction;
+                validatorObjects[1] = accounts;
+                validatorObjects[2] = mempool;
+
             }else{
                 tv = new DefiTransactionValidator(); // To be changed to another use case in the future
             }
 
-            if(!tv.validate(transaction, accounts, mempool)){
+            if(!tv.validate(validatorObjects)){
                 if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + "Transaction not valid");}
                 return;
-
             }
 
             mempool.put(getSHAString(transaction.getUID()), transaction);
@@ -262,8 +271,6 @@ public class Node  {
             if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + ": Added transaction. MP:" + mempool.values());}
         }         
     }
-
-    public void blockCatchUp(){}
 
     //Reconcile blocks
     public void sendQuorumReady(){
@@ -299,7 +306,8 @@ public class Node  {
                         }else if (blockId > currentBlock.getBlockId()){
                             // we are behind, quorum already happened / failed
                             reply = new Message(Message.Request.PING);
-                            blockCatchUp();
+                            //blockCatchUp();
+
                         }
                         mp.getOout().writeObject(reply);
                         mp.getOout().flush();
@@ -342,7 +350,7 @@ public class Node  {
                     Message reply = (Message) oin.readObject();
 
                     if(reply.getRequest().name().equals("RECONCILE_BLOCK")){
-                        blockCatchUp();
+                        //blockCatchUp();
                     }
                 }else{
                     oout.writeObject(new Message(Message.Request.PING));
@@ -467,25 +475,35 @@ public class Node  {
             HashMap<String, Transaction> blockTransactions = new HashMap<>();
 
             TransactionValidator tv;
-            if(USE.equals("USE")){
+            if(USE.equals("Defi")){
                 tv = new DefiTransactionValidator();
             }else{
+                // Room to enable another use case 
                 tv = new DefiTransactionValidator();
             }
             
             for(String key : mempool.keySet()){
                 Transaction transaction = mempool.get(key);
-                if(tv.validate(transaction, accounts, blockTransactions)){
-                    blockTransactions.put(key, transaction);
+                Object[] validatorObjects = new Object[3];
+                if(USE.equals("Defi")){
+                    validatorObjects[0] = transaction;
+                    validatorObjects[1] = accounts;
+                    validatorObjects[2] = blockTransactions;
+                }else{
+                    // Validator objects will change according to another use case
                 }
+                tv.validate(validatorObjects);
+                blockTransactions.put(key, transaction);
             }
 
             try {
-                if(USE.equals("USE")){
+                if(USE.equals("Defi")){
                     quorumBlock = new DefiBlock(blockTransactions,
                         getBlockHash(blockchain.getLast(), 0),
                                 blockchain.size());
                 }else{
+
+                    // Room to enable another use case 
                     quorumBlock = new DefiBlock(blockTransactions,
                         getBlockHash(blockchain.getLast(), 0),
                                 blockchain.size());
@@ -791,7 +809,7 @@ public class Node  {
      */
     public void addBlock(Block block){
         stateChangeRequest(0);
-        state = 0;
+        // state = 0;
         
         HashMap<String, Transaction> txMap = block.getTxList();
         HashSet<String> keys = new HashSet<>(txMap.keySet());
@@ -801,7 +819,7 @@ public class Node  {
         }
 
         MerkleTree mt = new MerkleTree(txList);
-        block.setMerkleRootHash(mt.getRootNode().getHash());
+        if(mt.getRootNode() != null) block.setMerkleRootHash(mt.getRootNode().getHash());
 
         blockchain.add(block);
         System.out.println("Node " + myAddress.getPort() + ": " + chainString(blockchain) + " MP: " + mempool.values());

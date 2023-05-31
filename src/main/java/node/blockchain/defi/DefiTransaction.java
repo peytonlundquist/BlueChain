@@ -1,22 +1,23 @@
 package node.blockchain.defi;
 
-import java.io.Serializable;
-
 import node.blockchain.Transaction;
 import node.communication.utils.*;
 
+/**
+ * A specific transaction made for the Defi use case
+ */
 public class DefiTransaction extends Transaction {
 
-    protected String to; //  Public key of reciever
-    protected String from; // Public key of sender
-    protected int amount;
+    protected String to; //  Public key string of reciever
+    protected String from; // Public key string of sender
+    protected int amount; // Amount to being transferred
     
     public DefiTransaction(String to, String from, int amount, String timestamp){
         this.to = to;
         this.from = from;
         this.amount = amount;
         this.timestamp = timestamp;
-        UID = Hashing.getSHAString(to + from + amount + timestamp);
+        UID = Hashing.getSHAString(to + from + amount + timestamp); // Hashing above fields to generate a unique timestamp
     }
 
     public String getTo(){

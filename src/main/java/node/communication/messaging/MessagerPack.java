@@ -1,4 +1,4 @@
-package node.communication;
+package node.communication.messaging;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
