@@ -1,0 +1,1 @@
+srun -p shortq -N 1 java -cp target/network-1.0-SNAPSHOT.jar node.blockchain.defi.Wallet -test 20
