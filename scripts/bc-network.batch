@@ -5,5 +5,6 @@
 #SBATCH -o bluechain-%J.log
 
 cd /home/kyle/reu-demo/BlueChain
+rm src/main/java/node/nodeRegistry/*.txt
 module load r2-applications openjdk/11.0.17/gcc/12.1.0
 java -cp target/network-1.0-SNAPSHOT.jar NetworkLauncher -a -t 10000
