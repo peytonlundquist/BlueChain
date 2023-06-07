@@ -156,6 +156,9 @@ public class Wallet {
                 case("u"):
                     updateFullNode();
                     break;
+                case("d"): // implements functionality to deposit into account instead of arbitrary 10 coin cheat transaction 
+                    depositAccount(); 
+                    break; 
                 case("h"):
                     printUsage();
                     break;
@@ -275,6 +278,10 @@ public class Wallet {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
+    }
+
+    private void depositAccount() { // need to implement functionality for depositing tokens into account, works around 10 coin cheat 
+        ; 
     }
 
     private void printAccounts(){
@@ -427,6 +434,7 @@ public class Wallet {
         System.out.println("t: Create a transaction");
         System.out.println("p: Print acccounts and balances");
         System.out.println("u: Update full nodes");
+        System.out.println("d: Deposit into account"); 
     }
 
     class Acceptor extends Thread {
