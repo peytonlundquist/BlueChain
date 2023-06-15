@@ -1,0 +1,2 @@
+
+/usr/bin/env /usr/lib/jvm/java-19-openjdk-amd64/bin/java @/tmp/cp_d9t81z2qsylpznwkhbm6fugrk.argfile Client json ; /usr/bin/env /usr/lib/jvm/java-19-openjdk-amd64/bin/java @/tmp/cp_d9t81z2qsylpznwkhbm6fugrk.argfile JavaHTTPServer 
