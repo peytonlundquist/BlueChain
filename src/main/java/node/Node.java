@@ -100,14 +100,23 @@ public class Node  {
         privateKey = keys.getPrivate();
         writePubKeyToRegistry(myAddress, keys.getPublic());
 
+        LOGGER = new Logger(this); 
+
         /* Begin Server Socket */
         try {
             ss = new ServerSocket(port);
             Acceptor acceptor = new Acceptor(this);
             acceptor.start();
-            System.out.println("Node up and running on port " + port + " " + InetAddress.getLocalHost());
+            LOGGER.printPort(port); // logging function
         } catch (IOException e) {
             System.err.println(e);
+        }
+
+        try {
+            LOGGER.logNodeJson(port);
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
         }
     }
 
@@ -231,9 +240,7 @@ public class Node  {
         synchronized(memPoolLock){
             if(Utils.containsTransactionInMap(transaction, mempool)) return;
 
-            if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + ": verifyTransaction: " + 
-
-            transaction.getUID() + ", blockchain size: " + blockchain.size());}
+            if(DEBUG_LEVEL == 1){LOGGER.printTransactionVerify(transaction);} // logging function
             LinkedList<Block> clonedBlockchain = new LinkedList<>();
 
 
@@ -241,7 +248,7 @@ public class Node  {
             for(Block block : clonedBlockchain){
                 if(block.getTxList().containsKey(getSHAString(transaction.getUID()))){
                     // We have this transaction in a block
-                    if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + ": trans :" + transaction.getUID() + " found in prev block " + block.getBlockId());}
+                    if(DEBUG_LEVEL == 1){LOGGER.printDupTransaction(transaction, block);} // logging function
                     return;
                 }
             }
@@ -261,14 +268,14 @@ public class Node  {
             }
 
             if(!tv.validate(validatorObjects)){
-                if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + "Transaction not valid");}
+                if(DEBUG_LEVEL == 1){LOGGER.printDefiTxInvalid();} // logging function
                 return;
             }
 
             mempool.put(getSHAString(transaction.getUID()), transaction);
             gossipTransaction(transaction);
 
-            if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + ": Added transaction. MP:" + mempool.values());}
+            if(DEBUG_LEVEL == 1){LOGGER.printAddedTransaction();} // logging function
         }         
     }
 
@@ -280,7 +287,7 @@ public class Node  {
         Block currentBlock = blockchain.getLast();
         ArrayList<Address> quorum = deriveQuorum(currentBlock, 0);
 
-        if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + " sent quorum is ready for q: " + quorum);
+        if(DEBUG_LEVEL == 1) {LOGGER.printSQReady(quorum);} // logging function
 
         for(Address quorumAddress : quorum){
             if(!myAddress.equals(quorumAddress)) {
@@ -301,7 +308,7 @@ public class Node  {
                             // tell them they are behind
                             reply = new Message(Message.Request.RECONCILE_BLOCK, currentBlock.getBlockId());
                             if(DEBUG_LEVEL == 1) {
-                                System.out.println("Node " + myAddress.getPort() + ": sendQuorumReady RECONCILE");
+                                LOGGER.printSQReconcile(); // logging function
                             }
                         }else if (blockId > currentBlock.getBlockId()){
                             // we are behind, quorum already happened / failed
@@ -315,7 +322,7 @@ public class Node  {
 
                     mp.getSocket().close();
                 } catch (IOException e) {
-                    System.out.println("Node " + myAddress.getPort() + ": sendQuorumReady Received IO Exception from node " + quorumAddress.getPort());
+                    LOGGER.printSQRException(quorumAddress); // logging function
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -337,13 +344,13 @@ public class Node  {
             Block currentBlock = blockchain.getLast();
             ArrayList<Address> quorum = deriveQuorum(currentBlock, 0);
 
-            if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + ": receiveQuorumReady invoked for " + quorum );
+            if(DEBUG_LEVEL == 1) {LOGGER.printRQReady(quorum);} // logging function
 
             try {
 
                 if(!inQuorum()){
                     if(DEBUG_LEVEL == 1) {
-                        System.out.println("Node " + myAddress.getPort() + ": not in quorum? q: " + quorum + " my addr: " + myAddress);
+                        LOGGER.printNonQMember(quorum); // logging function
                     }
                     oout.writeObject(new Message(Message.Request.RECONCILE_BLOCK, new Object[]{currentBlock.getBlockId(), getBlockHash(currentBlock, 0)}));
                     oout.flush();
@@ -363,7 +370,7 @@ public class Node  {
 
                 }
             } catch (IOException e) {
-                System.out.println("Node " + myAddress.getPort() + ": receiveQuorumReady EOF");
+                LOGGER.printRQRException(); // logging function
                 throw new RuntimeException(e);
             } catch (NoSuchAlgorithmException e) {
                 throw new RuntimeException(e);
@@ -377,7 +384,7 @@ public class Node  {
         synchronized (memPoolLock){
             stateChangeRequest(2);
 
-            if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + ": sendMempoolHashes invoked");
+            if(DEBUG_LEVEL == 1) {LOGGER.printSentMemHashes();} // logging function
             
             HashSet<String> keys = new HashSet<String>(mempool.keySet());
             ArrayList<Address> quorum = deriveQuorum(blockchain.getLast(), 0);
@@ -389,22 +396,22 @@ public class Node  {
                         Message messageReceived = mp.getMessage();
                         if(messageReceived.getRequest().name().equals("REQUEST_TRANSACTION")){
                             ArrayList<String> hashesRequested = (ArrayList<String>) messageReceived.getMetadata();
-                            if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + ": sendMempoolHashes: requested trans: " + hashesRequested);
+                            if(DEBUG_LEVEL == 1) {LOGGER.printSendRequestedTx(hashesRequested);} // logging function
                             ArrayList<Transaction> transactionsToSend = new ArrayList<>();
                             for(String hash : keys){
                                 if(mempool.containsKey(hash)){
                                     transactionsToSend.add(mempool.get(hash));
                                 }else{
-                                    if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + ": sendMempoolHashes: requested trans not in mempool. MP: " + mempool);
+                                    if(DEBUG_LEVEL == 1) {LOGGER.printMissingRequestedTx();} // logging function
                                 }
                             }
                             mp.getOout().writeObject(new Message(Message.Request.RECEIVE_MEMPOOL, transactionsToSend));
                         }
                         mp.getSocket().close();
                     } catch (IOException e) {
-                        System.out.println(e);
+                        LOGGER.printIOException(e); // logging function
                     } catch (Exception e){
-                        System.out.println(e);
+                        LOGGER.printException(e); // logging function
                     }
                 }
             }
@@ -426,7 +433,7 @@ public class Node  {
 
     public void resolveMempool(Set<String> keys, ObjectOutputStream oout, ObjectInputStream oin) {
         synchronized(memPoolRoundsLock){
-            if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + ": receiveMempool invoked"); 
+            if(DEBUG_LEVEL == 1) {LOGGER.printReceiveMempool();} // logging function 
             ArrayList<Address> quorum = deriveQuorum(blockchain.getLast(), 0);
             ArrayList<String> keysAbsent = new ArrayList<>();
             for (String key : keys) {
@@ -439,7 +446,7 @@ public class Node  {
                     oout.writeObject(new Message(Message.Request.PING));
                     oout.flush();
                 } else {
-                    if(DEBUG_LEVEL == 1) {System.out.println("Node " + myAddress.getPort() + ": receiveMempool requesting transactions for: " + keysAbsent); }
+                    if(DEBUG_LEVEL == 1) {LOGGER.printReceiveRequestedTx(keysAbsent); } // logging function
                     oout.writeObject(new Message(Message.Request.REQUEST_TRANSACTION, keysAbsent));
                     oout.flush();
                     Message message = (Message) oin.readObject();
@@ -447,18 +454,18 @@ public class Node  {
                     
                     for(Transaction transaction : transactionsReturned){
                         mempool.put(getSHAString(transaction.getUID()), transaction);
-                        if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + ": recieved transactions: " + keysAbsent);
+                        if(DEBUG_LEVEL == 1) {LOGGER.printReceivedTx(keysAbsent);} // logging function
                     }
                 }
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);
             } catch (IOException e) {
-                System.out.println(e);
+                LOGGER.printIOException(e); // logging function
                 throw new RuntimeException(e);
             }
 
             memPoolRounds++;
-            if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + ": receiveMempool invoked: mempoolRounds: " + memPoolRounds); 
+            if(DEBUG_LEVEL == 1) {LOGGER.printMempoolRounds(memPoolRounds);} // logging function
             if(memPoolRounds == quorum.size() - 1){
                 memPoolRounds = 0;
                 constructBlock();
@@ -468,7 +475,7 @@ public class Node  {
 
     public void constructBlock(){
         synchronized(memPoolLock){
-            if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + ": constructBlock invoked");
+            if(DEBUG_LEVEL == 1) {LOGGER.printConstructBlock();} // logging function
             stateChangeRequest(3);
             
             /* Make sure compiled transactions don't conflict */
@@ -528,12 +535,12 @@ public class Node  {
         BlockSignature blockSignature = new BlockSignature(sig, blockHash, myAddress);
         sendOneWayMessageQuorum(new Message(Message.Request.RECEIVE_SIGNATURE, blockSignature));
 
-        if(DEBUG_LEVEL == 1) {System.out.println("Node " + myAddress.getPort() + ": sendSigOfBlockHash invoked for hash: " + blockHash.substring(0, 4));}
+        if(DEBUG_LEVEL == 1) {LOGGER.printSigOfBlockHash(blockHash);} // logging function
     }
 
     public void receiveQuorumSignature(BlockSignature signature){
         synchronized (sigRoundsLock){
-            if(DEBUG_LEVEL == 1) { System.out.println("Node " + myAddress.getPort() + ": 1st part receiveQuorumSignature invoked. state: " + state);}
+            if(DEBUG_LEVEL == 1) {LOGGER.printReceiveQuorumSig(state);} // logging function
 
             while(state != 3){
                 try {
@@ -546,12 +553,12 @@ public class Node  {
             ArrayList<Address> quorum = deriveQuorum(blockchain.getLast(), 0);
 
             if(!containsAddress(quorum, signature.getAddress())){
-                if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + ": false sig from " + signature.getAddress());
+                if(DEBUG_LEVEL == 1) {LOGGER.printFalseSig(signature);} // logging function
                 return;
             }
 
             if(!inQuorum()){
-                if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + ": not in quorum? q: " + quorum + " my addr: " + myAddress); 
+                if(DEBUG_LEVEL == 1) {LOGGER.printNonQMember(quorum);} // logging function
                 return;
             } 
 
@@ -559,16 +566,15 @@ public class Node  {
             int blockId = blockchain.size() - 1;
 
             if(DEBUG_LEVEL == 1) {
-                System.out.println("Node " + myAddress.getPort() + ": receiveQuorumSignature invoked from " + 
-                signature.getAddress().toString() + " qSigs: " + quorumSigs + " quorum: " + quorum + " block " + quorumBlock.getBlockId());
+                LOGGER.printReceiveQuorumSig2(signature, quorumSigs, quorum, quorumBlock); // logging function
             }
 
             if(quorumSigs.size() == quorum.size() - 1){
                 if(!inQuorum()){
                     if(DEBUG_LEVEL == 1) {
-                        System.out.println("Node " + myAddress.getPort() + ": not in quorum? q: " + quorum + " my addr: " + myAddress);
+                        LOGGER.printNonQMember(quorum); // logging function
                     }
-                    System.out.println("Node " + myAddress.getPort() + ": rQs: not in quorum? q: " + quorum + " my addr: " + myAddress + " block: " + blockId);
+                    LOGGER.printNonRQMember(quorum, blockId); // logging function
                     return;
                 }
                 tallyQuorumSigs();
@@ -580,14 +586,14 @@ public class Node  {
         synchronized (blockLock) {
             resetMempool();
 
-            if (DEBUG_LEVEL == 1) {System.out.println("Node " + myAddress.getPort() + ": tallyQuorumSigs invoked");}
+            if (DEBUG_LEVEL == 1) {LOGGER.printTallyQSigs();} // logging function
 
             //state = 4;
             stateChangeRequest(4);
             ArrayList<Address> quorum = deriveQuorum(blockchain.getLast(), 0);
 
             if(!inQuorum()){
-                System.out.println("Node " + myAddress.getPort() + ": tQs: not in quorum? q: " + quorum + " my addr: " + myAddress);
+                LOGGER.printNonTQMember(quorum); // logging function
                 return;
             }
 
@@ -596,7 +602,7 @@ public class Node  {
             int block = blockchain.size() - 1;
             try {                
                 if(quorumBlock == null){
-                    System.out.println("Node " + myAddress.getPort() + ": tallyQuorumSigs quorum null");
+                    LOGGER.printQuorumNull(); // logging function
                 }
 
                 quorumBlockHash = getBlockHash(quorumBlock, 0);
@@ -629,22 +635,21 @@ public class Node  {
                 }
             }
             if (DEBUG_LEVEL == 1) {
-                System.out.println("Node " + myAddress.getPort() + ": tallyQuorumSigs: Winning hash votes = " + hashVotes.get(winningHash));
+                LOGGER.printWinningHashVotes(hashVotes, winningHash); // logging function
             }
             if (hashVotes.get(winningHash) == quorum.size()) {
                 if (quorumBlockHash.equals(winningHash)) {
                     sendSkeleton();
                     addBlock(quorumBlock);
                     if(quorumBlock == null){
-                        System.out.println("Node " + myAddress.getPort() + ": tallyQuorumSigs quorum null");
+                        LOGGER.printQuorumNull(); // logging function
 
                     }                    
                 } else {
-                    System.out.println("Node " + myAddress.getPort() + ": tallyQuorumSigs: quorumBlockHash does not equals(winningHash)");
+                    LOGGER.printLosingHash(); // logging function
                 }
             } else {
-                System.out.println("Node " + myAddress.getPort() + ": tallyQuorumSigs: failed vote. votes: " + hashVotes + " my block " + quorumBlock.getBlockId() + " " + quorumBlockHash.substring(0, 4) +
-                " quorumSigs: " + quorumSigs);
+                LOGGER.printFailedVote(hashVotes, quorumBlock, quorumBlockHash, quorumSigs); // logging function
             } 
             hashVotes.clear();
             quorumSigs.clear();
@@ -662,12 +667,12 @@ public class Node  {
             //state = 0;
 
             if(DEBUG_LEVEL == 1) {
-                System.out.println("Node " + myAddress.getPort() + ": sendSkeleton invoked. qSigs " + quorumSigs);
+                LOGGER.printSendSkeleton(quorumSigs); // logging function
             }
             BlockSkeleton skeleton = null;
             try {
                 if(quorumBlock == null){
-                    System.out.println("Node " + myAddress.getPort() + ": sendSkeleton quorum null");
+                    LOGGER.printSkeletonQuorumNull(); // logging function
 
                 }
                 skeleton = new BlockSkeleton(quorumBlock.getBlockId(),
@@ -686,7 +691,7 @@ public class Node  {
     public void sendSkeleton(BlockSkeleton skeleton){
         synchronized (lock){
             if(DEBUG_LEVEL == 1) {
-                System.out.println("Node " + myAddress.getPort() + ": sendSkeleton(local) invoked: BlockID " + skeleton.getBlockId());
+                LOGGER.printSendSkeletonLocal(skeleton); // logging function
             }
             for(Address address : localPeers){
                 if(!address.equals(myAddress)){
@@ -716,7 +721,7 @@ public class Node  {
                 //if(DEBUG_LEVEL == 1) { System.out.println("Node " + myAddress.getPort() + ": receiveSkeleton(local) currentblock not synced with skeleton. current id: " + currentBlock.getBlockId() + " new: " + blockSkeleton.getBlockId()); }
                 return;
             }else{
-                if(DEBUG_LEVEL == 1) { System.out.println("Node " + myAddress.getPort() + ": receiveSkeleton(local) invoked. Hash: " + blockSkeleton.getHash());}
+                if(DEBUG_LEVEL == 1) { LOGGER.printReceiveSkeletonLocal(blockSkeleton);} // logging function
             }
 
             ArrayList<Address> quorum = deriveQuorum(currentBlock, 0);
@@ -724,8 +729,7 @@ public class Node  {
             String hash = blockSkeleton.getHash();
 
             if(blockSkeleton.getSignatures().size() < 1){
-                if(DEBUG_LEVEL == 1) { System.out.println("Node " + myAddress.getPort() + ": No signatures. blockskeletonID: " + blockSkeleton.getBlockId() + ". CurrentBlockID: " + currentBlock.getBlockId() 
-                + " quorum: " + quorum ); }
+                if(DEBUG_LEVEL == 1) { LOGGER.printEmptySkeleton(blockSkeleton, currentBlock, quorum); } // logging function
             }
 
             for(BlockSignature blockSignature : blockSkeleton.getSignatures()){
@@ -734,17 +738,15 @@ public class Node  {
                     if(verifySignatureFromRegistry(hash, blockSignature.getSignature(), address)){
                         verifiedSignatures++;
                     }else{
-                        if(DEBUG_LEVEL == 1) { System.out.println("Node " + myAddress.getPort() + ": Failed to validate signature. blockskeletonID: " + blockSkeleton.getBlockId() + ". CurrentBlockID: " + currentBlock.getBlockId()); };
+                        if(DEBUG_LEVEL == 1) { LOGGER.printInvalidSig(blockSkeleton, currentBlock); }; // logging function
                     }
                 }else{
-                    if(DEBUG_LEVEL == 1) { System.out.println("Node " + myAddress.getPort() + ": blockskeletonID: " + blockSkeleton.getBlockId() + ". CurrentBlockID: " + currentBlock.getBlockId()
-                    + " quorum: " + quorum + ". Address: " + address);}
+                    if(DEBUG_LEVEL == 1) { LOGGER.printSkeletonId(blockSkeleton, currentBlock, quorum, address);} // logging function
                 }
             }
 
             if(verifiedSignatures != quorum.size() - 1){
-                if(DEBUG_LEVEL == 1) { System.out.println("Node " + myAddress.getPort() + ": sigs not verified for block " + blockSkeleton.getBlockId() + 
-                ". Verified sigs: " + verifiedSignatures + ". Needed: " + quorum.size() + " - 1."); }
+                if(DEBUG_LEVEL == 1) { LOGGER.printMissingVerifiedSigs(blockSkeleton, verifiedSignatures, quorum); } // logging function
                 return;
             }
 
@@ -758,7 +760,7 @@ public class Node  {
     public Block constructBlockWithSkeleton(BlockSkeleton skeleton){
         synchronized (memPoolLock){
             if(DEBUG_LEVEL == 1) {
-                System.out.println("Node " + myAddress.getPort() + ": constructBlockWithSkeleton(local) invoked");
+                LOGGER.printConstructBlockSkeleton(); // logging function
             }
             ArrayList<String> keys = skeleton.getKeys();
             HashMap<String, Transaction> blockTransactions = new HashMap<>();
@@ -822,7 +824,7 @@ public class Node  {
         if(mt.getRootNode() != null) block.setMerkleRootHash(mt.getRootNode().getHash());
 
         blockchain.add(block);
-        System.out.println("Node " + myAddress.getPort() + ": " + chainString(blockchain) + " MP: " + mempool.values());
+        LOGGER.printNewBlock(blockchain, mempool); // logging function
 
         if(USE.equals("Defi")){
             HashMap<String, DefiTransaction> defiTxMap = new HashMap<>();
@@ -852,9 +854,15 @@ public class Node  {
         }
 
         ArrayList<Address> quorum = deriveQuorum(blockchain.getLast(), 0);
+        
+        try {
+            LOGGER.logQuorumJson(quorum);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } 
 
         if(DEBUG_LEVEL == 1) {
-            System.out.println("Node " + myAddress.getPort() + ": Added block " + block.getBlockId() + ". Next quorum: " + quorum);
+            LOGGER.printBlockAdded(block, quorum); // logging function
         }
 
         if(inQuorum()){
@@ -964,7 +972,7 @@ public class Node  {
                     client = ss.accept();
                     new ServerConnection(client, node).start();
                 } catch (IOException e) {
-                    System.out.println(e);
+                    LOGGER.printIOException(e); // logging function
                     throw new RuntimeException(e);
                 }
             }
@@ -998,13 +1006,13 @@ public class Node  {
                         /* Use heartbeat to also output the block chain of the node */
 
                     } catch (InterruptedException e) {
-                        System.out.println("Received Interrupted Exception from node " + address.getPort());
+                        LOGGER.printInterruptedException(); // logging function
                         throw new RuntimeException(e);
                     } catch (ConcurrentModificationException e){
-                        System.out.println(e);
+                        LOGGER.printConcurrentModificationException(e); // logging function
                         break;
                     } catch (IndexOutOfBoundsException e){
-                        System.out.println(e);
+                        LOGGER.printIndexOutOfBoundsException(e); // logging function
                     }
                 }
             }
@@ -1026,6 +1034,7 @@ public class Node  {
     private PrivateKey privateKey;
     private int state;
     private final String USE;
+    private Logger LOGGER; // global LOGGER variable for logging implementation
 
 }
 

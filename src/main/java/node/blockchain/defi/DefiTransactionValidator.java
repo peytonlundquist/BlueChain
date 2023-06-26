@@ -46,13 +46,13 @@ public class DefiTransactionValidator extends TransactionValidator{
         /* Validate Transaction */
         String fromAccount = transaction.getFrom();
         int amount = transaction.getAmount();
-
+        
         if(amount < 0) return false; // No negatives
 
         if(!tempAccounts.containsKey(fromAccount)) {
-            if(amount != 10){ // This is our cheat for now
+            /*if(amount != 10){ // This is our cheat for now
                 return false;
-            }
+            } */ ; 
         }else{
             int balance = tempAccounts.get(fromAccount);
             if(amount > balance) return false; // Too much money trying to be spent
@@ -65,7 +65,7 @@ public class DefiTransactionValidator extends TransactionValidator{
         String UID = transaction.getUID();    // Get UID
 
         if(!DSA.verifySignature(UID, sigOfUID, publicKeyBytes)) return false; // Validate that the sender signed the transaction
-
+      
         return true;
     }
 

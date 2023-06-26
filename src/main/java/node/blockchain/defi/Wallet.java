@@ -123,6 +123,11 @@ public class Wallet {
                 wallet.test = true;
                 wallet.testNetwork(Integer.valueOf(args[1]));
                 System.exit(0); // We just test then exit
+            }else if(args[0].equals("-sim")){
+                Wallet wallet = new Wallet(port);
+                wallet.test = true;
+                wallet.simulateNetwork(Integer.valueOf(args[1]));
+                System.exit(0); // We just test then exit
             }
         }
 
@@ -347,6 +352,8 @@ public class Wallet {
             KeyPair newKeyPair = DSA.generateDSAKeyPair();
             Account newAccount = new Account(nickname, newKeyPair);
             
+            newAccount.updateBalance(100); // Starts every account with a balance of 100 
+
             for(Account account : accounts){
                 if(account.getNickname().equals(nickname)){
                     System.out.println("An account with this nickname already exists. Try a new one.");
@@ -392,6 +399,37 @@ public class Wallet {
 
         for(Address address : fullNodes){
             submitTransaction(newTransaction, address);
+        }
+    }
+
+    /* Adding method simulateNetwork to simulate actual network traffic on BlueChain, will randomize accounts sending transactions */
+    private void simulateNetwork(int j) {
+        System.out.println("Beginning Simulation");
+
+        try {
+            testAddAccount("Satoshi");
+            int randAccount; 
+            System.out.print("[");
+            for (int i = 0; i < j; i++) {
+                testAddAccount(String.valueOf(i));
+                Thread.sleep(1000); 
+                System.out.println(i);
+                randAccount = (int) (Math.random() * (i + 1)); 
+                System.out.println("random number:" + randAccount); 
+                testSubmitTransaction(String.valueOf(i), DSA.bytesToString(accounts.get(randAccount).getKeyPair().getPublic().getEncoded()),(int)(Math.random() * 100));
+                System.out.print("#"); 
+            }
+            System.out.print("]");
+            System.out.println("Sleeping wallet for last minute updates...");
+            Thread.sleep(25000);
+            
+            for (Account account: accounts) {
+                System.out.println("Account: " + account.getNickname() + "  Balance: " + account.getBalance()); 
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 

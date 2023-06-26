@@ -1,10 +1,12 @@
 import node.communication.Address;
 import node.communication.messaging.Message;
 
+import java.awt.*; 
 import javax.json.*;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Properties;
@@ -91,12 +93,29 @@ public class JavaHTTPServer implements Runnable{
                 // create dedicated thread to manage the client connection
                 Thread thread = new Thread(myServer);
                 thread.start();
+                try{
+                    openBrowserWindow("http://localhost:" + PORT);
+                } catch (Exception e) {
+                    System.err.println(e);
+                }
             }
 
         } catch (IOException e) {
             System.err.println("Server Connection error : " + e.getMessage());
         }
     }
+
+    private static void openBrowserWindow(String url) {
+        if (Desktop.isDesktopSupported()) {
+            Desktop desktop = Desktop.getDesktop();
+            try {
+                desktop.browse(new URI(url));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+    
 
     private static ArrayList<Address> queryPeer(int port){
         try {
