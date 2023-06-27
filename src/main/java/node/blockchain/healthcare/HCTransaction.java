@@ -1,3 +1,5 @@
+package node.blockchain.healthcare;
+
 import node.blockchain.Transaction;
 
 public class HCTransaction extends Transaction {
