@@ -1,6 +1,7 @@
 package node;
 
 import node.blockchain.*;
+import node.blockchain.healthcare.*;
 import node.blockchain.defi.DefiBlock;
 import node.blockchain.defi.DefiTransaction;
 import node.blockchain.defi.DefiTransactionValidator;
@@ -133,8 +134,8 @@ public class Node  {
             // hashOfTransaction = getSHAString(genesisTransaction.toString());
             // genesisTransactions.put(hashOfTransaction, genesisTransaction);
             addBlock(new DefiBlock(new HashMap<String, Transaction>(), "000000", 0));
-        }else{
-
+        }else if(USE.equals("HC")){
+            addBlock(new HCBlock(new HashMap<String, Transaction>(), "000000", 0));
         }
     }
 
@@ -257,7 +258,7 @@ public class Node  {
                 validatorObjects[2] = mempool;
 
             }else{
-                tv = new DefiTransactionValidator(); // To be changed to another use case in the future
+                tv = new HCTransactionValidator(); // To be changed to another use case in the future
             }
 
             if(!tv.validate(validatorObjects)){
@@ -477,8 +478,10 @@ public class Node  {
             TransactionValidator tv;
             if(USE.equals("Defi")){
                 tv = new DefiTransactionValidator();
-            }else{
+            }else if(USE.equals("HC")){
                 // Room to enable another use case 
+                tv = new HCTransactionValidator();
+            }else{
                 tv = new DefiTransactionValidator();
             }
             
@@ -489,7 +492,7 @@ public class Node  {
                     validatorObjects[0] = transaction;
                     validatorObjects[1] = accounts;
                     validatorObjects[2] = blockTransactions;
-                }else{
+                }else if(USE.equals("HC")){
                     // Validator objects will change according to another use case
                 }
                 tv.validate(validatorObjects);
@@ -504,7 +507,7 @@ public class Node  {
                 }else{
 
                     // Room to enable another use case 
-                    quorumBlock = new DefiBlock(blockTransactions,
+                    quorumBlock = new HCBlock(blockTransactions,
                         getBlockHash(blockchain.getLast(), 0),
                                 blockchain.size());
                 }
@@ -783,7 +786,7 @@ public class Node  {
                 }
             }else{
                 try {
-                    newBlock = new DefiBlock(blockTransactions,
+                    newBlock = new HCBlock(blockTransactions,
                             getBlockHash(blockchain.getLast(), 0),
                             blockchain.size());
                 } catch (NoSuchAlgorithmException e) {
