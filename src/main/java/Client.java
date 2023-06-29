@@ -48,84 +48,30 @@ public class Client {
             e.printStackTrace();
         }
 
-        if(args.length > 0) {
-            if (args[0].equals("graph")) {
-                LinkedList<GraphNode> graphNodes = new LinkedList<>();
-                for (int i = 0; i < numNodes; i++) {
-                    port = startingPort + i;
-                    ArrayList<Address> localPeers = queryPeer(port);
-                    if (localPeers != null) {
-                        System.out.println("Node " + port + " has " + localPeers.size() + " local peer connections.");
-                        graphNodes.add(new GraphNode(port, localPeers));
-                    }
+        JsonArrayBuilder jsonNodes = Json.createArrayBuilder();
+        JsonArrayBuilder jsonLinks = Json.createArrayBuilder();
+
+        for (int i = 0; i < numNodes; i++) {
+            port = startingPort + i;
+            ArrayList<Address> localPeers = queryPeer(port);
+            if (localPeers != null) {
+                jsonNodes.add(Json.createObjectBuilder().add("id", String.valueOf(port)).add("group", 1));
+
+                for(Address address : localPeers){
+                    jsonLinks.add(Json.createObjectBuilder().add("source", String.valueOf(port)).add("target", String.valueOf(address.getPort())).add("value", 2));
                 }
-                new Graph(graphNodes);
-            } else if (args[0].equals("query")) {
-                try {
-                    port = Integer.parseInt(args[1]);
-                    ArrayList<Address> localPeers = queryPeer(port);
-                    if (localPeers != null) {
-                        System.out.print("Node " + port + " has " + localPeers.size() + " local peer connections. Peers: ");
-                        for (Address address : localPeers) {
-                            System.out.print(address.getPort() + " ");
-                        }
-                        System.out.print("\n");
-                    }
-                } catch (NumberFormatException e) {
-                    System.out.println("Expected integer or no arguments");
-                    System.out.println("Usage: [graph] [query <portNum>]");
-                } catch (Exception e) {
-                    System.out.println(e);
-                }
-
-            }else if(args[0].equals("json")){
-
-               JsonArrayBuilder jsonNodes = Json.createArrayBuilder();
-               JsonArrayBuilder jsonLinks = Json.createArrayBuilder();
-
-               for (int i = 0; i < numNodes; i++) {
-                   port = startingPort + i;
-                   ArrayList<Address> localPeers = queryPeer(port);
-                   if (localPeers != null) {
-                       jsonNodes.add(Json.createObjectBuilder().add("id", String.valueOf(port)).add("group", 1));
-
-                       for(Address address : localPeers){
-                           jsonLinks.add(Json.createObjectBuilder().add("source", String.valueOf(port)).add("target", String.valueOf(address.getPort())).add("value", 2));
-                       }
-                   }
-               }
-
-               JsonObjectBuilder jsonObjectBuilder = Json.createObjectBuilder();
-               jsonObjectBuilder.add("nodes", jsonNodes).add("links", jsonLinks);
-               JsonObject empJsonObject = jsonObjectBuilder.build();
-
-               OutputStream os = new FileOutputStream("graph.json");
-               JsonWriter jsonWriter = Json.createWriter(os);
-               jsonWriter.writeObject(empJsonObject);
-               jsonWriter.close();
-            }else if(args[0].equals("trans")){
-                port = Integer.parseInt(args[1]);
-                submitTransaction(port, args[2]);
-                System.out.println("Submitted transaction");
-            }else if(args[0].equals("transEx")){
-                port = 8000;
-                for(int i = 0; i < 10; i++){
-                    port = port + i;
-
-                    submitTransaction(port, String.valueOf(i));
-                    System.out.println("Submitted transaction");
-                    try {
-                        Thread.sleep(5000);
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            }else{
-                System.out.println("Usage: <[graph] [query <portNum>] [trans <portNum> <Transaction String Id>]>");
             }
-        }else{
-            System.out.println("Usage: <[graph] [query <portNum>] [trans <portNum> <Transaction String Id>]>");
         }
+
+        JsonObjectBuilder jsonObjectBuilder = Json.createObjectBuilder();
+        jsonObjectBuilder.add("nodes", jsonNodes).add("links", jsonLinks);
+        JsonObject empJsonObject = jsonObjectBuilder.build();
+
+        OutputStream os = new FileOutputStream("src/main/resources/graph.json");
+        JsonWriter jsonWriter = Json.createWriter(os);
+        jsonWriter.writeObject(empJsonObject);
+        jsonWriter.close();
+            
     }
 
     /**

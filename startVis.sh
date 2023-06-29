@@ -1,1 +1,2 @@
-cd /home/jettblack/Documents/BlueChain ; /usr/bin/env /usr/lib/jvm/java-19-openjdk-amd64/bin/java @/tmp/cp_c35oz3l8svliakb96sit0g7ko.argfile Client json
+java -cp target/network-1.0-SNAPSHOT.jar:target/javax.json-1.1.4.jar Client;
+java -cp target/network-1.0-SNAPSHOT.jar:target/nanohttpd-2.3.1.jar JavaHTTPServer

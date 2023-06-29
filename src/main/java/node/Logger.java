@@ -42,8 +42,8 @@ public class Logger {
         this.node = node; 
     }
 
-    public void logNodeJson(int port) throws IOException {
-        /* Writes to JSON object as node is constructed */
+   /*  public void logNodeJson(int port) throws IOException {
+        /* Writes to JSON object as node is constructed 
 
         File file = new File("graph.json"); // path for json data 
 
@@ -113,7 +113,7 @@ public class Logger {
                 }   
             }
         }
-    }
+    }  */ 
 
     public void printPort(int port) {
         try {

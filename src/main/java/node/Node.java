@@ -112,12 +112,7 @@ public class Node  {
             System.err.println(e);
         }
 
-        try {
-            LOGGER.logNodeJson(port);
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
+        
     }
 
     /* A collection of getters */
@@ -855,11 +850,7 @@ public class Node  {
 
         ArrayList<Address> quorum = deriveQuorum(blockchain.getLast(), 0);
         
-        try {
-            LOGGER.logQuorumJson(quorum);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } 
+        
 
         if(DEBUG_LEVEL == 1) {
             LOGGER.printBlockAdded(block, quorum); // logging function
