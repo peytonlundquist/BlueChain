@@ -38,6 +38,12 @@
     </build>
 
     <dependencies>
+            <!-- https://mvnrepository.com/artifact/com.sun.net.httpserver/http -->
+        <dependency>
+            <groupId>com.sun.net.httpserver</groupId>
+            <artifactId>http</artifactId>
+            <version>20070405</version>
+        </dependency>
         <dependency>
             <groupId>org.nanohttpd</groupId>
             <artifactId>nanohttpd</artifactId>
