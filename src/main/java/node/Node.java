@@ -132,10 +132,12 @@ public class Node  {
             // HashMap<String, Transaction> genesisTransactions = new HashMap<String, Transaction>();
             // String hashOfTransaction = "";
             // hashOfTransaction = getSHAString(genesisTransaction.toString());
-            // genesisTransactions.put(hashOfTransaction, genesisTransaction);
+            // genesisTransacUSEtions.put(hashOfTransaction, genesisTransaction);
             addBlock(new DefiBlock(new HashMap<String, Transaction>(), "000000", 0));
         }else if(USE.equals("HC")){
             addBlock(new HCBlock(new HashMap<String, Transaction>(), "000000", 0));
+        }else if(USE.equals("PRISM")){
+            
         }
     }
 
