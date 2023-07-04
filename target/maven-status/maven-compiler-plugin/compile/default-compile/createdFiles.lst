@@ -11,6 +11,7 @@ node/communication/utils/Utils.class
 node/blockchain/Block.class
 node/communication/Address.class
 node/communication/messaging/Message$Request.class
+JavaHTTPServer$MyHandler.class
 Client.class
 node/communication/messaging/Messager.class
 node/communication/messaging/Message.class
