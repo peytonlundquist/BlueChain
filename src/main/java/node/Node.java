@@ -6,6 +6,8 @@ import node.blockchain.defi.DefiBlock;
 import node.blockchain.defi.DefiTransaction;
 import node.blockchain.defi.DefiTransactionValidator;
 import node.blockchain.merkletree.MerkleTree;
+import node.blockchain.prescription.ptBlock;
+import node.blockchain.prescription.ptTransactionValidator;
 import node.communication.*;
 import node.communication.messaging.Message;
 import node.communication.messaging.Messager;
@@ -45,7 +47,7 @@ import static node.communication.utils.Utils.*;
  *
  * Beware, any methods below are a WIP
  */
-public class Node  {
+public abstract class Node  {
 
     /**
      * Node constructor creates node and begins server socket to accept connections
@@ -134,8 +136,8 @@ public class Node  {
             // hashOfTransaction = getSHAString(genesisTransaction.toString());
             // genesisTransactions.put(hashOfTransaction, genesisTransaction);
             addBlock(new DefiBlock(new HashMap<String, Transaction>(), "000000", 0));
-        }else if(USE.equals("HC")){
-            addBlock(new HCBlock(new HashMap<String, Transaction>(), "000000", 0));
+        }else if(USE.equals("Prescription")){
+            addBlock(new ptBlock(new HashMap<String, Transaction>(), "000000", 0));
         }
     }
 
@@ -478,12 +480,11 @@ public class Node  {
             TransactionValidator tv;
             if(USE.equals("Defi")){
                 tv = new DefiTransactionValidator();
-            }else if(USE.equals("HC")){
+            }else if(USE.equals("Prescription")){
                 // Room to enable another use case 
-                tv = new HCTransactionValidator();
-            }else{
-                tv = new DefiTransactionValidator();
+                tv = new ptTransactionValidator();
             }
+
             
             for(String key : mempool.keySet()){
                 Transaction transaction = mempool.get(key);
@@ -492,7 +493,7 @@ public class Node  {
                     validatorObjects[0] = transaction;
                     validatorObjects[1] = accounts;
                     validatorObjects[2] = blockTransactions;
-                }else if(USE.equals("HC")){
+                }else if(USE.equals("Prescription")){
                     // Validator objects will change according to another use case
                 }
                 tv.validate(validatorObjects);
@@ -504,10 +505,10 @@ public class Node  {
                     quorumBlock = new DefiBlock(blockTransactions,
                         getBlockHash(blockchain.getLast(), 0),
                                 blockchain.size());
-                }else{
+                }else if{
 
                     // Room to enable another use case 
-                    quorumBlock = new HCBlock(blockTransactions,
+                    quorumBlock = new ptBlock(blockTransactions,
                         getBlockHash(blockchain.getLast(), 0),
                                 blockchain.size());
                 }
@@ -784,9 +785,9 @@ public class Node  {
                 } catch (NoSuchAlgorithmException e) {
                     throw new RuntimeException(e);
                 }
-            }else{
+            }else if(USE.equals("Prescription")){
                 try {
-                    newBlock = new HCBlock(blockTransactions,
+                    newBlock = new ptBlock(blockTransactions,
                             getBlockHash(blockchain.getLast(), 0),
                             blockchain.size());
                 } catch (NoSuchAlgorithmException e) {
@@ -853,6 +854,7 @@ public class Node  {
                 }
             }
         }
+        /* need to add elif for use prescription. */
 
         ArrayList<Address> quorum = deriveQuorum(blockchain.getLast(), 0);
 

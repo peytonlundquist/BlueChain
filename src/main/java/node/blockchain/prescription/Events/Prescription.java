@@ -1,26 +1,18 @@
-package node.blockchain.healthcare.Events;
+package node.blockchain.prescription.Events;
 
-import java.sql.Date;
+import java.util.Date;
 
-import node.blockchain.healthcare.Event;
+import node.blockchain.prescription.Event;
 
-public class Prescription extends Event{
+public class Prescription extends Event {
 
     private Date date;
     private int amount;
     private String medication;
-    private String provider;
+    private String doctorName;
     
     public int getAmount() {
         return amount;
-    }
-
-    public String getProvider() {
-        return provider;
-    }
-
-    public void setProvider(String provider) {
-        this.provider = provider;
     }
 
     public Date getDate() {
@@ -31,8 +23,13 @@ public class Prescription extends Event{
         return medication;
     }
 
-    public Prescription(String patientUID, String medication, Date date, int amount) {
+    public String getDoctorName() {
+        return doctorName;
+    }
+
+    public Prescription(String patientUID, String doctorName, String medication, Date date, int amount) {
         super(patientUID, Action.Prescription);
+        this.doctorName = doctorName;
         this.date = date;
         this.amount = amount;
         this.medication = medication;
