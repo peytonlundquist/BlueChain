@@ -12,6 +12,13 @@ import node.communication.messaging.MessagerPack;
 import node.communication.utils.Hashing;
 import node.communication.utils.Utils;
 
+import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
+import javax.json.JsonWriter;
+
 import java.io.*;
 import java.math.BigInteger;
 import java.net.*;
@@ -53,7 +60,7 @@ public class Node  {
      * @param maxPeers           Maximum amount of peer connections to maintain
      * @param initialConnections How many nodes we want to attempt to connect to on start
      */
-    public Node(String use, int port, int maxPeers, int initialConnections, int numNodes, int quorumSize, int minimumTransaction, int debugLevel) {
+    public Node(String use, int port, int maxPeers, int initialConnections, int numNodes, int quorumSize, int minimumTransaction, int debugLevel, boolean logger) {
 
         /* Configurations */
         USE = use;
@@ -63,6 +70,8 @@ public class Node  {
         QUORUM_SIZE = quorumSize;
         DEBUG_LEVEL = debugLevel;
         MINIMUM_TRANSACTIONS = minimumTransaction;
+        LOGGER_NODE = logger; 
+        
 
         /* Locks for Multithreading */
         lock =  new Object();
@@ -821,6 +830,10 @@ public class Node  {
         blockchain.add(block);
         LOGGER.printNewBlock(blockchain, mempool); // logging function
 
+        if (LOGGER_NODE) { // if this node is the logger node, log the state of the network at this block 
+            LOGGER.logNetworkState(block); 
+        }
+
         if(USE.equals("Defi")){
             HashMap<String, DefiTransaction> defiTxMap = new HashMap<>();
 
@@ -1026,6 +1039,7 @@ public class Node  {
     private int state;
     private final String USE;
     private Logger LOGGER; // global LOGGER variable for logging implementation
+    private boolean LOGGER_NODE; 
 
 }
 

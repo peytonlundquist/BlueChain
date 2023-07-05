@@ -12,6 +12,7 @@ import java.util.LinkedList;
 import java.util.Properties;
 
 import javax.json.Json;
+import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
@@ -48,28 +49,39 @@ public class Client {
             e.printStackTrace();
         }
 
-        JsonArrayBuilder jsonNodes = Json.createArrayBuilder();
-        JsonArrayBuilder jsonLinks = Json.createArrayBuilder();
+        JsonArrayBuilder jsonData = Json.createArrayBuilder();
+
+        JsonObjectBuilder jsonNodes = Json.createObjectBuilder(); 
+
+        JsonArrayBuilder jsonLinks = Json.createArrayBuilder(); 
 
         for (int i = 0; i < numNodes; i++) {
             port = startingPort + i;
             ArrayList<Address> localPeers = queryPeer(port);
+            
             if (localPeers != null) {
-                jsonNodes.add(Json.createObjectBuilder().add("id", String.valueOf(port)).add("group", 1));
-
+                jsonNodes.add("type","node").add("id", String.valueOf(port)); 
+        
                 for(Address address : localPeers){
-                    jsonLinks.add(Json.createObjectBuilder().add("source", String.valueOf(port)).add("target", String.valueOf(address.getPort())).add("value", 2));
+                    jsonLinks.add(String.valueOf(address.getPort())); 
                 }
+
+                jsonNodes.add("targets",jsonLinks); 
             }
+
+            jsonData.add(jsonNodes.build()); 
+
+            System.out.println(jsonData.toString()); 
+
+            jsonNodes = Json.createObjectBuilder();
+            jsonLinks = Json.createArrayBuilder();
         }
 
-        JsonObjectBuilder jsonObjectBuilder = Json.createObjectBuilder();
-        jsonObjectBuilder.add("nodes", jsonNodes).add("links", jsonLinks);
-        JsonObject empJsonObject = jsonObjectBuilder.build();
+       
 
-        OutputStream os = new FileOutputStream("src/main/resources/graph.json");
+        OutputStream os = new FileOutputStream("src/main/resources/nodes.json");
         JsonWriter jsonWriter = Json.createWriter(os);
-        jsonWriter.writeObject(empJsonObject);
+        jsonWriter.writeArray(jsonData.build());
         jsonWriter.close();
             
     }

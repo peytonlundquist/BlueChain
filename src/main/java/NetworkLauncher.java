@@ -61,7 +61,9 @@ public class NetworkLauncher {
             }
 
             for (int i = startingPort; i < startingPort + numNodes; i++) {
-                nodes.add(new Node(use, i, maxConnections, minConnections, numNodes, quorumSize, minimumTransactions, debugLevel));
+                if (i == ((startingPort + numNodes) - 1)) {
+                    nodes.add(new Node(use, i, maxConnections, minConnections, numNodes, quorumSize, minimumTransactions, debugLevel,true));
+                } else { nodes.add(new Node(use, i, maxConnections, minConnections, numNodes, quorumSize, minimumTransactions, debugLevel,false));} 
             }
 
 

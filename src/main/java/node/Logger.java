@@ -3,10 +3,12 @@ package node;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
@@ -40,6 +42,34 @@ public class Logger {
 
     public Logger(Node node) {
         this.node = node; 
+    }
+
+
+    public void logNetworkState(Block block) {
+
+        JsonArrayBuilder jsonData = Json.createArrayBuilder(); 
+
+        JsonObjectBuilder blockData = Json.createObjectBuilder();  
+
+        blockData.add("block", block.getBlockId())
+                .add("hash",block.getPrevBlockHash())
+                .add("transactions", block.getTxList().toString())
+                .add("quorum", node.deriveQuorum(block, 0).toString())
+                .add("mempool", node.getMempool().toString()); 
+
+        jsonData.add(blockData); 
+
+
+        try (OutputStream os = new FileOutputStream("src/main/resources/network.json",true)) {
+            JsonWriter jsonWriter = Json.createWriter(os);
+            jsonWriter.writeArray(jsonData.build());
+            jsonWriter.close();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+
     }
 
    /*  public void logNodeJson(int port) throws IOException {
