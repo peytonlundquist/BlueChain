@@ -4,7 +4,8 @@ public abstract class Event {
 
     public enum Action {
         Prescription,
-        FillScript
+        FillScript,
+        Algorithm
     }
 
     private String patientUID;
@@ -18,9 +19,15 @@ public abstract class Event {
         return action;
     }
 
+    public Event(Action action){
+        this.action = action;
+    }
+
     public Event(String patientUID, Action action){
         this.patientUID = patientUID;
         this.action = action;
     }
+
+
 }
 

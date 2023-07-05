@@ -7,7 +7,9 @@ import node.blockchain.defi.DefiTransaction;
 import node.blockchain.defi.DefiTransactionValidator;
 import node.blockchain.merkletree.MerkleTree;
 import node.blockchain.prescription.ptBlock;
+import node.blockchain.prescription.ptTransaction;
 import node.blockchain.prescription.ptTransactionValidator;
+import node.blockchain.prescription.Events.Algorithm;
 import node.communication.*;
 import node.communication.messaging.Message;
 import node.communication.messaging.Messager;
@@ -47,7 +49,7 @@ import static node.communication.utils.Utils.*;
  *
  * Beware, any methods below are a WIP
  */
-public abstract class Node  {
+public class Node  {
 
     /**
      * Node constructor creates node and begins server socket to accept connections
@@ -56,7 +58,16 @@ public abstract class Node  {
      * @param maxPeers           Maximum amount of peer connections to maintain
      * @param initialConnections How many nodes we want to attempt to connect to on start
      */
-    public Node(String use, int port, int maxPeers, int initialConnections, int numNodes, int quorumSize, int minimumTransaction, int debugLevel) {
+    public Node(NodeType nodeType, String use, int port, int maxPeers, int initialConnections, int numNodes, int quorumSize, int minimumTransaction, int debugLevel) {
+        
+        /* Prescription Tracking */
+        if(nodeType.name().equals("Doctor")){
+            Random random = new Random();
+            this.nodeType = nodeType;
+            algorithmSeed = random.nextInt(100);
+        }
+        algorithms = new ArrayList<>();
+
 
         /* Configurations */
         USE = use;
@@ -93,7 +104,7 @@ public abstract class Node  {
         String host = ip.getHostAddress();
 
         /* Other Data for Stateful Servant */
-        myAddress = new Address(port, host);
+        myAddress = new Address(port, host, nodeType);
         localPeers = new ArrayList<>();
         mempool = new HashMap<>();
         accountsToAlert = new HashMap<>();
@@ -505,7 +516,7 @@ public abstract class Node  {
                     quorumBlock = new DefiBlock(blockTransactions,
                         getBlockHash(blockchain.getLast(), 0),
                                 blockchain.size());
-                }else if{
+                }else if(USE.equals("Prescription")){
 
                     // Room to enable another use case 
                     quorumBlock = new ptBlock(blockTransactions,
@@ -793,6 +804,8 @@ public abstract class Node  {
                 } catch (NoSuchAlgorithmException e) {
                     throw new RuntimeException(e);
                 }
+            } else {
+                newBlock = null;
             }
             
 
@@ -853,7 +866,22 @@ public abstract class Node  {
                     }
                 }
             }
+        
+        }else if (USE.equals("Prescription") && nodeType.name().equals("Patient")){
+
+            for(String key : keys){ // For each tx key
+                ptTransaction transactionInList = (ptTransaction) txMap.get(key); // cast to our PT tx
+                if(transactionInList.getEvent().getAction().name().equals("Algorithm")){ // if its an algo
+                    algorithms.add((Algorithm)transactionInList.getEvent()); // add to list
+                    if(algorithms.size() == 3){ // if we have 3
+                        Random random = new Random();
+                        algorithmSeed = algorithms.get(random.nextInt(3)).getAlgorithmSeed(); // pick 1
+                    }
+                }
+            }
         }
+
+
         /* need to add elif for use prescription. */
 
         ArrayList<Address> quorum = deriveQuorum(blockchain.getLast(), 0);
@@ -863,6 +891,12 @@ public abstract class Node  {
         }
 
         if(inQuorum()){
+            /* We are a Doctor */
+            if(block.getBlockId() == 0){ // genesis block
+                gossipTransaction(new ptTransaction(new Algorithm(algorithmSeed)));
+            }
+
+
             while(mempool.size() < MINIMUM_TRANSACTIONS){
                 try {
                     Thread.sleep(3000);
@@ -928,7 +962,7 @@ public abstract class Node  {
                 while(quorum.size() < QUORUM_SIZE){
                     quorumNodeIndex = random.nextInt(NUM_NODES); // may be wrong but should still work
                     quorumNode = globalPeers.get(quorumNodeIndex);
-                    if(!containsAddress(quorum, quorumNode)){
+                    if(!containsAddress(quorum, quorumNode) && quorumNode.getNodeType().equals(NodeType.Doctor)){
                         quorum.add(globalPeers.get(quorumNodeIndex));
                     }
                 }
@@ -974,7 +1008,7 @@ public abstract class Node  {
                 }
             }
         }
-    }  
+    }
 
 
     /**
@@ -1018,9 +1052,10 @@ public abstract class Node  {
 
     private final int MAX_PEERS, NUM_NODES, QUORUM_SIZE, MIN_CONNECTIONS, DEBUG_LEVEL, MINIMUM_TRANSACTIONS;
     private final Object lock, quorumLock, memPoolLock, quorumReadyVotesLock, memPoolRoundsLock, sigRoundsLock, blockLock, accountsLock;
-    private int quorumReadyVotes, memPoolRounds;
+    private int quorumReadyVotes, memPoolRounds, algorithmSeed;
     private ArrayList<Address> globalPeers;
     private ArrayList<Address> localPeers;
+    private ArrayList<Algorithm> algorithms;
     private HashMap<String, Transaction> mempool;
     HashMap<String, Integer> accounts;
     private ArrayList<BlockSignature> quorumSigs;
@@ -1030,6 +1065,7 @@ public abstract class Node  {
     private Block quorumBlock;
     private PrivateKey privateKey;
     private int state;
+    protected NodeType nodeType;
     private final String USE;
 
 }

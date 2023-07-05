@@ -61,7 +61,7 @@ public class DefiClient {
             Object[] data = new Object[2];
             data[0] = pubKeyString;
             data[1] = myAddress;
-            Messager.sendOneWayMessage(new Address(fullNodes.get(0).getPort(), fullNodes.get(0).getHost()), 
+            Messager.sendOneWayMessage(new Address(fullNodes.get(0).getPort(), fullNodes.get(0).getHost(), null), 
             new Message(Message.Request.ALERT_WALLET, data), myAddress);
 
             System.out.println("===============================");
@@ -204,7 +204,7 @@ public class DefiClient {
             Object[] data = new Object[2];
             data[0] = pubKeyString;
             data[1] = myAddress;
-            Messager.sendOneWayMessage(new Address(fullNodes.get(0).getPort(), fullNodes.get(0).getHost()), 
+            Messager.sendOneWayMessage(new Address(fullNodes.get(0).getPort(), fullNodes.get(0).getHost(), null), 
             new Message(Message.Request.ALERT_WALLET, data), myAddress);
         }
     }
