@@ -6,9 +6,9 @@ import node.blockchain.defi.DefiBlock;
 import node.blockchain.defi.DefiTransaction;
 import node.blockchain.defi.DefiTransactionValidator;
 import node.blockchain.merkletree.MerkleTree;
-import node.blockchain.prescription.ptBlock;
-import node.blockchain.prescription.ptTransaction;
-import node.blockchain.prescription.ptTransactionValidator;
+import node.blockchain.prescription.PtBlock;
+import node.blockchain.prescription.PtTransaction;
+import node.blockchain.prescription.PtTransactionValidator;
 import node.blockchain.prescription.Events.Algorithm;
 import node.communication.*;
 import node.communication.messaging.Message;
@@ -148,7 +148,7 @@ public class Node  {
             // genesisTransactions.put(hashOfTransaction, genesisTransaction);
             addBlock(new DefiBlock(new HashMap<String, Transaction>(), "000000", 0));
         }else if(USE.equals("Prescription")){
-            addBlock(new ptBlock(new HashMap<String, Transaction>(), "000000", 0));
+            addBlock(new PtBlock(new HashMap<String, Transaction>(), "000000", 0));
         }
     }
 
@@ -480,6 +480,23 @@ public class Node  {
         }
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     public void constructBlock(){
         synchronized(memPoolLock){
             if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + ": constructBlock invoked");
@@ -488,14 +505,13 @@ public class Node  {
             /* Make sure compiled transactions don't conflict */
             HashMap<String, Transaction> blockTransactions = new HashMap<>();
 
-            TransactionValidator tv;
+            TransactionValidator tv = null;
             if(USE.equals("Defi")){
                 tv = new DefiTransactionValidator();
             }else if(USE.equals("Prescription")){
                 // Room to enable another use case 
-                tv = new ptTransactionValidator();
+                tv = new PtTransactionValidator();
             }
-
             
             for(String key : mempool.keySet()){
                 Transaction transaction = mempool.get(key);
@@ -506,6 +522,7 @@ public class Node  {
                     validatorObjects[2] = blockTransactions;
                 }else if(USE.equals("Prescription")){
                     // Validator objects will change according to another use case
+                    validatorObjects[0] = (PtTransaction) transaction;
                 }
                 tv.validate(validatorObjects);
                 blockTransactions.put(key, transaction);
@@ -519,7 +536,7 @@ public class Node  {
                 }else if(USE.equals("Prescription")){
 
                     // Room to enable another use case 
-                    quorumBlock = new ptBlock(blockTransactions,
+                    quorumBlock = new PtBlock(blockTransactions,
                         getBlockHash(blockchain.getLast(), 0),
                                 blockchain.size());
                 }
@@ -798,7 +815,7 @@ public class Node  {
                 }
             }else if(USE.equals("Prescription")){
                 try {
-                    newBlock = new ptBlock(blockTransactions,
+                    newBlock = new PtBlock(blockTransactions,
                             getBlockHash(blockchain.getLast(), 0),
                             blockchain.size());
                 } catch (NoSuchAlgorithmException e) {
@@ -870,7 +887,7 @@ public class Node  {
         }else if (USE.equals("Prescription") && nodeType.name().equals("Patient")){
 
             for(String key : keys){ // For each tx key
-                ptTransaction transactionInList = (ptTransaction) txMap.get(key); // cast to our PT tx
+                PtTransaction transactionInList = (PtTransaction) txMap.get(key); // cast to our PT tx
                 if(transactionInList.getEvent().getAction().name().equals("Algorithm")){ // if its an algo
                     algorithms.add((Algorithm)transactionInList.getEvent()); // add to list
                     if(algorithms.size() == 3){ // if we have 3
@@ -893,7 +910,7 @@ public class Node  {
         if(inQuorum()){
             /* We are a Doctor */
             if(block.getBlockId() == 0){ // genesis block
-                gossipTransaction(new ptTransaction(new Algorithm(algorithmSeed)));
+                gossipTransaction(new PtTransaction(new Algorithm(algorithmSeed)));
             }
 
 
