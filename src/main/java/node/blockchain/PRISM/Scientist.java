@@ -15,11 +15,15 @@ import java.net.UnknownHostException;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.regex.Pattern;
 
-import node.blockchain.PRISM.TransactionTypes.Project;
-import node.blockchain.PRISM.TransactionTypes.ProvenanceRecord;
+import node.blockchain.Transaction;
+import node.blockchain.PRISM.RecordTypes.Project;
+import node.blockchain.PRISM.RecordTypes.ProvenanceRecord;
+import node.blockchain.PRISM.RecordTypes.Record.RecordType;
 import node.blockchain.defi.DefiTransaction;
 import node.blockchain.defi.Wallet;
 import node.blockchain.merkletree.MerkleTreeProof;
@@ -152,6 +156,7 @@ public class Scientist {
         }
     }
 
+    
     /**
      * Interpret the string input
      * 
@@ -167,7 +172,7 @@ public class Scientist {
                     submitTask(); // Submit Transaction
                     break;
                 case ("i"):
-                    submitWIB(); // Submit WIB,
+                  //  submitWIB(); // Submit WIB,
                     break;
                 case ("p"):
                     printAccounts();
@@ -335,7 +340,7 @@ public class Scientist {
             return;
         }
 
-        ProvenanceRecord newTransaction = new ProvenanceRecord(to, myPublicKeyString, amount, String.valueOf(System.currentTimeMillis()));
+        PRISMTransaction newTransaction = new PRISMTransaction(new ProvenanceRecord("", "", "", null));
         String UID = newTransaction.getUID();
         byte[] signedUID = DSA.signHash(UID, pk);
         newTransaction.setSigUID(signedUID);
@@ -345,7 +350,7 @@ public class Scientist {
             submitTask(newTransaction, address);
         }
 
-    } private void submitTask(ProvenanceRecord transaction, Address address) {
+    } private void submitTask(PRISMTransaction transaction, Address address) {
         try {
             Socket s = new Socket(address.getHost(), address.getPort());
             OutputStream out = s.getOutputStream();
@@ -406,6 +411,14 @@ public class Scientist {
         }
     }
 
+
+    private void submitPRISMTransaction() {
+
+    }
+    private void submitPRISMTransaction(PRISMTransaction transaction, Address address) {
+
+
+    }
     private void printAccounts() {
         System.out.println("=============== Accounts ================");
         for (Account account : accounts) {
@@ -418,9 +431,9 @@ public class Scientist {
     private void updateAccounts(MerkleTreeProof mtp) {
         synchronized (updateLock) {
 
-            DefiTransaction transaction = (DefiTransaction) mtp.getTransaction();
+            Transaction transaction = (Transaction) mtp.getTransaction();
 
-            for (DefiTransaction existingTransaction : seenTransactions) {
+            for (Transaction existingTransaction : seenTransactions) {
                 if (existingTransaction.equals(transaction)) {
                     return;
                 }
@@ -442,7 +455,7 @@ public class Scientist {
                 return;
             }
 
-            seenTransactions.add(transaction);
+           // seenTransactions.add(transaction);
 
             if (!mtp.confirmMembership()) {
                 System.out.println("Could not validate tx in MerkleTreeProof");
@@ -451,7 +464,7 @@ public class Scientist {
 
             for (Account account : accounts) {
                 if (DSA.bytesToString(account.getKeyPair().getPublic().getEncoded()).equals(transaction.getFrom())) {
-                    account.updateBalance(-(transaction.getAmount()));
+                   // account.updateBalance(-(transaction.getAmount()));
                 }
                 if (DSA.bytesToString(account.getKeyPair().getPublic().getEncoded()).equals(transaction.getTo())) {
                     account.updateBalance(transaction.getAmount());

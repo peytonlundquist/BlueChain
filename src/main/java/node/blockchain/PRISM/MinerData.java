@@ -2,21 +2,23 @@ package node.blockchain.PRISM;
 
 public class MinerData {
     
-    private String signature;
+    private byte[] signature;
     private long timestamp; // assuming this is a Unix timestamp
-    private int correctness; // either -1 or 1
+    private int accuracy; // either -1 or 1
+    private String outputHash;
 
-    public MinerData(String signature, long timestamp, int correctness) {
+    public MinerData(byte[] signature, long timestamp, int accuracy, String outputHash) {
         this.signature = signature;
         this.timestamp = timestamp;
-        this.correctness = correctness;
+        this.accuracy = accuracy;
+        this.outputHash = outputHash;
     }
 
-    public String getSignature() {
+    public byte[] getSignature() {
         return signature;
     }
 
-    public void setSignature(String signature) {
+    public void setSignature(byte[]  signature) {
         this.signature = signature;
     }
 
@@ -28,11 +30,11 @@ public class MinerData {
         this.timestamp = timestamp;
     }
 
-    public int getCorrectness() {
-        return correctness;
+    public int getAccuracy() {
+        return accuracy;
     }
 
-    public void setCorrectness(int correctness) {
-        this.correctness = correctness;
+    public void setAccuracy(int correctness) {
+        this.accuracy = correctness;
     }
 }

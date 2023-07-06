@@ -1,4 +1,4 @@
-package node.blockchain.PRISM.TransactionTypes;
+package node.blockchain.PRISM.RecordTypes;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -7,14 +7,17 @@ import java.util.Arrays;
 import java.util.StringJoiner;
 
 import node.blockchain.Transaction;
+import node.blockchain.PRISM.PRISMTransaction;
 import node.communication.utils.Hashing;
 
-public class Project extends Transaction {
+public class Project extends Record {
+
+
     String uniqueWorkflowID;
     String hypothesis;
     String[] authors;
     String timestap;
-
+     
     /*
      * A project will be placed in a WorkflowInceptionBlock(WIB)
      * A project must contain:
@@ -28,16 +31,12 @@ public class Project extends Transaction {
      * 
      * 
      */
-    public Project(String hypothesis, String[] authors, String timestamp) {
+    public Project(String hypothesis, String[] authors, String workflowID) {
+        super(RecordType.Project, workflowID);
         this.authors = authors;
         this.hypothesis = hypothesis;
         this.uniqueWorkflowID = Hashing.getSHAString(hypothesis + authors);
-        this.timestamp = timestamp;
     }
 
-    @Override
-    public String toString() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'toString'");
-    }
+  
 }

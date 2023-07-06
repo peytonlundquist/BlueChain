@@ -3,7 +3,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import node.blockchain.Block;
 import node.blockchain.Transaction;
-import node.blockchain.PRISM.TransactionTypes.Project;
+import node.blockchain.PRISM.Records.Project;
 import node.blockchain.defi.DefiTransaction;
 
 public class WorkflowInceptionBlock extends Block {
@@ -19,7 +19,7 @@ public class WorkflowInceptionBlock extends Block {
         /* Converting the transaction from Block to DefiTransactions*/
         HashSet<String> keys = new HashSet<>(txList.keySet());
         for(String key : keys){
-            Project transactionInList = (Project) txList.get(key);
+            PRISMTransaction transactionInList = (PRISMTransaction) txList.get(key);
             this.txList.put(key, transactionInList);
         }
     }
