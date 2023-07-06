@@ -3,6 +3,7 @@ package node.blockchain.prescription.Events;
 import java.util.Random;
 
 import node.blockchain.prescription.Event;
+import node.blockchain.prescription.ptTransaction;
 
 public class Algorithm extends Event{
 
@@ -17,7 +18,7 @@ public class Algorithm extends Event{
         this.algorithmSeed = algorithmSeed;
     }
 
-    public boolean algorithm(Prescription p){
+    public boolean runAlgorithm(ptTransaction transaction){
         Random random = new Random(algorithmSeed);
         int flip = random.nextInt(2);
 
