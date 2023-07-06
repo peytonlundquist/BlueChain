@@ -9,11 +9,14 @@ import node.blockchain.merkletree.MerkleTree;
 import node.blockchain.prescription.PtBlock;
 import node.blockchain.prescription.PtTransaction;
 import node.blockchain.prescription.PtTransactionValidator;
+import node.blockchain.prescription.ValidationResult;
 import node.blockchain.prescription.Events.Algorithm;
 import node.communication.*;
 import node.communication.messaging.Message;
 import node.communication.messaging.Messager;
 import node.communication.messaging.MessagerPack;
+import node.communication.messaging.Message.Request;
+import node.communication.utils.DSA;
 import node.communication.utils.Hashing;
 import node.communication.utils.Utils;
 
@@ -387,13 +390,56 @@ public class Node  {
         }
     }
 
+
+    public void calculateEligibity(String hash, ObjectOutputStream oout, ObjectInputStream oin){
+        synchronized (memPoolLock){
+            Algorithm algo = new Algorithm(algorithmSeed);
+            Boolean eligible = algo.runAlgorithm((PtTransaction)mempool.get(hash));
+            ValidationResult vr = new ValidationResult(eligible, algorithmSeed, hash);
+            byte[] sig = DSA.signHash(vr.getStringForSig(), privateKey);
+            
+            ValidationResultSignature vrs = new ValidationResultSignature(sig, myAddress, vr);
+
+            try {
+                oout.writeObject(new Message(new Message(Request.CALCULATION_COMPLETE, vrs)));
+                oout.flush();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+
+
+
+
     public void sendMempoolHashes() {
         synchronized (memPoolLock){
-            stateChangeRequest(2);
+            stateChangeRequest(2);            
+            
+            HashSet<String> keys = new HashSet<String>(mempool.keySet());
+
+
+            for(String hash : keys){
+                PtTransaction ptTransaction = (PtTransaction) mempool.get(hash);
+                ArrayList<ValidationResultSignature> vrs = new ArrayList<>();
+
+                for(Address address : globalPeers){
+                    if(address.getNodeType().name().equals("Patient")){
+                        Message reply = Messager.sendTwoWayMessage(address, new Message(Request.REQUEST_CALCULATION, hash), myAddress);
+
+                        if(reply.getRequest().name().equals("CALCULATION_COMPLETE")){
+                            ValidationResultSignature vr = (ValidationResultSignature) reply.getMetadata();
+                            vrs.add(vr);
+                        }
+                    }
+                }
+                ptTransaction.setValidationResultSignatures(vrs);
+            }
+
 
             if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + ": sendMempoolHashes invoked");
             
-            HashSet<String> keys = new HashSet<String>(mempool.keySet());
             ArrayList<Address> quorum = deriveQuorum(blockchain.getLast(), 0);
             
             for (Address quorumAddress : quorum) {

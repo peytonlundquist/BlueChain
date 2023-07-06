@@ -38,7 +38,9 @@ public class Message implements Serializable {
         RECEIVE_SKELETON,
         RECEIVE_SIGNATURE,
         RECONCILE_BLOCK,
-        ALERT_WALLET
+        ALERT_WALLET,
+        CALCULATION_COMPLETE,
+        REQUEST_CALCULATION
     }
 
     public Request getRequest(){

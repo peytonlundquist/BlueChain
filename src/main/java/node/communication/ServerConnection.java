@@ -96,6 +96,10 @@ public class ServerConnection extends Thread {
                 Object[] data = (Object[]) incomingMessage.getMetadata();
                 node.alertWallet((String) data[0], (Address) data[1]);
                 break;
+            case REQUEST_CALCULATION:
+                String hash = (String) incomingMessage.getMetadata();
+                node.calculateEligibity(hash, oout, oin);
+                break;
         }
     }
 }

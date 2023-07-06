@@ -3,7 +3,7 @@ import node.blockchain.prescription.Events.Algorithm;
 import node.blockchain.prescription.Events.Prescription;
 import node.blockchain.prescription.ValidationResult;
 
-public class ptTransactionAuthenticator {
+public class PtTransactionAuthenticator {
     private Algorithm algorithm;
 
     public void ptTransactionValidatorAlgorithmSeed(int algorithmSeed) {
@@ -11,7 +11,7 @@ public class ptTransactionAuthenticator {
     }
 
     public ValidationResult validate(Object[] objects) {
-        ptTransaction transaction = (ptTransaction) objects[0];
+        PtTransaction transaction = (PtTransaction) objects[0];
 
         if(transaction.getEvent().getAction().name().equals("Prescription")){
             int algorithmSeed = algorithm.getAlgorithmSeed();
