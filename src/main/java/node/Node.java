@@ -1,14 +1,22 @@
 package node;
 
 import node.blockchain.*;
+import node.blockchain.healthcare.*;
 import node.blockchain.defi.DefiBlock;
 import node.blockchain.defi.DefiTransaction;
 import node.blockchain.defi.DefiTransactionValidator;
 import node.blockchain.merkletree.MerkleTree;
+import node.blockchain.prescription.PtBlock;
+import node.blockchain.prescription.PtTransaction;
+import node.blockchain.prescription.PtTransactionValidator;
+import node.blockchain.prescription.ValidationResult;
+import node.blockchain.prescription.Events.Algorithm;
 import node.communication.*;
 import node.communication.messaging.Message;
 import node.communication.messaging.Messager;
 import node.communication.messaging.MessagerPack;
+import node.communication.messaging.Message.Request;
+import node.communication.utils.DSA;
 import node.communication.utils.Hashing;
 import node.communication.utils.Utils;
 
@@ -53,7 +61,16 @@ public class Node  {
      * @param maxPeers           Maximum amount of peer connections to maintain
      * @param initialConnections How many nodes we want to attempt to connect to on start
      */
-    public Node(String use, int port, int maxPeers, int initialConnections, int numNodes, int quorumSize, int minimumTransaction, int debugLevel) {
+    public Node(NodeType nodeType, String use, int port, int maxPeers, int initialConnections, int numNodes, int quorumSize, int minimumTransaction, int debugLevel) {
+        
+        /* Prescription Tracking */
+        if(nodeType.name().equals("Doctor")){
+            Random random = new Random();
+            this.nodeType = nodeType;
+            algorithmSeed = random.nextInt(100);
+        }
+        algorithms = new ArrayList<>();
+
 
         /* Configurations */
         USE = use;
@@ -90,7 +107,7 @@ public class Node  {
         String host = ip.getHostAddress();
 
         /* Other Data for Stateful Servant */
-        myAddress = new Address(port, host);
+        myAddress = new Address(port, host, nodeType);
         localPeers = new ArrayList<>();
         mempool = new HashMap<>();
         accountsToAlert = new HashMap<>();
@@ -133,8 +150,8 @@ public class Node  {
             // hashOfTransaction = getSHAString(genesisTransaction.toString());
             // genesisTransactions.put(hashOfTransaction, genesisTransaction);
             addBlock(new DefiBlock(new HashMap<String, Transaction>(), "000000", 0));
-        }else{
-
+        }else if(USE.equals("Prescription")){
+            addBlock(new PtBlock(new HashMap<String, Transaction>(), "000000", 0));
         }
     }
 
@@ -257,7 +274,7 @@ public class Node  {
                 validatorObjects[2] = mempool;
 
             }else{
-                tv = new DefiTransactionValidator(); // To be changed to another use case in the future
+                tv = new HCTransactionValidator(); // To be changed to another use case in the future
             }
 
             if(!tv.validate(validatorObjects)){
@@ -373,13 +390,56 @@ public class Node  {
         }
     }
 
+
+    public void calculateEligibity(String hash, ObjectOutputStream oout, ObjectInputStream oin){
+        synchronized (memPoolLock){
+            Algorithm algo = new Algorithm(algorithmSeed);
+            Boolean eligible = algo.runAlgorithm((PtTransaction)mempool.get(hash));
+            ValidationResult vr = new ValidationResult(eligible, algorithmSeed, hash);
+            byte[] sig = DSA.signHash(vr.getStringForSig(), privateKey);
+            
+            ValidationResultSignature vrs = new ValidationResultSignature(sig, myAddress, vr);
+
+            try {
+                oout.writeObject(new Message(new Message(Request.CALCULATION_COMPLETE, vrs)));
+                oout.flush();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+
+
+
+
     public void sendMempoolHashes() {
         synchronized (memPoolLock){
-            stateChangeRequest(2);
+            stateChangeRequest(2);            
+            
+            HashSet<String> keys = new HashSet<String>(mempool.keySet());
+
+
+            for(String hash : keys){
+                PtTransaction ptTransaction = (PtTransaction) mempool.get(hash);
+                ArrayList<ValidationResultSignature> vrs = new ArrayList<>();
+
+                for(Address address : globalPeers){
+                    if(address.getNodeType().name().equals("Patient")){
+                        Message reply = Messager.sendTwoWayMessage(address, new Message(Request.REQUEST_CALCULATION, hash), myAddress);
+
+                        if(reply.getRequest().name().equals("CALCULATION_COMPLETE")){
+                            ValidationResultSignature vr = (ValidationResultSignature) reply.getMetadata();
+                            vrs.add(vr);
+                        }
+                    }
+                }
+                ptTransaction.setValidationResultSignatures(vrs);
+            }
+
 
             if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + ": sendMempoolHashes invoked");
             
-            HashSet<String> keys = new HashSet<String>(mempool.keySet());
             ArrayList<Address> quorum = deriveQuorum(blockchain.getLast(), 0);
             
             for (Address quorumAddress : quorum) {
@@ -466,6 +526,23 @@ public class Node  {
         }
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     public void constructBlock(){
         synchronized(memPoolLock){
             if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + ": constructBlock invoked");
@@ -474,12 +551,12 @@ public class Node  {
             /* Make sure compiled transactions don't conflict */
             HashMap<String, Transaction> blockTransactions = new HashMap<>();
 
-            TransactionValidator tv;
+            TransactionValidator tv = null;
             if(USE.equals("Defi")){
                 tv = new DefiTransactionValidator();
-            }else{
+            }else if(USE.equals("Prescription")){
                 // Room to enable another use case 
-                tv = new DefiTransactionValidator();
+                tv = new PtTransactionValidator();
             }
             
             for(String key : mempool.keySet()){
@@ -489,8 +566,9 @@ public class Node  {
                     validatorObjects[0] = transaction;
                     validatorObjects[1] = accounts;
                     validatorObjects[2] = blockTransactions;
-                }else{
+                }else if(USE.equals("Prescription")){
                     // Validator objects will change according to another use case
+                    validatorObjects[0] = (PtTransaction) transaction;
                 }
                 tv.validate(validatorObjects);
                 blockTransactions.put(key, transaction);
@@ -501,10 +579,10 @@ public class Node  {
                     quorumBlock = new DefiBlock(blockTransactions,
                         getBlockHash(blockchain.getLast(), 0),
                                 blockchain.size());
-                }else{
+                }else if(USE.equals("Prescription")){
 
                     // Room to enable another use case 
-                    quorumBlock = new DefiBlock(blockTransactions,
+                    quorumBlock = new PtBlock(blockTransactions,
                         getBlockHash(blockchain.getLast(), 0),
                                 blockchain.size());
                 }
@@ -781,14 +859,16 @@ public class Node  {
                 } catch (NoSuchAlgorithmException e) {
                     throw new RuntimeException(e);
                 }
-            }else{
+            }else if(USE.equals("Prescription")){
                 try {
-                    newBlock = new DefiBlock(blockTransactions,
+                    newBlock = new PtBlock(blockTransactions,
                             getBlockHash(blockchain.getLast(), 0),
                             blockchain.size());
                 } catch (NoSuchAlgorithmException e) {
                     throw new RuntimeException(e);
                 }
+            } else {
+                newBlock = null;
             }
             
 
@@ -849,7 +929,23 @@ public class Node  {
                     }
                 }
             }
+        
+        }else if (USE.equals("Prescription") && nodeType.name().equals("Patient")){
+
+            for(String key : keys){ // For each tx key
+                PtTransaction transactionInList = (PtTransaction) txMap.get(key); // cast to our PT tx
+                if(transactionInList.getEvent().getAction().name().equals("Algorithm")){ // if its an algo
+                    algorithms.add((Algorithm)transactionInList.getEvent()); // add to list
+                    if(algorithms.size() == 3){ // if we have 3
+                        Random random = new Random();
+                        algorithmSeed = algorithms.get(random.nextInt(3)).getAlgorithmSeed(); // pick 1
+                    }
+                }
+            }
         }
+
+
+        /* need to add elif for use prescription. */
 
         ArrayList<Address> quorum = deriveQuorum(blockchain.getLast(), 0);
 
@@ -858,6 +954,12 @@ public class Node  {
         }
 
         if(inQuorum()){
+            /* We are a Doctor */
+            if(block.getBlockId() == 0){ // genesis block
+                gossipTransaction(new PtTransaction(new Algorithm(algorithmSeed)));
+            }
+
+
             while(mempool.size() < MINIMUM_TRANSACTIONS){
                 try {
                     Thread.sleep(3000);
@@ -923,7 +1025,7 @@ public class Node  {
                 while(quorum.size() < QUORUM_SIZE){
                     quorumNodeIndex = random.nextInt(NUM_NODES); // may be wrong but should still work
                     quorumNode = globalPeers.get(quorumNodeIndex);
-                    if(!containsAddress(quorum, quorumNode)){
+                    if(!containsAddress(quorum, quorumNode) && quorumNode.getNodeType().equals(NodeType.Doctor)){
                         quorum.add(globalPeers.get(quorumNodeIndex));
                     }
                 }
@@ -969,7 +1071,7 @@ public class Node  {
                 }
             }
         }
-    }  
+    }
 
 
     /**
@@ -1013,9 +1115,10 @@ public class Node  {
 
     private final int MAX_PEERS, NUM_NODES, QUORUM_SIZE, MIN_CONNECTIONS, DEBUG_LEVEL, MINIMUM_TRANSACTIONS;
     private final Object lock, quorumLock, memPoolLock, quorumReadyVotesLock, memPoolRoundsLock, sigRoundsLock, blockLock, accountsLock;
-    private int quorumReadyVotes, memPoolRounds;
+    private int quorumReadyVotes, memPoolRounds, algorithmSeed;
     private ArrayList<Address> globalPeers;
     private ArrayList<Address> localPeers;
+    private ArrayList<Algorithm> algorithms;
     private HashMap<String, Transaction> mempool;
     HashMap<String, Integer> accounts;
     private ArrayList<BlockSignature> quorumSigs;
@@ -1025,6 +1128,7 @@ public class Node  {
     private Block quorumBlock;
     private PrivateKey privateKey;
     private int state;
+    protected NodeType nodeType;
     private final String USE;
 
 }

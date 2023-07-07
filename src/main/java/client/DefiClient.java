@@ -1,195 +1,45 @@
-package node.blockchain.defi;
+package client;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import java.net.InetAddress;
-import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.regex.Pattern;
+
+import node.blockchain.defi.Account;
+import node.blockchain.defi.DefiTransaction;
 import node.blockchain.merkletree.MerkleTreeProof;
 import node.communication.Address;
 import node.communication.messaging.Message;
 import node.communication.messaging.Messager;
 import node.communication.utils.DSA;
 
-public class Wallet {
+public class DefiClient {
 
-    BufferedReader reader; // To read user input
+    Object updateLock;
+    BufferedReader reader;
     ArrayList<Account> accounts; // Our defi account list
-    ServerSocket ss;
+    HashSet<DefiTransaction> seenTransactions; // Transactions we've seen from full nodes
     Address myAddress;
     ArrayList<Address> fullNodes; // List of full nodes we want to use
-    HashSet<DefiTransaction> seenTransactions; // Transactions we've seen from full nodes
-    Object updateLock; // Lock for multithreading
     boolean test; // Boolean for test vs normal output
 
-    public Wallet(int port){
+    public DefiClient(Object updateLock, BufferedReader reader, Address myAddress, ArrayList<Address> fullNodes){
+        this.reader = reader;
+        this.updateLock = updateLock;
+        this.myAddress = myAddress;
+        this.fullNodes = fullNodes;
 
-        /* Initializations */
-        fullNodes = new ArrayList<>();
-        reader = new BufferedReader(new InputStreamReader(System.in));
-        accounts = new ArrayList<>();
         seenTransactions = new HashSet<>();
-        updateLock = new Object();
+        accounts = new ArrayList<>();
 
-
-        boolean boundToPort = false;
-        int portBindingAttempts = 10; // Amount of attempts to bind to a port
-        int fullNodeDefaultAmount = 3; // Full nodes we will try to connect to by default
-
-        String path = "./src/main/java/node/nodeRegistry/"; 
-        File folder = new File(path);        
-        File[] listOfFiles = folder.listFiles();
-
-        /* Iterate through each file in the nodeRegistry dir in order to derive our full nodes dynamically */
-        for (int i = 0; i < listOfFiles.length; i++) {
-
-            /* Make sure each item is in fact a file, isn't the special '.keep' file */
-            if (listOfFiles[i].isFile() && !listOfFiles[i].getName().contains("keep") && fullNodes.size() < fullNodeDefaultAmount) {
-
-                /* Extracting address from file name */
-                String[] addressStrings = listOfFiles[i].getName().split("_");
-                String hostname = addressStrings[0];
-                String portString[] = addressStrings[1].split((Pattern.quote(".")));
-                int fullNodePort = Integer.valueOf(portString[0]);
-                fullNodes.add(new Address(fullNodePort, hostname));
-            }
-        }
-
-        /* Binding to our Server Socket so full nodes can hit us up */
-        try {
-            ss = new ServerSocket(port);
-            boundToPort = true;
-        } catch (IOException e) {
-            for(int i = 1; i < portBindingAttempts; i++){ // We will try several attempts to find a port we can bind too
-                try {
-                    ss = new ServerSocket(port - i);
-                    boundToPort = true;
-                    port = port - i;
-                } catch (IOException E) {}
-            }
-        }
-
-        if(boundToPort == false){
-            System.out.println("Specify a new port in args[0]");
-            System.exit(1);
-        }
-
-        InetAddress ip;
-
-        try {
-            ip = InetAddress.getLocalHost();
-        } catch (UnknownHostException e) {
-            throw new RuntimeException(e);
-        }
-
-        String host = ip.getHostAddress();
-        myAddress = new Address(port, host);
-
-        System.out.println("Wallet bound to " + myAddress);
-
-        if(!this.test) System.out.println("Full Nodes to connect to by default: \n" + fullNodes + 
-        "\nTo update Full Nodes address use 'u' command. \nUse 'h' command for full list of options");
-
-        Acceptor acceptor = new Acceptor(this);
-        acceptor.start();
     }
 
-    public static void main(String[] args) throws IOException{
-
-        System.out.println("============ BlueChain Wallet =============");
-
-        BufferedReader mainReader = new BufferedReader(new InputStreamReader(System.in));
- 
-        // Reading data using readLine
-        String input = "";
-        int port = 7999;
-        if(args.length > 0){
-            if(args[0].equals("-port")){
-                port = Integer.valueOf(args[0]);
-            }else if(args[0].equals("-test")){
-                Wallet wallet = new Wallet(port);
-                wallet.test = true;
-                wallet.testNetwork(Integer.valueOf(args[1]));
-                System.exit(0); // We just test then exit
-            }
-        }
-
-        Wallet wallet = new Wallet(port);
-        wallet.test = false; // This is not a test
-
-        while(!input.equals("exit") | !input.equals("e")){
-            System.out.print(">");
-            input = mainReader.readLine();
-            wallet.interpretInput(input);
-        }
-    }
-
-    /**
-     * Interpret the string input
-     * 
-     * @param input the string to interpret
-     */
-    public void interpretInput(String input){
-        try {
-            switch(input){
-                case("a"):
-                    addAccount();
-                    break;
-                case("t"):
-                    submitTransaction();
-                    break;
-                case("p"):
-                    printAccounts();
-                    break;
-                case("u"):
-                    updateFullNode();
-                    break;
-                case("h"):
-                    printUsage();
-                    break;
-            }
-        } catch (IOException e) {
-            System.out.println("Input malformed. Try again.");
-        } 
-    }
-
-    public void updateFullNode() throws IOException{
-        System.out.println("Updating Full Nodes. \nAdd or remove? ('a' or 'r'): ");
-        String response = reader.readLine();
-        if(response.equals("a")){
-            System.out.println("Full Node host?: ");
-            String hostname = reader.readLine();
-            System.out.println("Full Node port?: ");
-            String port = reader.readLine();
-            fullNodes.add(new Address(Integer.valueOf(port), hostname));
-        }else if(response.equals("r")){
-            System.out.println("Full Node index to remove?: \n" + fullNodes);
-            int index = Integer.parseInt(reader.readLine());
-            if(index > fullNodes.size()){
-                System.out.println("Index not in range.");
-                return;
-            } 
-
-            Address removedAddress = fullNodes.remove(index);
-            System.out.println("Removed full node: " + removedAddress);
-        }else{
-            System.out.println("Invalid option");
-        }
-    }
-
-    public void addAccount() throws IOException{
+    protected void addAccount() throws IOException{
         synchronized(updateLock){
             System.out.println("Adding account. Account NickName?: ");
             String input = "unnamed";
@@ -211,7 +61,7 @@ public class Wallet {
             Object[] data = new Object[2];
             data[0] = pubKeyString;
             data[1] = myAddress;
-            Messager.sendOneWayMessage(new Address(fullNodes.get(0).getPort(), fullNodes.get(0).getHost()), 
+            Messager.sendOneWayMessage(new Address(fullNodes.get(0).getPort(), fullNodes.get(0).getHost(), null), 
             new Message(Message.Request.ALERT_WALLET, data), myAddress);
 
             System.out.println("===============================");
@@ -220,7 +70,7 @@ public class Wallet {
         }
     }
 
-    public void submitTransaction() throws IOException{
+    protected void submitTransaction() throws IOException{
         System.out.println("Generating Transaction");
         System.out.println("Deposit address?");
         String to = reader.readLine();
@@ -258,7 +108,7 @@ public class Wallet {
         }
     }
 
-    private void submitTransaction(DefiTransaction transaction, Address address){
+    protected void submitTransaction(DefiTransaction transaction, Address address){
         try {
             Socket s = new Socket(address.getHost(), address.getPort());
             OutputStream out = s.getOutputStream();
@@ -277,7 +127,7 @@ public class Wallet {
         }
     }
 
-    private void printAccounts(){
+    protected void printAccounts(){
         System.out.println("=============== Accounts ================");
         for(Account account :  accounts){
             System.out.println(account.getNickname() + " balance: " + account.getBalance());
@@ -286,7 +136,7 @@ public class Wallet {
         System.out.print(">");
     }
 
-    private void updateAccounts(MerkleTreeProof mtp){
+    protected void updateAccounts(MerkleTreeProof mtp){
         synchronized(updateLock){
 
             DefiTransaction transaction = (DefiTransaction) mtp.getTransaction();
@@ -334,7 +184,7 @@ public class Wallet {
     }
 
 
-    public void testAddAccount(String nickname) throws IOException{
+    protected void testAddAccount(String nickname) throws IOException{
         synchronized(updateLock){
 
             KeyPair newKeyPair = DSA.generateDSAKeyPair();
@@ -354,12 +204,12 @@ public class Wallet {
             Object[] data = new Object[2];
             data[0] = pubKeyString;
             data[1] = myAddress;
-            Messager.sendOneWayMessage(new Address(fullNodes.get(0).getPort(), fullNodes.get(0).getHost()), 
+            Messager.sendOneWayMessage(new Address(fullNodes.get(0).getPort(), fullNodes.get(0).getHost(), null), 
             new Message(Message.Request.ALERT_WALLET, data), myAddress);
         }
     }
 
-    public void testSubmitTransaction(String nickname, String to, int amount) throws IOException{
+    protected void testSubmitTransaction(String nickname, String to, int amount) throws IOException{
         Account chosenAccount = null;
         for(Account account : accounts){
             if(account.getNickname().equals(nickname)) chosenAccount = account;
@@ -388,7 +238,7 @@ public class Wallet {
         }
     }
 
-    private void testNetwork(int j){
+    void testNetwork(int j){
 
         System.out.println("Beginning Test");
 
@@ -421,43 +271,11 @@ public class Wallet {
         }
     }
 
-    private void printUsage(){
+    protected void printUsage(){
         System.out.println("BlueChain Wallet Usage:");
         System.out.println("a: Add a new account");
         System.out.println("t: Create a transaction");
         System.out.println("p: Print acccounts and balances");
         System.out.println("u: Update full nodes");
-    }
-
-    class Acceptor extends Thread {
-        Wallet wallet;
-
-        Acceptor(Wallet wallet){
-            this.wallet = wallet;
-        }
-
-        public void run() {
-            Socket client;
-            while (true) {
-                try {
-                    client = ss.accept();
-                    OutputStream out = client.getOutputStream();
-                    InputStream in = client.getInputStream();
-                    ObjectOutputStream oout = new ObjectOutputStream(out);
-                    ObjectInputStream oin = new ObjectInputStream(in);
-                    Message incomingMessage = (Message) oin.readObject();
-                    
-                    if(incomingMessage.getRequest().name().equals("ALERT_WALLET")){
-                        MerkleTreeProof mtp = (MerkleTreeProof) incomingMessage.getMetadata();
-                        updateAccounts(mtp);
-                    }
-                } catch (IOException e) {
-                    System.out.println(e);
-                    throw new RuntimeException(e);
-                } catch (ClassNotFoundException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
     }
 }

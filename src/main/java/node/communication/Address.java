@@ -1,15 +1,22 @@
 package node.communication;
 
 import java.io.Serializable;
-import java.util.Objects;
+
+import node.NodeType;
 
 public class Address implements Serializable {
     private final int port;
     private final String host;
+    private final NodeType nt;
 
-    public Address(int port, String host){
+    public NodeType getNodeType() {
+        return nt;
+    }
+
+    public Address(int port, String host, NodeType nt){
         this.port = port;
         this.host = host;
+        this.nt = nt;
     }
 
     public int getPort(){
