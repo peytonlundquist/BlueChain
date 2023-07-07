@@ -12,6 +12,7 @@ import node.communication.*;
 import node.communication.messaging.Message;
 import node.communication.messaging.Messager;
 import node.communication.messaging.MessagerPack;
+import node.communication.messaging.Message.Request;
 import node.communication.utils.Hashing;
 import node.communication.utils.Utils;
 
@@ -321,7 +322,7 @@ public class Node {
     }
 
     // Reconcile blocks
-    public void sendQuorumReady() {
+    public void sendQuorumReady() { // Start of Quorum Consensus
         // state = 1;
         stateChangeRequest(1);
         quorumSigs = new ArrayList<>();
@@ -427,8 +428,28 @@ public class Node {
         }
     }
 
+    public void delegateWork(){
+        for(Address address : localPeers){
+            //if( quorum contains this address ) then dont do this stuff
+            Message reply = Messager.sendTwoWayMessage(address, new Message(Request.DELEGATE_WORK), myAddress);
+            String hash = null;
+
+            if(reply.getRequest().name().equals("COMPLETED_WORK")){
+                hash = (String) reply.getMetadata();
+            }
+
+            // Do something with the hash
+        }
+
+
+    }
+
+
     public void sendMempoolHashes() {
         synchronized (memPoolLock) {
+
+            // Here
+
             stateChangeRequest(2);
 
             if (DEBUG_LEVEL == 1)
@@ -670,7 +691,7 @@ public class Node {
         }
     }
 
-    public void tallyQuorumSigs() {
+    public void tallyQuorumSigs() { // End of Quorum Consensus
         synchronized (blockLock) {
             resetMempool();
 
@@ -1045,25 +1066,6 @@ public class Node {
         } 
     }
 
-    public Map<Address, Float> calculateReputations(float alpha, float beta, float gamma) {
-
-        Map<Address, Float> reputations = new HashMap<Address, Float>();
-        /* Pseudocode:
-         * For each node in the nodeRegistry:
-         *  For each block in the ledger:
-         *    If the node signature is in the PrismTransaction:
-         *       blocksParticipated ++;
-         *       accuracy += MinerData.correctness
-         *       if(accuracy == 1)
-         *           accuracyCount ++
-         *       time += MinerData.time - minimumCorrectTime
-         *   Rep = (alpha * accuracy + beta * time + gamma * (accuracyCount / blocksParticipated)) / blocksParticipated
-         * reputations.put(address, Rep)
-         */
-
-         return null;
-
-    }
 
     public ArrayList<Address> deriveQuorum(Block block, int nonce) { // PRISM, This needs modified to derive a
                                                                      // percentage of the quroum based off of
@@ -1086,7 +1088,14 @@ public class Node {
                     quorumNodeIndex = random.nextInt(NUM_NODES); // may be wrong but should still work
                     quorumNode = globalPeers.get(quorumNodeIndex);
                     if (!containsAddress(quorum, quorumNode)) {
-                        quorum.add(globalPeers.get(quorumNodeIndex));
+
+                        
+                        PRISMTransactionValidator tv = new PRISMTransactionValidator();
+                        if(tv.calculateReputation(quorumNode, seed, quorumNodeIndex, nonce) > 10){
+                            quorum.add(globalPeers.get(quorumNodeIndex));
+                        }
+
+                        //Collections.shuffle(quorum, random);
                     }
                 }
                 return quorum;
