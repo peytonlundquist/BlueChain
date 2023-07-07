@@ -8,6 +8,7 @@ import java.util.StringJoiner;
 
 import node.blockchain.Transaction;
 import node.blockchain.PRISM.PRISMTransaction;
+import node.communication.Address;
 import node.communication.utils.Hashing;
 
 public class Project extends Record {
@@ -15,7 +16,11 @@ public class Project extends Record {
 
     String uniqueWorkflowID;
     String hypothesis;
-    String[] authors;
+    Address[] authors;
+    public Address[] getAuthors() {
+        return authors;
+    }
+
     String timestap;
      
     /*
@@ -31,7 +36,7 @@ public class Project extends Record {
      * 
      * 
      */
-    public Project(String hypothesis, String[] authors, String workflowID) {
+    public Project(String hypothesis, Address[] authors, String workflowID) {
         super(RecordType.Project, workflowID);
         this.authors = authors;
         this.hypothesis = hypothesis;
