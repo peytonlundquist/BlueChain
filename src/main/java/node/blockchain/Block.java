@@ -4,10 +4,16 @@ import java.io.Serializable;
 import java.util.HashMap;
 
 public abstract class Block implements Serializable {
+
+    public enum BlockType {
+        wTask,
+        wProject
+    }
     protected int blockId;
     protected HashMap<String, Transaction> txList;
     protected String prevBlockHash;
     protected String merkleRootHash;
+    protected BlockType blockType; 
 
     public String getMerkleRootHash() {
         return merkleRootHash;
@@ -27,5 +33,13 @@ public abstract class Block implements Serializable {
 
     public void setMerkleRootHash(String rootHash){
         this.merkleRootHash = rootHash;
+    }
+
+    public BlockType getBlockType() {
+        return blockType;
+    }
+
+    public void setBlockType(BlockType blockType) {
+        this.blockType = blockType;
     }
 }

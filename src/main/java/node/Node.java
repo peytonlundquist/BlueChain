@@ -430,14 +430,16 @@ public class Node {
 
     public void delegateWork(){
         for(Address address : localPeers){
-            //if( quorum contains this address ) then dont do this stuff
+            if(deriveQuorum(blockchain.getLast(), 0).contains(address)){
+                return; //if my neighbour is a quorum member, return
+            }
             Message reply = Messager.sendTwoWayMessage(address, new Message(Request.DELEGATE_WORK), myAddress);
             String hash = null;
 
             if(reply.getRequest().name().equals("COMPLETED_WORK")){
                 hash = (String) reply.getMetadata();
             }
-
+            
             // Do something with the hash
         }
 
