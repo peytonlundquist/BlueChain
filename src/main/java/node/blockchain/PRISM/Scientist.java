@@ -41,8 +41,7 @@ public class Scientist {
     ServerSocket ss;
     Address myAddress;
     ArrayList<Address> fullNodes; // List of full nodes we want to use
-    HashSet<Project> seenProjectTransactions; // Transactions we've seen from full nodes
-    HashSet<ProvenanceRecord> seenProvenanceTransactions; // Transactions we've seen from full nodes
+    HashSet<PRISMTransaction> seenPRISMTransactions; // Transactions we've seen from full nodes
     Object updateLock; // Lock for multithreading
     boolean test; // Boolean for test vs normal output
 
@@ -52,8 +51,7 @@ public class Scientist {
         fullNodes = new ArrayList<>();
         reader = new BufferedReader(new InputStreamReader(System.in));
         accounts = new ArrayList<>();
-        seenProjectTransactions = new HashSet<>();
-        seenProjectTransactions = new HashSet<>();
+        seenPRISMTransactions = new HashSet<>();
 
         updateLock = new Object();
 
@@ -156,7 +154,6 @@ public class Scientist {
         }
     }
 
-    
     /**
      * Interpret the string input
      * 
@@ -169,10 +166,10 @@ public class Scientist {
                     addAccount();
                     break;
                 case ("t"):
-                    submitTask(); // Submit Transaction
+                    submitPRISMTransaction(); // Submit Transaction
                     break;
                 case ("i"):
-                  //  submitWIB(); // Submit WIB,
+                    // submitWIB(); // Submit WIB,
                     break;
                 case ("p"):
                     printAccounts();
@@ -307,91 +304,153 @@ public class Scientist {
     // e.printStackTrace();
     // }
     // }
-    
 
-   
     /* WORKFLOW TASK BLOCKS */
 
-    public void submitTask() throws IOException {
-        System.out.println("Generating Transaction");
-        System.out.println("Deposit address?");
-        String to = reader.readLine();
-        System.out.println("Withdraw account nickname?");
-        String nickname = reader.readLine();
-        System.out.println("Amount to send?");
-        int amount = Integer.valueOf(reader.readLine());
+    // public void submitTask() throws IOException {
+    // System.out.println("Generating Transaction");
+    // System.out.println("Deposit address?");
+    // String to = reader.readLine();
+    // System.out.println("Withdraw account nickname?");
+    // String nickname = reader.readLine();
+    // System.out.println("Amount to send?");
+    // int amount = Integer.valueOf(reader.readLine());
 
-        Account chosenAccount = null;
-        for (Account account : accounts) {
-            if (account.getNickname().equals(nickname))
-                chosenAccount = account;
-        }
+    // Account chosenAccount = null;
+    // for (Account account : accounts) {
+    // if (account.getNickname().equals(nickname))
+    // chosenAccount = account;
+    // }
 
-        if (chosenAccount == null) {
-            System.out.println("Account with the nickname " + nickname + " is not found.");
-            return;
-        }
+    // if (chosenAccount == null) {
+    // System.out.println("Account with the nickname " + nickname + " is not
+    // found.");
+    // return;
+    // }
 
-        PrivateKey pk = chosenAccount.getKeyPair().getPrivate();
-        String myPublicKeyString = DSA.bytesToString(chosenAccount.getKeyPair().getPublic().getEncoded());
+    // PrivateKey pk = chosenAccount.getKeyPair().getPrivate();
+    // String myPublicKeyString =
+    // DSA.bytesToString(chosenAccount.getKeyPair().getPublic().getEncoded());
 
-        if (myPublicKeyString.equals(to)) {
-            System.out.println("Cannot send to self.");
-            return;
-        }
+    // if (myPublicKeyString.equals(to)) {
+    // System.out.println("Cannot send to self.");
+    // return;
+    // }
 
-        PRISMTransaction newTransaction = new PRISMTransaction(new ProvenanceRecord("", "", "", null));
-        String UID = newTransaction.getUID();
-        byte[] signedUID = DSA.signHash(UID, pk);
-        newTransaction.setSigUID(signedUID);
+    // PRISMTransaction newTransaction = new PRISMTransaction(new
+    // ProvenanceRecord("", "", "", null));
+    // String UID = newTransaction.getUID();
+    // byte[] signedUID = DSA.signHash(UID, pk);
+    // newTransaction.setSigUID(signedUID);
 
-        System.out.println("Submitting transaction to nodes: ");
-        for (Address address : fullNodes) {
-            submitTask(newTransaction, address);
-        }
+    // System.out.println("Submitting transaction to nodes: ");
+    // for (Address address : fullNodes) {
+    // submitTask(newTransaction, address);
+    // }
 
-    } private void submitTask(PRISMTransaction transaction, Address address) {
-        try {
-            Socket s = new Socket(address.getHost(), address.getPort());
-            OutputStream out = s.getOutputStream();
-            ObjectOutputStream oout = new ObjectOutputStream(out);
-            Message message = new Message(Message.Request.ADD_TRANSACTION, transaction);
-            oout.writeObject(message);
-            oout.flush();
-            Thread.sleep(1000);
-            s.close();
-            if (!this.test)
-                System.out.println("Full node: " + address);
-        } catch (IOException e) {
-            System.out.println("Full node at " + address + " appears down.");
-        } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-    }
-    /* WORKFLOW INCEPTION BLOCKS */
-    public void submtiWIB() throws IOException {
-        System.out.println("Generating Transaction");
+    // } private void submitTask(PRISMTransaction transaction, Address address) {
+    // try {
+    // Socket s = new Socket(address.getHost(), address.getPort());
+    // OutputStream out = s.getOutputStream();
+    // ObjectOutputStream oout = new ObjectOutputStream(out);
+    // Message message = new Message(Message.Request.ADD_TRANSACTION, transaction);
+    // oout.writeObject(message);
+    // oout.flush();
+    // Thread.sleep(1000);
+    // s.close();
+    // if (!this.test)
+    // System.out.println("Full node: " + address);
+    // } catch (IOException e) {
+    // System.out.println("Full node at " + address + " appears down.");
+    // } catch (InterruptedException e) {
+    // // TODO Auto-generated catch block
+    // e.printStackTrace();
+    // }
+    // }
+    // /* WORKFLOW INCEPTION BLOCKS */
+    // public void submtiWIB() throws IOException {
+    // System.out.println("Generating Transaction");
+    // System.out.println("Hypothesis?");
+    // String hypothesis = reader.readLine();
+    // System.out.println("Enter authors seperated by a comma");
+    // String authorsInput = reader.readLine();
+    // // Split the input string into an array using comma as the delimiter
+    // String[] authors = authorsInput.split(",");
+
+    // Project newTransaction = new Project(hypothesis,
+    // authors,String.valueOf(System.currentTimeMillis()));
+
+    // System.out.println("Submitting transaction to nodes: ");
+    // for (Address address : fullNodes) {
+    // submitWIB(newTransaction, address);
+    // }
+    // }
+
+    // private void submitWIB(Project transaction, Address address) {
+    // try {
+    // Socket s = new Socket(address.getHost(), address.getPort());
+    // OutputStream out = s.getOutputStream();
+    // ObjectOutputStream oout = new ObjectOutputStream(out);
+    // Message message = new Message(Message.Request.ADD_TRANSACTION, transaction);
+    // oout.writeObject(message);
+    // oout.flush();
+    // Thread.sleep(1000);
+    // s.close();
+    // if (!this.test)
+    // System.out.println("Full node: " + address);
+    // } catch (IOException e) {
+    // System.out.println("Full node at " + address + " appears down.");
+    // } catch (InterruptedException e) {
+    // // TODO Auto-generated catch block
+    // e.printStackTrace();
+    // }
+    // }
+
+    public void submitPRISMTransaction() throws IOException {
+        System.out.println("[1]: Workflow Inception Block");
         System.out.println("Hypothesis?");
         String hypothesis = reader.readLine();
         System.out.println("Enter authors seperated by a comma");
         String authorsInput = reader.readLine();
         // Split the input string into an array using comma as the delimiter
         String[] authors = authorsInput.split(",");
-        
-      
 
-        Project newTransaction = new Project(hypothesis, authors,String.valueOf(System.currentTimeMillis()));
-       
-       
+        Project project = new Project(hypothesis, authors,"0");
+
+        // Account chosenAccount = null;
+        // for (Account account : accounts) {
+        // if (account.getNickname().equals(nickname))
+        // chosenAccount = account;
+        // }
+
+        // if (chosenAccount == null) {
+        // System.out.println("Account with the nickname " + nickname + " is not found.");
+        // return;
+        // }
+
+        // PrivateKey pk = chosenAccount.getKeyPair().getPrivate();
+        // String myPublicKeyString =
+        // DSA.bytesToString(chosenAccount.getKeyPair().getPublic().getEncoded());
+
+        // if (myPublicKeyString.equals(to)) {
+        // System.out.println("Cannot send to self.");
+        // return;
+        // }
+
+        PRISMTransaction newTransaction = new PRISMTransaction(project, String.valueOf(System.currentTimeMillis()));
+
+        // String UID = newTransaction.getUID();
+        // byte[] signedUID = DSA.signHash(UID, pk);
+        // newTransaction.setSigUID(signedUID);
 
         System.out.println("Submitting transaction to nodes: ");
+
         for (Address address : fullNodes) {
-            submitWIB(newTransaction, address);
+            submitPRISMTransaction(newTransaction, address);
         }
     }
 
-    private void submitWIB(Project transaction, Address address) {
+    private void submitPRISMTransaction(PRISMTransaction transaction, Address address) {
         try {
             Socket s = new Socket(address.getHost(), address.getPort());
             OutputStream out = s.getOutputStream();
@@ -411,14 +470,6 @@ public class Scientist {
         }
     }
 
-
-    private void submitPRISMTransaction() {
-
-    }
-    private void submitPRISMTransaction(PRISMTransaction transaction, Address address) {
-
-
-    }
     private void printAccounts() {
         System.out.println("=============== Accounts ================");
         for (Account account : accounts) {
@@ -431,9 +482,9 @@ public class Scientist {
     private void updateAccounts(MerkleTreeProof mtp) {
         synchronized (updateLock) {
 
-            Transaction transaction = (Transaction) mtp.getTransaction();
+            PRISMTransaction transaction = (PRISMTransaction) mtp.getTransaction(); //changed from Transaction to PRISMTransaction
 
-            for (Transaction existingTransaction : seenTransactions) {
+            for (Transaction existingTransaction : seenPRISMTransactions) {
                 if (existingTransaction.equals(transaction)) {
                     return;
                 }
@@ -455,7 +506,7 @@ public class Scientist {
                 return;
             }
 
-           // seenTransactions.add(transaction);
+             seenPRISMTransactions.add(transaction);
 
             if (!mtp.confirmMembership()) {
                 System.out.println("Could not validate tx in MerkleTreeProof");
@@ -464,7 +515,7 @@ public class Scientist {
 
             for (Account account : accounts) {
                 if (DSA.bytesToString(account.getKeyPair().getPublic().getEncoded()).equals(transaction.getFrom())) {
-                   // account.updateBalance(-(transaction.getAmount()));
+                    // account.updateBalance(-(transaction.getAmount()));
                 }
                 if (DSA.bytesToString(account.getKeyPair().getPublic().getEncoded()).equals(transaction.getTo())) {
                     account.updateBalance(transaction.getAmount());
@@ -523,14 +574,13 @@ public class Scientist {
             return;
         }
 
-        DefiTransaction newTransaction = new DefiTransaction(to, myPublicKeyString, amount,
-                String.valueOf(System.currentTimeMillis()));
+        PRISMTransaction newTransaction = new PRISMTransaction(new ProvenanceRecord("Data", "Task", "0", null), String.valueOf(System.currentTimeMillis())); // PRISM
         String UID = newTransaction.getUID();
         byte[] signedUID = DSA.signHash(UID, pk);
         newTransaction.setSigUID(signedUID);
 
         for (Address address : fullNodes) {
-            submitTransaction(newTransaction, address);
+            submitPRISMTransaction(newTransaction, address);
         }
     }
 

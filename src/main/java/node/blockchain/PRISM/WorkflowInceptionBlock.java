@@ -3,7 +3,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import node.blockchain.Block;
 import node.blockchain.Transaction;
-import node.blockchain.PRISM.Records.Project;
+import node.blockchain.PRISM.RecordTypes.Project;
 import node.blockchain.defi.DefiTransaction;
 
 public class WorkflowInceptionBlock extends Block {
