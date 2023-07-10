@@ -3,6 +3,7 @@ package node;
 import node.blockchain.*;
 import node.blockchain.PRISM.PRISMTransaction;
 import node.blockchain.PRISM.PRISMTransactionValidator;
+import node.blockchain.PRISM.RepData;
 import node.blockchain.PRISM.WorkflowInceptionBlock;
 import node.blockchain.healthcare.*;
 import node.blockchain.defi.DefiBlock;
@@ -433,16 +434,17 @@ public class Node {
     public void delegateWork() {
         for (Address address : localPeers) {
             if (deriveQuorum(blockchain.getLast(), 0).contains(address)) {
-                return; // if my neighbour is a quorum member, return
-            }
-            Message reply = Messager.sendTwoWayMessage(address, new Message(Request.DELEGATE_WORK, mempool), myAddress);
-            String hash = null;
+                // if my neighbour is a quorum member, return
+            }else{
+                Message reply = Messager.sendTwoWayMessage(address, new Message(Request.DELEGATE_WORK, mempool), myAddress);
+                String hash = null;
 
-            if (reply.getRequest().name().equals("COMPLETED_WORK")) {
-                hash = Hashing.getSHAString((String) reply.getMetadata());
-            }
+                if (reply.getRequest().name().equals("COMPLETED_WORK")) {
+                    hash = Hashing.getSHAString((String) reply.getMetadata());
+                }
 
-            // Do something with the hash
+                // Do something with the hash
+            }
         }
 
     }
@@ -452,7 +454,22 @@ public class Node {
             PRISMTransaction PRISMtx = (PRISMTransaction) txList.get(txHash);
 
         }
+
+        String hash = null;
+
+
         // Do work
+
+
+        hash = "213fsdf";
+
+        try {
+            oout.writeObject(new Message(Request.COMPLETED_WORK, hash));
+            oout.flush();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
 
     }
 
@@ -998,7 +1015,8 @@ public class Node {
             for (String key : keys) {
                 DefiTransaction transactionInList = (DefiTransaction) txMap.get(key);
                 defiTxMap.put(key, transactionInList);
-            }
+            }            PRISMTransactionValidator.updateReps(Block, RepData);
+
 
             DefiTransactionValidator.updateAccounts(defiTxMap, accounts);
 
@@ -1018,6 +1036,7 @@ public class Node {
                     }
                 }
             }
+        }else {
         }
 
         ArrayList<Address> quorum = deriveQuorum(blockchain.getLast(), 0);
@@ -1191,6 +1210,15 @@ public class Node {
                 e.printStackTrace();
             }
             while (true) {
+
+
+
+                if(repData.get(new Address(DEBUG_LEVEL, USE)) == null){
+                        // rep is 0 / no history
+                }else{
+                    float rep = repData.get(new Address(DEBUG_LEVEL, USE)).getCurrentReputation();
+                }
+
                 for (Address address : localPeers) {
                     try {
                         Thread.sleep(10000);
@@ -1210,6 +1238,7 @@ public class Node {
                     }
                 }
             }
+
         }
     }
 
@@ -1220,7 +1249,7 @@ public class Node {
     private ArrayList<Address> globalPeers;
     private ArrayList<Address> localPeers;
     private HashMap<String, Transaction> mempool;
-    HashMap<String, Integer> accounts;
+    private HashMap<String, Integer> accounts;
     private ArrayList<BlockSignature> quorumSigs;
     private LinkedList<Block> blockchain;
     private final Address myAddress;
@@ -1229,5 +1258,13 @@ public class Node {
     private PrivateKey privateKey;
     private int state;
     private final String USE;
+
+    private HashMap<Address, RepData> repData;
+
+
+
+
+
+
 
 }
