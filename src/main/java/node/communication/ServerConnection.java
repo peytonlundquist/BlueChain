@@ -12,7 +12,9 @@ import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -95,6 +97,13 @@ public class ServerConnection extends Thread {
             case ALERT_WALLET:
                 Object[] data = (Object[]) incomingMessage.getMetadata();
                 node.alertWallet((String) data[0], (Address) data[1]);
+                break;
+            case DELEGATE_WORK:
+                HashMap<String,Transaction> mempool = (HashMap<String,Transaction>) incomingMessage.getMetadata();
+                node.doWork(mempool, oin, oout);
+                break;
+            case COMPLETED_WORK:
+                
                 break;
         }
     }
