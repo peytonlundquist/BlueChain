@@ -1,6 +1,7 @@
 package node;
 
 import node.blockchain.*;
+import node.blockchain.PRISM.PRISMTransaction;
 import node.blockchain.PRISM.PRISMTransactionValidator;
 import node.blockchain.PRISM.WorkflowInceptionBlock;
 import node.blockchain.healthcare.*;
@@ -428,24 +429,31 @@ public class Node {
         }
     }
 
-    public void delegateWork(){
-        for(Address address : localPeers){
-            if(deriveQuorum(blockchain.getLast(), 0).contains(address)){
-                return; //if my neighbour is a quorum member, return
+    public void delegateWork() {
+        for (Address address : localPeers) {
+            if (deriveQuorum(blockchain.getLast(), 0).contains(address)) {
+                return; // if my neighbour is a quorum member, return
             }
-            Message reply = Messager.sendTwoWayMessage(address, new Message(Request.DELEGATE_WORK), myAddress);
+            Message reply = Messager.sendTwoWayMessage(address, new Message(Request.DELEGATE_WORK, mempool), myAddress);
             String hash = null;
 
-            if(reply.getRequest().name().equals("COMPLETED_WORK")){
-                hash = (String) reply.getMetadata();
+            if (reply.getRequest().name().equals("COMPLETED_WORK")) {
+                hash = Hashing.getSHAString((String) reply.getMetadata());
             }
-            
+
             // Do something with the hash
         }
 
-
     }
 
+    public void doWork(HashMap<String, Transaction> txList, ObjectInputStream oin, ObjectOutputStream oout) {
+        for (String txHash : txList.keySet()) { // For each transaction in that block
+            PRISMTransaction PRISMtx = (PRISMTransaction) txList.get(txHash);
+
+        }
+        // Do work
+
+    }
 
     public void sendMempoolHashes() {
         synchronized (memPoolLock) {
@@ -1065,9 +1073,8 @@ public class Node {
                 }
             }
             return quorumMember;
-        } 
+        }
     }
-
 
     public ArrayList<Address> deriveQuorum(Block block, int nonce) { // PRISM, This needs modified to derive a
                                                                      // percentage of the quroum based off of
@@ -1091,13 +1098,12 @@ public class Node {
                     quorumNode = globalPeers.get(quorumNodeIndex);
                     if (!containsAddress(quorum, quorumNode)) {
 
-                        
                         PRISMTransactionValidator tv = new PRISMTransactionValidator();
-                        if(tv.calculateReputation(quorumNode, seed, quorumNodeIndex, nonce) > 10){
+                        if (tv.calculateReputation(quorumNode, blockchain, seed, quorumNodeIndex, nonce) > 10) {
                             quorum.add(globalPeers.get(quorumNodeIndex));
                         }
 
-                        //Collections.shuffle(quorum, random);
+                        // Collections.shuffle(quorum, random);
                     }
                 }
                 return quorum;
