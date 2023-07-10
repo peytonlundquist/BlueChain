@@ -24,6 +24,7 @@ import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.util.*;
+import java.util.stream.*;
 
 import static node.communication.utils.DSA.*;
 import static node.communication.utils.Hashing.getBlockHash;
@@ -1093,12 +1094,32 @@ public class Node {
                 Address quorumNode; // The address of thenode from the quorumNode Index to go in to the quorum
                 // System.out.println("Node " + myAddress.getPort() + ": blockhash" +
                 // chainString(blockchain));
-                while (quorum.size() < QUORUM_SIZE) {
+                PRISMTransactionValidator tv = new PRISMTransactionValidator();
+
+                HashMap<Address, Float> potentialQuorumMembers = tv.calculateReputations(blockchain, quorum, 1, 1, 1);
+                int numToKeep = (int) Math.ceil(potentialQuorumMembers.size() * 0.20); // replace 0.20 with your desired
+                                                                                       // percentage
+
+                // Create a new linked hash map and sort the potentialQuorumMembers map by
+                // values in descending order,
+                // and limit the map to the top x percent
+                LinkedHashMap<Address, Float> sortedMap = potentialQuorumMembers.entrySet()
+                        .stream()
+                        .sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
+                        .limit(numToKeep)
+                        .collect(Collectors.toMap(
+                                Map.Entry::getKey,
+                                Map.Entry::getValue,
+                                (e1, e2) -> e1,
+                                LinkedHashMap::new));
+
+                
+                while (quorum.size() < QUORUM_SIZE) { // Id like to make quorumSize variable depending on the nodeSize
+                                                      // (Maybe we can do this in config)
                     quorumNodeIndex = random.nextInt(NUM_NODES); // may be wrong but should still work
                     quorumNode = globalPeers.get(quorumNodeIndex);
                     if (!containsAddress(quorum, quorumNode)) {
 
-                        PRISMTransactionValidator tv = new PRISMTransactionValidator();
                         if (tv.calculateReputation(quorumNode, blockchain, seed, quorumNodeIndex, nonce) > 10) {
                             quorum.add(globalPeers.get(quorumNodeIndex));
                         }

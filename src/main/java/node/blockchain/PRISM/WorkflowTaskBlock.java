@@ -16,7 +16,6 @@ public class WorkflowTaskBlock extends Block {
 
     //List of correct and incorrec miners and their signatures and their time to mine
      public WorkflowTaskBlock(HashMap<String, Transaction> txList, String prevBlockHash, int blockId,  List<MinerData> minerData ) {
-        super(setBlockType(BlockType.wTask));
         /* Setting variables inherited from Block class */
         this.txList = new HashMap<>();
         this.prevBlockHash = prevBlockHash;

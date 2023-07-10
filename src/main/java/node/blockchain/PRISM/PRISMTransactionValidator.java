@@ -15,10 +15,10 @@ import node.communication.Address;
 
 public class PRISMTransactionValidator extends TransactionValidator {
 
-    public Map<Address, Float> calculateReputations(LinkedList<Block> blockchain, ArrayList<Address> globalPeers,
+    public HashMap<Address, Float> calculateReputations(LinkedList<Block> blockchain, ArrayList<Address> globalPeers,
             float alpha, float beta, float gamma) {
 
-        Map<Address, Float> reputations = new HashMap<>();
+        HashMap<Address, Float> reputations = new HashMap<>();
         for (Address address : globalPeers) { // FOR EVERY ADDRESS
             int blocksParticipated = 0;
             float accuracy = 0.0f;
