@@ -435,8 +435,9 @@ public class Node {
         for (Address address : localPeers) {
             if (deriveQuorum(blockchain.getLast(), 0).contains(address)) {
                 // if my neighbour is a quorum member, return
-            }else{
-                Message reply = Messager.sendTwoWayMessage(address, new Message(Request.DELEGATE_WORK, mempool), myAddress);
+            } else {
+                Message reply = Messager.sendTwoWayMessage(address, new Message(Request.DELEGATE_WORK, mempool),
+                        myAddress);
                 String hash = null;
 
                 if (reply.getRequest().name().equals("COMPLETED_WORK")) {
@@ -457,9 +458,7 @@ public class Node {
 
         String hash = null;
 
-
         // Do work
-
 
         hash = "213fsdf";
 
@@ -1015,8 +1014,8 @@ public class Node {
             for (String key : keys) {
                 DefiTransaction transactionInList = (DefiTransaction) txMap.get(key);
                 defiTxMap.put(key, transactionInList);
-            }            PRISMTransactionValidator.updateReps(Block, RepData);
-
+            }
+            
 
             DefiTransactionValidator.updateAccounts(defiTxMap, accounts);
 
@@ -1036,7 +1035,11 @@ public class Node {
                     }
                 }
             }
-        }else {
+        } else {
+            //PRISM
+            PRISMTransactionValidator txValidator = new PRISMTransactionValidator();
+            repData = txValidator.calculateReputationsData(block, repData);
+
         }
 
         ArrayList<Address> quorum = deriveQuorum(blockchain.getLast(), 0);
@@ -1096,56 +1099,71 @@ public class Node {
         }
     }
 
-    public ArrayList<Address> deriveQuorum(Block block, int nonce) { // PRISM, This needs modified to derive a
-                                                                     // percentage of the quroum based off of
-                                                                     // reputation.
+    public ArrayList<Address> deriveQuorum(Block block, int nonce) {
         String blockHash;
         if (block != null && block.getPrevBlockHash() != null) {
             try {
-                ArrayList<Address> quorum = new ArrayList<>(); // New list for returning a quorum, list of addr
-                blockHash = Hashing.getBlockHash(block, nonce); // gets the hash of the block
-                BigInteger bigInt = new BigInteger(blockHash, 16); // Converts the hex hash in to a big Int
-                bigInt = bigInt.mod(BigInteger.valueOf(NUM_NODES)); // we mod the big int I guess
-                int seed = bigInt.intValue(); // This makes our seed
-                Random random = new Random(seed); // Makes our random in theory the same across all healthy nodes
-                int quorumNodeIndex; // The index from our global peers from which we select nodes to participate in
-                                     // next quorum
-                Address quorumNode; // The address of thenode from the quorumNode Index to go in to the quorum
-                // System.out.println("Node " + myAddress.getPort() + ": blockhash" +
-                // chainString(blockchain));
+                ArrayList<Address> quorum = new ArrayList<>();
+                blockHash = Hashing.getBlockHash(block, nonce);
+                BigInteger bigInt = new BigInteger(blockHash, 16);
+                bigInt = bigInt.mod(BigInteger.valueOf(NUM_NODES));
+                int seed = bigInt.intValue();
+                Random random = new Random(seed);
                 PRISMTransactionValidator tv = new PRISMTransactionValidator();
+                repData = tv.calculateReputationsData(block, repData);
 
-                HashMap<Address, Float> potentialQuorumMembers = tv.calculateReputations(blockchain, quorum, 1, 1, 1);
-                int numToKeep = (int) Math.ceil(potentialQuorumMembers.size() * 0.20); // replace 0.20 with your desired
-                                                                                       // percentage
-
-                // Create a new linked hash map and sort the potentialQuorumMembers map by
-                // values in descending order,
-                // and limit the map to the top x percent
-                LinkedHashMap<Address, Float> sortedMap = potentialQuorumMembers.entrySet()
+                // Sort the repData map by currentReputation values in descending order
+                LinkedHashMap<Address, RepData> sortedMap = repData.entrySet()
                         .stream()
-                        .sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
-                        .limit(numToKeep)
+                        .sorted(Map.Entry
+                                .<Address, RepData>comparingByValue(Comparator.comparing(RepData::getCurrentReputation))
+                                .reversed())
                         .collect(Collectors.toMap(
                                 Map.Entry::getKey,
                                 Map.Entry::getValue,
                                 (e1, e2) -> e1,
                                 LinkedHashMap::new));
 
-                
-                while (quorum.size() < QUORUM_SIZE) { // Id like to make quorumSize variable depending on the nodeSize
-                                                      // (Maybe we can do this in config)
-                    quorumNodeIndex = random.nextInt(NUM_NODES); // may be wrong but should still work
-                    quorumNode = globalPeers.get(quorumNodeIndex);
-                    if (!containsAddress(quorum, quorumNode)) {
+                // Calculate top 20% limit
+                int topTwentyLimit = (int) Math.ceil(sortedMap.size() * 0.20);
+                // Get the top 20% entries
+                LinkedHashMap<Address, RepData> topTwentyPercent = sortedMap.entrySet()
+                        .stream()
+                        .limit(topTwentyLimit)
+                        .collect(Collectors.toMap(
+                                Map.Entry::getKey,
+                                Map.Entry::getValue,
+                                (e1, e2) -> e1,
+                                LinkedHashMap::new));
 
-                        if (tv.calculateReputation(quorumNode, blockchain, seed, quorumNodeIndex, nonce) > 10) {
-                            quorum.add(globalPeers.get(quorumNodeIndex));
-                        }
+                // Convert map entries to a list
+                List<Map.Entry<Address, RepData>> entries = new ArrayList<>(topTwentyPercent.entrySet());
+                // Shuffle the list
+                Collections.shuffle(entries, random);
 
-                        // Collections.shuffle(quorum, random);
-                    }
-                }
+                // Create a new LinkedHashMap and insert the shuffled entries
+                LinkedHashMap<Address, RepData> shuffledMap = entries.stream()
+                        .collect(Collectors.toMap(
+                                Map.Entry::getKey,
+                                Map.Entry::getValue,
+                                (e1, e2) -> e1,
+                                LinkedHashMap::new));
+
+                // Calculate top 5% limit
+                int topFiveLimit = (int) Math.ceil(shuffledMap.size() * 0.05);
+                // Get the top 5% entries
+                LinkedHashMap<Address, RepData> topFivePercent = shuffledMap.entrySet()
+                        .stream()
+                        .limit(topFiveLimit)
+                        .collect(Collectors.toMap(
+                                Map.Entry::getKey,
+                                Map.Entry::getValue,
+                                (e1, e2) -> e1,
+                                LinkedHashMap::new));
+
+                // Add these to the quorum
+                quorum.addAll(topFivePercent.keySet());
+
                 return quorum;
             } catch (NoSuchAlgorithmException e) {
                 throw new RuntimeException(e);
@@ -1211,11 +1229,9 @@ public class Node {
             }
             while (true) {
 
-
-
-                if(repData.get(new Address(DEBUG_LEVEL, USE)) == null){
-                        // rep is 0 / no history
-                }else{
+                if (repData.get(new Address(DEBUG_LEVEL, USE)) == null) {
+                    // rep is 0 / no history
+                } else {
                     float rep = repData.get(new Address(DEBUG_LEVEL, USE)).getCurrentReputation();
                 }
 
@@ -1259,12 +1275,6 @@ public class Node {
     private int state;
     private final String USE;
 
-    private HashMap<Address, RepData> repData;
-
-
-
-
-
-
+    private  HashMap<Address, RepData> repData;
 
 }

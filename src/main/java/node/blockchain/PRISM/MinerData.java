@@ -24,7 +24,7 @@ public class MinerData {
         this.accuracy = accuracy;
         this.outputHash = outputHash;
     }
-
+    
   
     public long getTimestamp() {
         return timestamp;
