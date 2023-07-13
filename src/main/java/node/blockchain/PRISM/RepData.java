@@ -10,8 +10,7 @@ public class RepData {
     float accurarySummation;
     int accuracyCount;
 
-    public RepData(int blocksParticipated, float timeSummation, float accurarySummation,
-            int accuracyCount) {
+    public RepData(int blocksParticipated, float timeSummation, float accurarySummation, int accuracyCount) {
         this.currentReputation = 0;
         this.blocksParticipated = blocksParticipated;
         this.timeSummation = timeSummation;

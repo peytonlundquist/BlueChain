@@ -432,36 +432,56 @@ public class Node {
     }
 
     public void delegateWork() {
+
+        HashMap<String, Integer> minerOutput = new HashMap<>(); // minerOutput contains all the hashes and their counts.
+
         for (Address address : localPeers) {
-            if (deriveQuorum(blockchain.getLast(), 0).contains(address)) {
+            if (!deriveQuorum(blockchain.getLast(), 0).contains(address)) {
                 // if my neighbour is a quorum member, return
-            } else {
+
                 Message reply = Messager.sendTwoWayMessage(address, new Message(Request.DELEGATE_WORK, mempool),
                         myAddress);
                 String hash = null;
 
                 if (reply.getRequest().name().equals("COMPLETED_WORK")) {
                     hash = Hashing.getSHAString((String) reply.getMetadata());
-                }
 
-                // Do something with the hash
+                    // Check if the hash is already in the map. If it is, increment its count.
+                    // Otherwise, add it to the map with a count of 1.
+                    if (minerOutput.containsKey(hash)) {
+                        minerOutput.put(hash, minerOutput.get(hash) + 1);
+                    } else {
+                        minerOutput.put(hash, 1);
+                    }
+
+                }
             }
         }
 
     }
 
     public void doWork(HashMap<String, Transaction> txList, ObjectInputStream oin, ObjectOutputStream oout) {
-        for (String txHash : txList.keySet()) { // For each transaction in that block
-            PRISMTransaction PRISMtx = (PRISMTransaction) txList.get(txHash);
-
+        PRISMTransaction PRISMtx = null;
+    
+        for (String txHash : txList.keySet()) { // For each transaction in that block (there should only be one
+            // transaction per block)
+            PRISMtx = (PRISMTransaction) txList.get(txHash);
         }
-
+    
+        // Percentage (from 0 to 1) that controls whether to use PRISMtx.getUID hash or a random hash
+        ; // example value, adjust as needed
+    
+        // Based on a percentage (0 to 1), this should set hash to the hash of PRISMtx.getUID. Otherwise, it returns a random hash
         String hash = null;
-
+        
+        if (Math.random() < accuracyPercent && PRISMtx != null) {
+            hash = Hashing.getSHAString(PRISMtx.getUID());
+        } else {
+            hash = "aaa"; // assuming you have a method to generate random hashes
+        }
+    
         // Do work
-
-        hash = "213fsdf";
-
+    
         try {
             oout.writeObject(new Message(Request.COMPLETED_WORK, hash));
             oout.flush();
@@ -469,14 +489,10 @@ public class Node {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-
     }
-
     public void sendMempoolHashes() {
         synchronized (memPoolLock) {
-
             // Here
-
             stateChangeRequest(2);
 
             if (DEBUG_LEVEL == 1)
@@ -1015,7 +1031,6 @@ public class Node {
                 DefiTransaction transactionInList = (DefiTransaction) txMap.get(key);
                 defiTxMap.put(key, transactionInList);
             }
-            
 
             DefiTransactionValidator.updateAccounts(defiTxMap, accounts);
 
@@ -1036,7 +1051,7 @@ public class Node {
                 }
             }
         } else {
-            //PRISM
+            // PRISM
             PRISMTransactionValidator txValidator = new PRISMTransactionValidator();
             repData = txValidator.calculateReputationsData(block, repData);
 
@@ -1275,6 +1290,8 @@ public class Node {
     private int state;
     private final String USE;
 
-    private  HashMap<Address, RepData> repData;
+    private HashMap<Address, RepData> repData;
+    private float accuracyPercent; // value between 0 and 1 that determines how likely this node is to get a
+                                   // correct answer as a miner.
 
 }
