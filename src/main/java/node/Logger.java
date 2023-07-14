@@ -168,7 +168,6 @@ public class Logger {
     public void logMessage(Address to, String message) {
         
       
-        JsonArrayBuilder jsonData = Json.createArrayBuilder(); 
         JsonObjectBuilder messageJson = Json.createObjectBuilder(); 
 
         if (to == null) {
@@ -178,12 +177,12 @@ public class Logger {
             .add("message_to", String.valueOf(to.getPort()))
             .add("message_from", String.valueOf(this.port)); 
 
-        jsonData.add(messageJson); 
-        String jsonDataString = jsonData.build().toString(); 
-        jsonDataString += ",\n"; 
+         
+        String jsonDataString = messageJson.build().toString(); 
+        jsonDataString += "\n"; 
 
-        try (OutputStream os = new FileOutputStream("src/main/resources/messages.json",true)) {
-            FileWriter fileWriter = new FileWriter("src/main/resources/messages.json", true);
+        try (OutputStream os = new FileOutputStream("src/main/resources/messages.ndjson",true)) {
+            FileWriter fileWriter = new FileWriter("src/main/resources/messages.ndjson", true);
             //JsonWriter jsonWriter = Json.createWriter(os); 
             //jsonWriter.writeArray(jsonData.build()); 
             fileWriter.write(jsonDataString);

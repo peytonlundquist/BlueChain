@@ -114,12 +114,12 @@ function updateData() {
       var lastBlock = updatedBlockData[updatedBlockData.length - 1];
       var quorumMembers = lastBlock.quorum;
       
-      // Use a class or id to select the correct SVG, replace svg with the appropriate selector
+      // selects nodes
       var svg = d3.select("svg");
       var nodes = svg.selectAll("circle");
       
       nodes.each(function(d) {
-        // I am assuming 'd' has a property that represents its id or name. Replace 'id' with the correct property.
+        // fill quorum members red and other nodes gray 
         var nodeColor = quorumMembers.includes(d.id) ? "red" : "gray";
         d3.select(this).attr('fill', nodeColor);
 

@@ -488,7 +488,7 @@ public class Wallet {
             System.out.print("[");
             for(int i = 0; i < j; i++){
                     testAddAccount(String.valueOf(i));
-                    Thread.sleep(1000);
+                    Thread.sleep(2000);
                     testSubmitTransaction(String.valueOf(i), DSA.bytesToString(accounts.get(0).getKeyPair().getPublic().getEncoded()), 10);
                     System.out.print("#");
             }
