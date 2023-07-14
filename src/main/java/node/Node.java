@@ -222,9 +222,12 @@ public class Node  {
 
     public void gossipTransaction(Transaction transaction){
         synchronized (lock){
+            Address lastAddress = localPeers.get(0); 
             for(Address address : localPeers){
                 Messager.sendOneWayMessage(address, new Message(Message.Request.ADD_TRANSACTION, transaction), myAddress);
+                lastAddress = address; 
             }
+            LOGGER.logMessage(lastAddress,"ADD_TRANSACTION");
         }
     }
 
@@ -298,10 +301,12 @@ public class Node  {
                 try {
                     Thread.sleep(2000);
                     MessagerPack mp = Messager.sendInterestingMessage(quorumAddress, new Message(Message.Request.QUORUM_READY), myAddress);
+                    LOGGER.logMessage(quorumAddress, "QUORUM_READY");
                     Message messageReceived = mp.getMessage();
                     Message reply = new Message(Message.Request.PING);
 
                     if(messageReceived.getRequest().name().equals("RECONCILE_BLOCK")){
+                        LOGGER.logMessage(quorumAddress, "RECONCILE_BLOCK");
                         Object[] blockData = (Object[]) messageReceived.getMetadata();
                         int blockId = (Integer) blockData[0];
                         String blockHash = (String) blockData[1];
@@ -397,8 +402,10 @@ public class Node  {
                 if (!myAddress.equals(quorumAddress)) {
                     try {
                         MessagerPack mp = Messager.sendInterestingMessage(quorumAddress, new Message(Message.Request.RECEIVE_MEMPOOL, keys), myAddress);                        ;
+                        LOGGER.logMessage(quorumAddress, "RECEIVE_MEMPOOL");
                         Message messageReceived = mp.getMessage();
                         if(messageReceived.getRequest().name().equals("REQUEST_TRANSACTION")){
+                            LOGGER.logMessage(quorumAddress, "REQUEST_TRANSACTION");
                             ArrayList<String> hashesRequested = (ArrayList<String>) messageReceived.getMetadata();
                             if(DEBUG_LEVEL == 1) {LOGGER.printSendRequestedTx(hashesRequested);} // logging function
                             ArrayList<Transaction> transactionsToSend = new ArrayList<>();
@@ -684,9 +691,9 @@ public class Node  {
             } catch (NoSuchAlgorithmException e) {
                 throw new RuntimeException(e);
             }
-
             for(Address address : localPeers){
                 Messager.sendOneWayMessage(address, new Message(Message.Request.RECEIVE_SKELETON, skeleton), myAddress);
+                LOGGER.logMessage(address, "RECEIVE_SKELETON");
             }
 
         }
@@ -700,6 +707,7 @@ public class Node  {
             for(Address address : localPeers){
                 if(!address.equals(myAddress)){
                     Messager.sendOneWayMessage(address, new Message(Message.Request.RECEIVE_SKELETON, skeleton), myAddress);
+                    LOGGER.logMessage(address, "RECEIVE_SKELETON");
                 }
             }
         }
@@ -854,6 +862,7 @@ public class Node  {
                         dtx.getTo().equals(account)){
                             Messager.sendOneWayMessage(accountsToAlert.get(account), 
                             new Message(Message.Request.ALERT_WALLET, mt.getProof(txMap.get(transHash))), myAddress);
+                            LOGGER.logMessage(accountsToAlert.get(transHash), "ALERT_WALLET");
                             //System.out.println("sent update");
                         }
                     }
@@ -886,6 +895,7 @@ public class Node  {
         for(Address quorumAddress : quorum){
             if(!myAddress.equals(quorumAddress)) {
                 Messager.sendOneWayMessage(quorumAddress, message, myAddress);
+                LOGGER.logMessage(quorumAddress, "RECEIVE_SIGNATURE");
             }
         }
     }
@@ -1006,7 +1016,7 @@ public class Node  {
                     try {                 
                         Thread.sleep(10000);
                         Message messageReceived = Messager.sendTwoWayMessage(address, new Message(Message.Request.PING), myAddress);
-
+                        LOGGER.logMessage(address, "PING");
                         /* Use heartbeat to also output the block chain of the node */
 
                     } catch (InterruptedException e) {

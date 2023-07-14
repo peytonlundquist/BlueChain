@@ -17,6 +17,7 @@ import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonWriter;
+
 import java.io.FileReader;
 import java.io.FileWriter; 
 import java.io.IOException; 
@@ -71,7 +72,6 @@ public class Client {
 
             jsonData.add(jsonNodes.build()); 
 
-            System.out.println(jsonData.toString()); 
 
             jsonNodes = Json.createObjectBuilder();
             jsonLinks = Json.createArrayBuilder();

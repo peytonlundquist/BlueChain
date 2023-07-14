@@ -11,9 +11,11 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.*;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Random;
 
 import javax.json.Json;
 import javax.json.JsonArray;
@@ -39,6 +41,7 @@ public class Logger {
     Node node; 
     InetAddress ip; 
     int debug; 
+    int port; 
 
     public Logger(Node node) {
         this.node = node; 
@@ -47,22 +50,39 @@ public class Logger {
 
     public void logNetworkState(Block block) {
 
-        JsonArrayBuilder jsonData = Json.createArrayBuilder(); 
-
+        //JsonArrayBuilder jsonData = Json.createArrayBuilder(); 
         JsonObjectBuilder blockData = Json.createObjectBuilder();  
+        JsonArrayBuilder qMembers = Json.createArrayBuilder(); 
+        JsonArrayBuilder transactionArray = Json.createArrayBuilder(); 
+
+        for (Address qMember : node.deriveQuorum(block,0)) {
+            qMembers.add(String.valueOf(qMember.getPort())); 
+        }
+
+    
+        Collection<Transaction> transactions = block.getTxList().values();
+
+        for (Transaction transaction : transactions) {
+            transactionArray.add(transaction.toString()); 
+        }
+
 
         blockData.add("block", block.getBlockId())
                 .add("hash",block.getPrevBlockHash())
-                .add("transactions", block.getTxList().toString())
-                .add("quorum", node.deriveQuorum(block, 0).toString())
+                .add("quorum", qMembers)
+                .add("transactions", transactionArray)
+                .add("tx_count", block.getTxList().size())
                 .add("mempool", node.getMempool().toString()); 
 
-        jsonData.add(blockData); 
+        //jsonData.add(blockData.build()); 
 
 
-        try (OutputStream os = new FileOutputStream("src/main/resources/network.json",true)) {
-            JsonWriter jsonWriter = Json.createWriter(os);
-            jsonWriter.writeArray(jsonData.build());
+        try (OutputStream os = new FileOutputStream("src/main/resources/network.ndjson",true)) {
+            JsonWriter jsonWriter = Json.createWriter(os); 
+            jsonWriter.writeObject(blockData.build());
+            FileWriter fileWriter = new FileWriter("src/main/resources/network.ndjson", true); 
+            fileWriter.write("\n");
+            fileWriter.close(); 
             jsonWriter.close();
         } catch (IOException e) {
             // TODO Auto-generated catch block
@@ -145,7 +165,40 @@ public class Logger {
         }
     }  */ 
 
+    public void logMessage(Address to, String message) {
+        
+      
+        JsonArrayBuilder jsonData = Json.createArrayBuilder(); 
+        JsonObjectBuilder messageJson = Json.createObjectBuilder(); 
+
+        if (to == null) {
+            return; 
+        }
+        messageJson.add("message",message)
+            .add("message_to", String.valueOf(to.getPort()))
+            .add("message_from", String.valueOf(this.port)); 
+
+        jsonData.add(messageJson); 
+        String jsonDataString = jsonData.build().toString(); 
+        jsonDataString += ",\n"; 
+
+        try (OutputStream os = new FileOutputStream("src/main/resources/messages.json",true)) {
+            FileWriter fileWriter = new FileWriter("src/main/resources/messages.json", true);
+            //JsonWriter jsonWriter = Json.createWriter(os); 
+            //jsonWriter.writeArray(jsonData.build()); 
+            fileWriter.write(jsonDataString);
+            fileWriter.close(); 
+            //jsonWriter.close();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+
+
+    }
     public void printPort(int port) {
+        this.port = port; 
         try {
             System.out.println("Node up and running on port " + port + " " +  InetAddress.getLocalHost());
         } catch (IOException e) {

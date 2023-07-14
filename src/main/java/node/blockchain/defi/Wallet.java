@@ -2,6 +2,8 @@ package node.blockchain.defi;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -17,6 +19,13 @@ import java.security.PrivateKey;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.regex.Pattern;
+
+import javax.json.Json;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObjectBuilder;
+import javax.json.JsonWriter;
+
+import node.blockchain.Transaction;
 import node.blockchain.merkletree.MerkleTreeProof;
 import node.communication.Address;
 import node.communication.messaging.Message;
@@ -256,6 +265,7 @@ public class Wallet {
         }
 
         DefiTransaction newTransaction = new DefiTransaction(to, myPublicKeyString, amount, String.valueOf(System.currentTimeMillis()));
+      
         String UID = newTransaction.getUID();
         byte[] signedUID = DSA.signHash(UID, pk);
         newTransaction.setSigUID(signedUID);
@@ -276,6 +286,7 @@ public class Wallet {
             oout.flush();
             Thread.sleep(1000);
             s.close();
+            
             if(!this.test) System.out.println("Full node: " + address);
         } catch (IOException e) {
             System.out.println("Full node at " + address + " appears down.");
@@ -393,6 +404,39 @@ public class Wallet {
         }
 
         DefiTransaction newTransaction = new DefiTransaction(to, myPublicKeyString, amount, String.valueOf(System.currentTimeMillis()));
+        // Implementing functionality to write to transaction file as transactions are submitted 
+        JsonArrayBuilder jsonData = Json.createArrayBuilder(); 
+        JsonObjectBuilder txData = Json.createObjectBuilder();  
+        
+
+        txData.add("transaction", newTransaction.toString())
+            .add("to", to.substring(to.length() - 7, to.length() - 1))
+            .add("from",  myPublicKeyString.substring(myPublicKeyString.length() - 7, myPublicKeyString.length() - 1))
+            .add("amount",String.valueOf(amount)); 
+        
+        
+        chosenAccount.updateBalance(chosenAccount.getBalance() - amount);
+        
+        if (chosenAccount.getBalance() < amount) {
+            txData.add("valid","no");
+        } else {
+            txData.add("valid","yes"); 
+        }
+    
+
+        jsonData.add(txData); 
+
+
+        try (OutputStream os = new FileOutputStream("src/main/resources/transactions.json",true);
+            JsonWriter jsonWriter = Json.createWriter(os)) {
+            jsonWriter.writeArray(jsonData.build());
+            FileWriter fileWriter = new FileWriter("src/main/resources/transactions.json", true); 
+            fileWriter.write(",\n");
+            fileWriter.close(); 
+            jsonWriter.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         String UID = newTransaction.getUID();
         byte[] signedUID = DSA.signHash(UID, pk);
         newTransaction.setSigUID(signedUID);
@@ -412,12 +456,12 @@ public class Wallet {
             System.out.print("[");
             for (int i = 0; i < j; i++) {
                 testAddAccount(String.valueOf(i));
-                Thread.sleep(1000); 
-                System.out.println(i);
-                randAccount = (int) (Math.random() * (i + 1)); 
-                System.out.println("random number:" + randAccount); 
-                testSubmitTransaction(String.valueOf(i), DSA.bytesToString(accounts.get(randAccount).getKeyPair().getPublic().getEncoded()),(int)(Math.random() * 100));
+            }
+            for (int i = 0; i < j; i++) {
+                randAccount = (int) (Math.random() * (j + 1)); 
                 System.out.print("#"); 
+                Thread.sleep(1000);
+                testSubmitTransaction(String.valueOf(i), DSA.bytesToString(accounts.get(randAccount).getKeyPair().getPublic().getEncoded()),(int)(Math.random() * 100));
             }
             System.out.print("]");
             System.out.println("Sleeping wallet for last minute updates...");
@@ -444,7 +488,7 @@ public class Wallet {
             System.out.print("[");
             for(int i = 0; i < j; i++){
                     testAddAccount(String.valueOf(i));
-                    Thread.sleep(2000);
+                    Thread.sleep(1000);
                     testSubmitTransaction(String.valueOf(i), DSA.bytesToString(accounts.get(0).getKeyPair().getPublic().getEncoded()), 10);
                     System.out.print("#");
             }
