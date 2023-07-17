@@ -405,13 +405,13 @@ public class Wallet {
 
         DefiTransaction newTransaction = new DefiTransaction(to, myPublicKeyString, amount, String.valueOf(System.currentTimeMillis()));
         // Implementing functionality to write to transaction file as transactions are submitted 
-        JsonArrayBuilder jsonData = Json.createArrayBuilder(); 
+   
         JsonObjectBuilder txData = Json.createObjectBuilder();  
         
 
         txData.add("transaction", newTransaction.toString())
-            .add("to", to.substring(to.length() - 7, to.length() - 1))
-            .add("from",  myPublicKeyString.substring(myPublicKeyString.length() - 7, myPublicKeyString.length() - 1))
+            .add("to", to.substring(to.length() - 5, to.length() - 1))
+            .add("from",  myPublicKeyString.substring(myPublicKeyString.length() - 5, myPublicKeyString.length() - 1))
             .add("amount",String.valueOf(amount)); 
         
         
@@ -424,14 +424,12 @@ public class Wallet {
         }
     
 
-        jsonData.add(txData); 
 
-
-        try (OutputStream os = new FileOutputStream("src/main/resources/transactions.json",true);
+        try (OutputStream os = new FileOutputStream("src/main/resources/transactions.ndjson",true);
             JsonWriter jsonWriter = Json.createWriter(os)) {
-            jsonWriter.writeArray(jsonData.build());
-            FileWriter fileWriter = new FileWriter("src/main/resources/transactions.json", true); 
-            fileWriter.write(",\n");
+            jsonWriter.writeObject(txData.build());
+            FileWriter fileWriter = new FileWriter("src/main/resources/transactions.ndjson", true); 
+            fileWriter.write("\n");
             fileWriter.close(); 
             jsonWriter.close();
         } catch (IOException e) {

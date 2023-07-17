@@ -8,7 +8,7 @@ var heightBlocks = 200; // adjust this as needed
 svgBlocks.attr("width", widthBlocks).attr("height", heightBlocks);
 
 // Set the dimensions of each block
-var blockSize = 150;
+var blockSize = 125;
 var blockPadding = 20;
 
 // Initialize the index for blockData
@@ -23,7 +23,7 @@ function addNewBlock(blockData) {
   var newBlock = svgBlocks.append("rect")
     .attr("class", "block")
     .attr("x", -blockSize)
-    .attr("y", heightBlocks - blockSize)
+    .attr("y", (heightBlocks - blockSize) - 15)
     .attr("width", blockSize)
     .attr("height", blockSize)
     .transition()
@@ -34,10 +34,10 @@ function addNewBlock(blockData) {
   var newBlockLabel = svgBlocks.append("text")
     .attr("class", "block-label")
     .attr("x", -blockSize / 2)
-    .attr("y", heightBlocks - blockSize / 1.25)
+    .attr("y" , (heightBlocks - blockSize / 1.25) -15)
     .attr("text-anchor", "middle")
-    .attr("fill", "white")
-    .text("Block ID: " + blockData[index].block)
+    .attr("fill", "black")
+    .text("block " +blockData[index].block)
     .transition()
     .duration(1000)
     .attr("x", blockSize / 2);
@@ -45,10 +45,10 @@ function addNewBlock(blockData) {
   var newBlockHashLabel = svgBlocks.append("text")
     .attr("class","hash-label")
     .attr("x",-blockSize/2)
-    .attr("y", heightBlocks-blockSize/2)
+    .attr("y", (heightBlocks-blockSize/2) -15) 
     .attr("text-anchor","middle")
-    .attr("fill","white")
-    .text("Hash Value: " + (blockData[index].hash).substring(0,4))
+    .attr("fill","black")
+    .text("hash " + (blockData[index].hash).substring(0,4))
     .transition()
     .duration(1000)
     .attr("x",blockSize/2);
@@ -56,10 +56,10 @@ function addNewBlock(blockData) {
   var newBlockTxLabel = svgBlocks.append("text")
     .attr("class","tx-label")
     .attr("x",-blockSize/2)
-    .attr("y", heightBlocks-blockSize/4)
+    .attr("y", (heightBlocks-blockSize/5) - 15) 
     .attr("text-anchor","middle")
-    .attr("fill","white")
-    .text("TXN Count: " + blockData[index].tx_count)
+    .attr("fill","black")
+    .text(blockData[index].tx_count + " TXNs")
     .transition()
     .duration(1000)
     .attr("x",blockSize/2);
@@ -120,7 +120,7 @@ function updateData() {
       
       nodes.each(function(d) {
         // fill quorum members red and other nodes gray 
-        var nodeColor = quorumMembers.includes(d.id) ? "red" : "gray";
+        var nodeColor = quorumMembers.includes(d.id) ? "green" : "grey";
         d3.select(this).attr('fill', nodeColor);
 
       });

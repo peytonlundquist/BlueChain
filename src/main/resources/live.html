@@ -10,19 +10,27 @@
   <link rel="icon" type="image/x-icon" href="static/assets/favicon.ico" />
   <!-- Core theme CSS (includes Bootstrap)-->
   <link href="https://cdn.jsdelivr.net/gh/jettcblack/bluevision-css@main/styles.css" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300&display=swap" rel="stylesheet">
   <style>
 
     body {
       overflow:hidden;
     }
-    .links line {
-      stroke: #7ab5c7;
+   /* .links line {
+      stroke: grey; 
       stroke-opacity: 0.6;
-    }
+    } */ 
     
     .nodes circle {
       stroke: #fff;
       stroke-width: 1.5px;
+    }
+
+    .container-flex {
+      display: flex;
+      height: 50vh; /* adjust as needed, this is just an example */
     }
 
     @media (min-width: 576px) {
@@ -55,9 +63,30 @@
       margin-top:1rem; 
     }
 
+    
     .container {
       padding-left: 100px;
       padding-right: 100px;
+    }
+
+    .container-flex {
+      display: grid !important; 
+      grid-template-columns: 1fr 2fr 1fr !important; /* This will give two small spaces at the sides and a large space in the middle */
+      height: 60vh !important; /* adjust as needed */
+    }
+
+    .table {
+      grid-column: 1 !important; /* position it in the first column */
+      overflow:scroll !important; /* makes it scrollable if the content overflows */
+      font-family: 'Montserrat', sans-serif;
+    }
+
+    .container-svg {
+      grid-column: 2 !important; /* position it in the second (middle) column */
+    }
+
+    .key {
+      grid-column: 3 !important; /* position it in the third column */
     }
 
     .container-svg {
@@ -67,46 +96,79 @@
       justify-content: center;
       align-self: center; 
       overflow: visible; 
-
     }
 
     #svg-graph {
-      transform: scale(1);
+      transform: scale(2);
     }
 
 
     .block-label {
-    font-family: sans-serif;
-    font-size: 10px; /* Adjust as needed */
+      font-family:'Montserrat', sans-serif;
+      font-size: 15px; /* Adjust as needed */
     }
+
+    .hash-label {
+      font-family:'Montserrat', sans-serif;
+      font-size: 15px; /* Adjust as needed */
+    }
+
+    .tx-label {
+      font-family:'Montserrat', sans-serif;
+      font-size: 15px; /* Adjust as needed */
+    }
+
 
     
     .block {
-      fill: blue; 
+      fill: white; 
       stroke: #333333;
       stroke-width: 2px;
-      rx: 15px;  /* Add horizontal radius for rounded edges */
+      rx: 2px;  /* Add horizontal radius for rounded edges */
       transition: fill 0.3s ease;
       
     }
 
     #blocks-svg {
-      filter: drop-shadow(0 0 40px #969696);
-    }
-  
-    .block:hover {
-      fill: #3abfc9;
-    }
-
-
-    .table {
-      flex-basis: 30%;
+      filter: drop-shadow(0 0 2px #969696);
+      overflow: visible; 
+      
     }
     
+    
+    .block:hover {
+      fill: #00d4ff;
+      opacity: 25%; 
+    }
+
+
+
+
+    .table-container {
+      height:100px;
+    }
+
+    #table-body {
+      overflow:scroll;
+    }
+    
+    .mt-5 {
+      margin-top: 2rem !important;
+      font-family: 'Montserrat', sans-serif;
+    }
+
+    .bg-dark{
+      background-color:black !important;
+    } 
+    .navbar-brand {
+      font-family: 'Montserrat',sans-serif;
+    }
     
     text {
-      font-family: sans-serif;
+      font-family: 'Montserrat', sans-serif !important;
       font-size: 10px;
+      user-select: none;  /* This will prevent text from being selected */
+      cursor: default;
     }
 
     
@@ -116,7 +178,7 @@
   <!-- Responsive navbar-->
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
-      <a class="navbar-brand" href="#">BlueVision</a>
+      <a class="navbar-brand" href="#">BLUEVISION</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
       <div class="collapse navbar-collapse" id="navbarSupportedContent">
         <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
@@ -137,17 +199,85 @@
   <!-- Page content-->
   <div class="container">
     <div class="text-center mt-5">
-      <h1>The BlueChain Network</h1>
+      <h1>bluechain</h1>
     </div>
     <div class="container-flex">
       <div class="table">
-        <table>
-          <tr>Transactions</tr>
-        </table>
+          <table id="transactionTable">
+              <thead>
+                  <tr>
+                      <th>tx</th>
+                      <th>to</th>
+                      <th>from</th>
+                      <th>amount</th>
+                  </tr>
+              </thead>
+              <tbody id="tableBody">
+                  <!-- Rows will be inserted here -->
+              </tbody>
+          </table>
+          <script>
+            let lastLine = 0;
+            
+            function updateTable() {
+                fetch('transactions.ndjson')
+                    .then(response => response.text())
+                    .then(text => {
+                        const lines = text.split('\n').filter(Boolean);  // Split by lines and remove any empty ones
+                        const tableBody = document.getElementById('tableBody');
+            
+                        // Only process lines that haven't been added to the table yet
+                        for (let i = lastLine; i < lines.length; i++) {
+                            const obj = JSON.parse(lines[i]);
+                            const row = document.createElement('tr');
+                            row.style.opacity = "0"; // Initially set opacity to 0
+                            row.innerHTML = `
+                                <td>${obj.transaction}</td>
+                                <td>${obj.to}</td>
+                                <td>${obj.from}</td>
+                                <td>${obj.amount}</td>
+                            `;
+                            // If there is a first child, insert before it, otherwise appendChild (which will happen when the table is initially empty)
+                            if (tableBody.firstChild) {
+                                tableBody.insertBefore(row, tableBody.firstChild);
+                            } else {
+                                tableBody.appendChild(row);
+                            }
+                            // Use setTimeout to delay the start of the transition slightly, giving the page time to add the new row
+                            setTimeout(() => {
+                                row.style.transition = "opacity 5s"; // Set transition effect
+                                row.style.opacity = "1"; // Transition to full opacity
+                            }, 10);
+                        }
+                        // Update lastLine so we don't re-process old lines next time
+                        lastLine = lines.length;
+                    })
+                    .catch(error => console.error(error));
+            }
+            
+            // Update the table immediately, and then every 5 seconds
+            updateTable();
+            setInterval(updateTable, 5000);
+            </script>
+            
       </div>
-    </div>
     <div class="container-svg">
-      <svg id="graph-svg"></svg>
+      <svg id="graph-svg">
+        <defs>
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+              <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+          </filter>
+      </defs>
+      </svg>
+    </div>
     </div>
     <div class="container-svg">
       <svg id="blocks-svg">

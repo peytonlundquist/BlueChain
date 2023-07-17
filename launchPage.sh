@@ -1,0 +1,1 @@
+java -cp target/network-1.0-SNAPSHOT.jar:target/nanohttpd-2.3.1.jar JavaHTTPServer

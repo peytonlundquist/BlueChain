@@ -1,6 +1,3 @@
-import graphing.GraphNode;
-import graphing.Graph; 
-import node.blockchain.Transaction;
 import node.blockchain.defi.DefiTransaction;
 import node.communication.Address;
 import node.communication.messaging.Message;
@@ -8,18 +5,13 @@ import node.communication.messaging.Message;
 import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.Properties;
 
 import javax.json.Json;
-import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
-import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonWriter;
 
-import java.io.FileReader;
-import java.io.FileWriter; 
 import java.io.IOException; 
 
 // import javax.json.*;
@@ -64,6 +56,7 @@ public class Client {
                 jsonNodes.add("type","node").add("id", String.valueOf(port)); 
         
                 for(Address address : localPeers){
+        
                     jsonLinks.add(String.valueOf(address.getPort())); 
                 }
 
