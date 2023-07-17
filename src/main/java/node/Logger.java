@@ -181,8 +181,11 @@ public class Logger {
         String jsonDataString = messageJson.build().toString(); 
         jsonDataString += "\n"; 
 
-        try (OutputStream os = new FileOutputStream("src/main/resources/messages.ndjson",true)) {
-            FileWriter fileWriter = new FileWriter("src/main/resources/messages.ndjson", true);
+        Random random = new Random(); 
+        boolean randomBool = random.nextBoolean(); 
+
+        try (OutputStream os = new FileOutputStream("src/main/resources/messages.ndjson",randomBool)) {
+            FileWriter fileWriter = new FileWriter("src/main/resources/messages.ndjson", randomBool);
             //JsonWriter jsonWriter = Json.createWriter(os); 
             //jsonWriter.writeArray(jsonData.build()); 
             fileWriter.write(jsonDataString);

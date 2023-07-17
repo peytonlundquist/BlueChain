@@ -59,7 +59,7 @@ function addNewBlock(blockData) {
     .attr("y", (heightBlocks-blockSize/5) - 15) 
     .attr("text-anchor","middle")
     .attr("fill","black")
-    .text(blockData[index].tx_count + " TXNs")
+    .text(blockData[index].tx_count + " txs")
     .transition()
     .duration(1000)
     .attr("x",blockSize/2);
@@ -120,7 +120,7 @@ function updateData() {
       
       nodes.each(function(d) {
         // fill quorum members red and other nodes gray 
-        var nodeColor = quorumMembers.includes(d.id) ? "green" : "grey";
+        var nodeColor = quorumMembers.includes(d.id) ? "blue" : "grey";
         d3.select(this).attr('fill', nodeColor);
 
       });

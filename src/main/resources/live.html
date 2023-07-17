@@ -26,6 +26,7 @@
     .nodes circle {
       stroke: #fff;
       stroke-width: 1.5px;
+      filter: drop-shadow(0 0 2px #111111);
     }
 
     .container-flex {
@@ -76,19 +77,48 @@
     }
 
     .table {
+      width: 100%;
       grid-column: 1 !important; /* position it in the first column */
-      overflow:scroll !important; /* makes it scrollable if the content overflows */
+      overflow:auto !important; /* makes it scrollable if the content overflows */
       font-family: 'Montserrat', sans-serif;
+    }
+
+    .table::-webkit-scrollbar {
+      display:none; 
+    }
+
+    #transactionTable {
+      width:100% !important; 
     }
 
     .container-svg {
       grid-column: 2 !important; /* position it in the second (middle) column */
     }
 
-    .key {
-      grid-column: 3 !important; /* position it in the third column */
+    .key-panel {
+        display: grid; 
+        flex-direction: column;
+        justify-content: center;
+        font-family: 'Montserrat', sans-serif;
+        align-items: center;
+        height: 100%;
+        width: 100%;
     }
 
+    .key-panel table {
+        grid-column: 3 !important; 
+        width: 100%;
+        text-align: center;
+        border-collapse: collapse;
+    }
+
+    .key-panel th, .key-panel td {
+        padding: 10px;
+    }
+
+    .key-panel td svg {
+        margin: auto;  /* Center the gradient rectangles in their cells */
+    }
     .container-svg {
       height:55vh; 
       padding-top: 5px;
@@ -278,6 +308,67 @@
       </defs>
       </svg>
     </div>
+    <div class="key-panel">
+      <table>
+        <thead>
+          <tr>
+            <th>message type</th>
+            <th>message color</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>add transaction</td>
+            <td>
+              <svg width="20" height="20">
+                <rect width="20" height="20" fill="url(#gradientGreen)"/>
+              </svg>
+            </td>
+          </tr>
+          <tr>
+            <td>quorum ready</td>
+            <td>
+              <svg width="20" height="20">
+                <rect width="20" height="20" fill="url(#gradient)"/>
+              </svg>
+            </td>
+          </tr>
+          <tr>
+            <td>ping</td>
+            <td>
+              <svg width="20" height="20">
+                <rect width="20" height="20" fill="url(#gradientGold)"/>
+              </svg>
+            </td>
+          </tr>
+          <tr>
+            <td>receive mempool</td>
+            <td>
+              <svg width="20" height="20">
+                <rect width="20" height="20" fill="url(#gradientPurple)"/>
+              </svg>
+            </td>
+          </tr>
+          <tr>
+            <td>receive signature</td>
+            <td>
+              <svg width="20" height="20">
+                <rect width="20" height="20" fill="url(#gradientPink)"/>
+              </svg>
+            </td>
+          </tr>
+          <tr>
+            <td>receive skeleton</td>
+            <td>
+              <svg width="20" height="20">
+                <rect width="20" height="20" fill="url(#gradientCrimson)"/>
+              </svg>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
     </div>
     <div class="container-svg">
       <svg id="blocks-svg">

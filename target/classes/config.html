@@ -10,12 +10,28 @@
         <link rel="icon" type="image/x-icon" href="static/assets/favicon.ico" />
         <!-- Core theme CSS (includes Bootstrap)-->
         <link href="https://cdn.jsdelivr.net/gh/jettcblack/bluevision-css@main/styles.css" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300&display=swap" rel="stylesheet">
+        <style>
+          .bg-dark{
+            background-color:black !important;
+        } 
+
+        .navbar-brand {
+            font-family: 'Montserrat',sans-serif;
+        }
+        .mt-5 {
+          margin-top: 2rem !important;
+          font-family: 'Montserrat', sans-serif;
+        }
+
+        </style>
     </head>
+
     <body>
         <!-- Responsive navbar-->
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
             <div class="container">
-                <a class="navbar-brand" href="#">BlueVision</a>
+                <a class="navbar-brand" href="#">BLUEVISION</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
                 <div class="collapse navbar-collapse" id="navbarSupportedContent">
                     <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
@@ -39,7 +55,7 @@
         <!-- Page content-->
         <div class="container">
             <div class="text-center mt-5">
-                <h1>Configuring the BlueChain Network</h1>
+                <h1>configuring the bluechain network</h1>
                 <form class="form-text">       
                     <input type="text" id="nodeCount" class="form-label" name="nodes" placeholder="Node Count" required="" autofocus=""/>
                     <br>
