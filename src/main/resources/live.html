@@ -26,7 +26,7 @@
     .nodes circle {
       stroke: #fff;
       stroke-width: 1.5px;
-      filter: drop-shadow(0 0 2px #111111);
+      filter: drop-shadow(0 0 3px #111111);
     }
 
     .container-flex {
@@ -133,6 +133,31 @@
     }
 
 
+
+    
+    .block {
+      fill: white; 
+      stroke: #333333;
+      stroke-width: 2px;
+      rx: 2px;  /* Add horizontal radius for rounded edges */
+      transition: fill 0.3s ease;
+    }
+
+    #blocks-svg {
+      filter: drop-shadow(0 0 2px #969696);
+      overflow: visible; 
+      
+    }
+    
+    
+    .block:hover {
+      cursor: pointer;
+      /*transform: scale(1.1); */
+      fill: #00d4ff;
+      opacity: 25%; 
+      transition: all ease-in-out .3s;
+    }
+
     .block-label {
       font-family:'Montserrat', sans-serif;
       font-size: 15px; /* Adjust as needed */
@@ -147,30 +172,6 @@
       font-family:'Montserrat', sans-serif;
       font-size: 15px; /* Adjust as needed */
     }
-
-
-    
-    .block {
-      fill: white; 
-      stroke: #333333;
-      stroke-width: 2px;
-      rx: 2px;  /* Add horizontal radius for rounded edges */
-      transition: fill 0.3s ease;
-      
-    }
-
-    #blocks-svg {
-      filter: drop-shadow(0 0 2px #969696);
-      overflow: visible; 
-      
-    }
-    
-    
-    .block:hover {
-      fill: #00d4ff;
-      opacity: 25%; 
-    }
-
 
 
 
@@ -260,7 +261,7 @@
                         for (let i = lastLine; i < lines.length; i++) {
                             const obj = JSON.parse(lines[i]);
                             const row = document.createElement('tr');
-                            row.style.opacity = "0"; // Initially set opacity to 0
+                            //row.style.opacity = "0"; // Initially set opacity to 0
                             row.innerHTML = `
                                 <td>${obj.transaction}</td>
                                 <td>${obj.to}</td>
@@ -273,11 +274,16 @@
                             } else {
                                 tableBody.appendChild(row);
                             }
+
+                            const rowLimit = 20;  // Adjust this as needed
+                            if (tableBody.childElementCount > rowLimit) {
+                                tableBody.removeChild(tableBody.lastChild);
+                            }
                             // Use setTimeout to delay the start of the transition slightly, giving the page time to add the new row
-                            setTimeout(() => {
+                           /* setTimeout(() => {
                                 row.style.transition = "opacity 5s"; // Set transition effect
                                 row.style.opacity = "1"; // Transition to full opacity
-                            }, 10);
+                            }, 10);*/
                         }
                         // Update lastLine so we don't re-process old lines next time
                         lastLine = lines.length;
@@ -287,7 +293,7 @@
             
             // Update the table immediately, and then every 5 seconds
             updateTable();
-            setInterval(updateTable, 5000);
+            setInterval(updateTable, 10000);
             </script>
             
       </div>

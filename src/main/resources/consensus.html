@@ -26,7 +26,7 @@
     .nodes circle {
       stroke: #fff;
       stroke-width: 1.5px;
-      filter: drop-shadow(0 0 3px #111111);
+      filter: drop-shadow(0 0 2px #111111);
     }
 
     .container-flex {
@@ -123,6 +123,7 @@
       height:55vh; 
       padding-top: 5px;
       display: flex;
+      flex-basis: 75%;
       justify-content: center;
       align-self: center; 
       overflow: visible; 
@@ -132,31 +133,6 @@
       transform: scale(2);
     }
 
-
-
-    
-    .block {
-      fill: white; 
-      stroke: #333333;
-      stroke-width: 2px;
-      rx: 2px;  /* Add horizontal radius for rounded edges */
-      transition: fill 0.3s ease;
-    }
-
-    #blocks-svg {
-      filter: drop-shadow(0 0 2px #969696);
-      overflow: visible; 
-      
-    }
-    
-    
-    .block:hover {
-      cursor: pointer;
-      /*transform: scale(1.1); */
-      fill: #00d4ff;
-      opacity: 25%; 
-      transition: all ease-in-out .3s;
-    }
 
     .block-label {
       font-family:'Montserrat', sans-serif;
@@ -172,6 +148,33 @@
       font-family:'Montserrat', sans-serif;
       font-size: 15px; /* Adjust as needed */
     }
+
+    .information {
+        display:flex;
+        flex-basis: 25%;
+    }
+    
+    .block {
+      fill: white; 
+      stroke: #333333;
+      stroke-width: 2px;
+      rx: 2px;  /* Add horizontal radius for rounded edges */
+      transition: fill 0.3s ease;
+      
+    }
+
+    #blocks-svg {
+      filter: drop-shadow(0 0 2px #969696);
+      overflow: visible; 
+      
+    }
+    
+    
+    .block:hover {
+      fill: #00d4ff;
+      opacity: 25%; 
+    }
+
 
 
 
@@ -230,73 +233,12 @@
   <!-- Page content-->
   <div class="container">
     <div class="text-center mt-5">
-      <h1>bluechain</h1>
+      <h1>bluevision edu</h1>
     </div>
     <div class="container-flex">
-      <div class="table">
-          <table id="transactionTable">
-              <thead>
-                  <tr>
-                      <th>tx</th>
-                      <th>to</th>
-                      <th>from</th>
-                      <th>amount</th>
-                  </tr>
-              </thead>
-              <tbody id="tableBody">
-                  <!-- Rows will be inserted here -->
-              </tbody>
-          </table>
-          <script>
-            let lastLine = 0;
-            
-            function updateTable() {
-                fetch('transactions.ndjson')
-                    .then(response => response.text())
-                    .then(text => {
-                        const lines = text.split('\n').filter(Boolean);  // Split by lines and remove any empty ones
-                        const tableBody = document.getElementById('tableBody');
-            
-                        // Only process lines that haven't been added to the table yet
-                        for (let i = lastLine; i < lines.length; i++) {
-                            const obj = JSON.parse(lines[i]);
-                            const row = document.createElement('tr');
-                            //row.style.opacity = "0"; // Initially set opacity to 0
-                            row.innerHTML = `
-                                <td>${obj.transaction}</td>
-                                <td>${obj.to}</td>
-                                <td>${obj.from}</td>
-                                <td>${obj.amount}</td>
-                            `;
-                            // If there is a first child, insert before it, otherwise appendChild (which will happen when the table is initially empty)
-                            if (tableBody.firstChild) {
-                                tableBody.insertBefore(row, tableBody.firstChild);
-                            } else {
-                                tableBody.appendChild(row);
-                            }
-
-                            const rowLimit = 20;  // Adjust this as needed
-                            if (tableBody.childElementCount > rowLimit) {
-                                tableBody.removeChild(tableBody.lastChild);
-                            }
-                            // Use setTimeout to delay the start of the transition slightly, giving the page time to add the new row
-                           /* setTimeout(() => {
-                                row.style.transition = "opacity 5s"; // Set transition effect
-                                row.style.opacity = "1"; // Transition to full opacity
-                            }, 10);*/
-                        }
-                        // Update lastLine so we don't re-process old lines next time
-                        lastLine = lines.length;
-                    })
-                    .catch(error => console.error(error));
-            }
-            
-            // Update the table immediately, and then every 5 seconds
-            updateTable();
-            setInterval(updateTable, 10000);
-            </script>
-            
-      </div>
+        <div class="information">
+            <p>welcome to blueedu, where you chose block x</p>
+        </div>
     <div class="container-svg">
       <svg id="graph-svg">
         <defs>
@@ -314,67 +256,6 @@
       </defs>
       </svg>
     </div>
-    <div class="key-panel">
-      <table>
-        <thead>
-          <tr>
-            <th>message type</th>
-            <th>message color</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>add transaction</td>
-            <td>
-              <svg width="20" height="20">
-                <rect width="20" height="20" fill="url(#gradientGreen)"/>
-              </svg>
-            </td>
-          </tr>
-          <tr>
-            <td>quorum ready</td>
-            <td>
-              <svg width="20" height="20">
-                <rect width="20" height="20" fill="url(#gradient)"/>
-              </svg>
-            </td>
-          </tr>
-          <tr>
-            <td>ping</td>
-            <td>
-              <svg width="20" height="20">
-                <rect width="20" height="20" fill="url(#gradientGold)"/>
-              </svg>
-            </td>
-          </tr>
-          <tr>
-            <td>receive mempool</td>
-            <td>
-              <svg width="20" height="20">
-                <rect width="20" height="20" fill="url(#gradientPurple)"/>
-              </svg>
-            </td>
-          </tr>
-          <tr>
-            <td>receive signature</td>
-            <td>
-              <svg width="20" height="20">
-                <rect width="20" height="20" fill="url(#gradientPink)"/>
-              </svg>
-            </td>
-          </tr>
-          <tr>
-            <td>receive skeleton</td>
-            <td>
-              <svg width="20" height="20">
-                <rect width="20" height="20" fill="url(#gradientCrimson)"/>
-              </svg>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    
     </div>
     <div class="container-svg">
       <svg id="blocks-svg">
@@ -386,8 +267,8 @@
   <!-- Include D3 and the graph.js file -->
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
-  <script src="graph.js"></script>
-  <script src="blockchain.js"></script>
+  <script src="consensusGraph.js"></script>
+  <script src="consensusBlockchain.js"></script>
   
 
   <!-- Bootstrap core JS-->

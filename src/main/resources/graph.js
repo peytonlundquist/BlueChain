@@ -303,8 +303,8 @@ d3.json("nodes.json").then(function(data) {
               .attr("stroke-dasharray", `${pathLength} ${pathLength}`)  // Set the dash and gap lengths to the length of the path
               .attr("stroke-dashoffset", pathLength)  // Set the offset to the length of the path
               .transition()
-              .duration(2000)
-              .delay(index * 1000)  // Delay each message to prevent them from all animating at once
+              .duration(1000)
+              .delay(index * 100)  // Delay each message to prevent them from all animating at once
               .attrTween("stroke-dashoffset", function() {
                 return d3.interpolate(pathLength, 0);
               })
@@ -313,7 +313,7 @@ d3.json("nodes.json").then(function(data) {
               })
               .attr("stroke-opacity", 1)  // Increase the stroke opacity to 1 to make the line visible
               .transition()  // Add a new transition to make the line disappear
-              .duration(2000)
+              .duration(1000)
               .attr("stroke-opacity", 0)  // Fade out the line by reducing its opacity to 0
               .remove();  // After the line has faded out, remove it from the SVG
           });
@@ -323,7 +323,7 @@ d3.json("nodes.json").then(function(data) {
         })
         .finally(function() {
           // Call the loadMessages function recursively after a delay
-          setTimeout(loadMessages, 250); // Delay in milliseconds (e.g., 5000 for 5 seconds)
+          setTimeout(loadMessages, 200); // Delay in milliseconds (e.g., 5000 for 5 seconds)
         });
     }
 

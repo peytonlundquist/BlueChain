@@ -11,13 +11,19 @@ svgBlocks.attr("width", widthBlocks).attr("height", heightBlocks);
 var blockSize = 125;
 var blockPadding = 20;
 
+
+
 // Initialize the index for blockData
 var index = 0;
 
 // Function to add a new block
 function addNewBlock(blockData) {
+
   // Animate the transition of the blocks
   animateBlocks();
+  
+  // store block number 
+  var blockNum = blockData[index].block; 
 
   // Append a new block
   var newBlock = svgBlocks.append("rect")
@@ -26,9 +32,14 @@ function addNewBlock(blockData) {
     .attr("y", (heightBlocks - blockSize) - 15)
     .attr("width", blockSize)
     .attr("height", blockSize)
+      .on("click", function(d) {
+        window.location.href = "consensus.html?block=" + blockNum; 
+      })
     .transition()
     .duration(1000)
     .attr("x", 0);
+  
+
 
   // Append a new block label
   var newBlockLabel = svgBlocks.append("text")
@@ -120,7 +131,7 @@ function updateData() {
       
       nodes.each(function(d) {
         // fill quorum members red and other nodes gray 
-        var nodeColor = quorumMembers.includes(d.id) ? "blue" : "grey";
+        var nodeColor = quorumMembers.includes(d.id) ? "#add8e6" : "grey";
         d3.select(this).attr('fill', nodeColor);
 
       });
@@ -153,7 +164,7 @@ d3.text("network.ndjson").then(function(text) {
   }
 
   // Start updating the data every 3 seconds
-  setInterval(updateData, 3000);
+  setInterval(updateData, 5000);
 }).catch(function(error) {
   console.log("Error loading data:", error);
 });
