@@ -71,59 +71,22 @@
     }
 
     .container-flex {
-      display: grid !important; 
-      grid-template-columns: 1fr 2fr 1fr !important; /* This will give two small spaces at the sides and a large space in the middle */
+      display: flex !important; 
+      grid-template-columns: 1fr 3fr 1fr !important; /* This will give two small spaces at the sides and a large space in the middle */
       height: 60vh !important; /* adjust as needed */
     }
 
-    .table {
-      width: 100%;
-      grid-column: 1 !important; /* position it in the first column */
-      overflow:auto !important; /* makes it scrollable if the content overflows */
-      font-family: 'Montserrat', sans-serif;
-    }
 
     .table::-webkit-scrollbar {
       display:none; 
     }
 
-    #transactionTable {
-      width:100% !important; 
-    }
-
-    .container-svg {
-      grid-column: 2 !important; /* position it in the second (middle) column */
-    }
-
-    .key-panel {
-        display: grid; 
-        flex-direction: column;
-        justify-content: center;
-        font-family: 'Montserrat', sans-serif;
-        align-items: center;
-        height: 100%;
-        width: 100%;
-    }
-
-    .key-panel table {
-        grid-column: 3 !important; 
-        width: 100%;
-        text-align: center;
-        border-collapse: collapse;
-    }
-
-    .key-panel th, .key-panel td {
-        padding: 10px;
-    }
-
-    .key-panel td svg {
-        margin: auto;  /* Center the gradient rectangles in their cells */
-    }
+   
     .container-svg {
       height:55vh; 
       padding-top: 5px;
       display: flex;
-      flex-basis: 75%;
+      flex-basis: 65%;
       justify-content: center;
       align-self: center; 
       overflow: visible; 
@@ -150,11 +113,17 @@
     }
 
     .information {
-        display:flex;
-        flex-basis: 25%;
+      display: flex;
+      flex-basis: 35%;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      flex-direction: column;  /* This will make the contents of the div stack vertically */
     }
+
     
     .block {
+    
       fill: white; 
       stroke: #333333;
       stroke-width: 2px;
@@ -168,15 +137,75 @@
       overflow: visible; 
       
     }
-    
-    
-    .block:hover {
-      fill: #00d4ff;
-      opacity: 25%; 
+
+    .step-buttons {
+      margin-top: 40px;
     }
 
 
 
+
+/* CSS */
+    .step-buttons {
+      align-items: center;
+      appearance: none;
+      background-color: #FCFCFD;
+      border-radius: 4px;
+      border-width: 0;
+      box-shadow: rgba(45, 35, 66, 0.4) 0 2px 4px,rgba(45, 35, 66, 0.3) 0 7px 13px -3px,#D6D6E7 0 -3px 0 inset;
+      box-sizing: border-box;
+      color: #36395A;
+      cursor: pointer;
+      display: inline-flex;
+      font-family: "JetBrains Mono",monospace;
+      height: 48px;
+      justify-content: center;
+      line-height: 1;
+      list-style: none;
+      overflow: hidden;
+      padding-left: 16px;
+      padding-right: 16px;
+      position: relative;
+      text-align: left;
+      text-decoration: none;
+      transition: box-shadow .15s,transform .15s;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+      white-space: nowrap;
+      will-change: box-shadow,transform;
+      font-size: 18px;
+    }
+
+    .step-buttons:focus {
+      box-shadow: #D6D6E7 0 0 0 1.5px inset, rgba(45, 35, 66, 0.4) 0 2px 4px, rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #D6D6E7 0 -3px 0 inset;
+    }
+
+    .step-buttons:hover {
+      box-shadow: rgba(45, 35, 66, 0.4) 0 4px 8px, rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #D6D6E7 0 -3px 0 inset;
+      transform: translateY(-2px);
+    }
+
+    .step-buttons:active {
+      box-shadow: #D6D6E7 0 3px 7px inset;
+      transform: translateY(2px);
+    }
+        
+    
+    .block:hover {
+     
+      opacity: 25%; 
+    }
+
+
+    .information {
+    
+      font-family: 'Montserrat', sans-serif; 
+      font-size: 20px;
+  
+      width: 100%;
+    
+    }
 
     .table-container {
       height:100px;
@@ -204,6 +233,22 @@
       user-select: none;  /* This will prevent text from being selected */
       cursor: default;
     }
+
+    .generator {
+      /* Adjust these values as needed */
+      width: 100px;
+      height: 100px;
+      background-color: red;
+      visibility: hidden;  /* Hide the generator initially */
+     
+    }
+
+    .hash-label {
+      border: "2px solid black";
+      stroke-width: 2px;
+    }
+
+  
 
     
   </style>
@@ -236,39 +281,77 @@
       <h1>bluevision edu</h1>
     </div>
     <div class="container-flex">
-        <div class="information">
-            <p>welcome to blueedu, where you chose block x</p>
-        </div>
-    <div class="container-svg">
-      <svg id="graph-svg">
-        <defs>
-          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <div class="generator"></div>
+      <div class="information">
+        <script>
+          // Parse the URL parameters
+          const htmlParams = new URLSearchParams(window.location.search);
+          const blockNumHtml = htmlParams.get('block');
+        
+          // Load the data
+          fetch('network.ndjson')
+            .then(response => response.text())
+            .then(text => {
+              // Parse the data
+              const blockData = text.split('\n').filter(Boolean).map(JSON.parse);
+              const block = blockData.find(b => b.block == blockNum);
+        
+              if (block) {
+                // Update the information div
+                const infoDiv = document.querySelector('.information');
+                infoDiv.innerHTML = `<p>Welcome to bluevision edu, where you chose block ${blockNum} with a hash of <span class="hash-value">${block.hash.substring(0, 4)}</span> and ${block.tx_count} transactions inside of it!<br><br>Block ${blockNum} is what all the nodes in the network agreed upon when creating the block for the ledger. You can also see the other blocks that the nodes have added up to this point as well.<br><br>bluevision edu will guide you through the process of creating block ${parseInt(blockNum)+1} and adding it to the blockchain. The first step in creating the next block is to figure out who the quorum members are in constructing ${parseInt(blockNum) + 1}.<br><br>When you are ready, press the derive quorum button in order to find the quorum members!</p>`;
+                
+                // Create the button
+                const button = document.createElement("button");
+                button.className = "step-buttons";
+                button.id = "derive-quorum";
+                button.innerHTML = "Derive Quorum";
+                
+                // Add event listener to the button
+                button.addEventListener('click', function() {
+                  // place your deriveQuorum.js code here
+                });
+        
+                // Append the button to the div
+                infoDiv.appendChild(button);
+              } else {
+                console.log(`Block ${blockNum} not found`);
+              }
+            })
+            .catch(console.error);
+            
+        </script>
+        <script src="deriveQuorum.js"></script>
+      </div>
+      <div class="container-svg">
+        <svg id="graph-svg">
+          <defs>
+            <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
               <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
               <feMerge>
                 <feMergeNode in="coloredBlur"/>
                 <feMergeNode in="coloredBlur"/>
                 <feMergeNode in="coloredBlur"/>
                 <feMergeNode in="coloredBlur"/>
-                <feMergeNode in="coloredBlur"/>
                 <feMergeNode in="SourceGraphic"/>
               </feMerge>
-          </filter>
-      </defs>
-      </svg>
-    </div>
+            </filter>
+          </defs>
+        </svg>
+      </div>
     </div>
     <div class="container-svg">
       <svg id="blocks-svg">
       </svg>
     </div>
-  </div>
-  
-
+    
+    
   <!-- Include D3 and the graph.js file -->
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
   <script src="consensusGraph.js"></script>
   <script src="consensusBlockchain.js"></script>
+  <script src="deriveQuorum.js"></script>
   
 
   <!-- Bootstrap core JS-->
