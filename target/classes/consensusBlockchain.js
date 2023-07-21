@@ -20,6 +20,16 @@ function addNewBlock(blockDataItem, index) {
   // Calculate position based on index
   var position = (blockSize + blockPadding) * (blockNum - index);
 
+  var newLine = svgBlocks.append("line")
+      .attr("class", "chain")
+      .attr("x1", position + blockSize + blockPadding)
+      .attr("y1", (heightBlocks - blockSize) - 15 + blockSize / 2) // Center of block
+      .attr("x2", position)
+      .attr("y2", (heightBlocks - blockSize) - 15 + blockSize / 2) // Center of block
+      .attr("stroke", "black")
+      .attr("stroke-width", 2)
+      ; // Add this line
+  
   // Append a new block
   var newBlock = svgBlocks.append("rect")
     .attr("class", "block")

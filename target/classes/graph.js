@@ -24,7 +24,7 @@ d3.json("nodes.json").then(function(data) {
   nodes.forEach(function(d, i) {
     d.x = d.fx = radius * Math.cos((2 * Math.PI * i) / nodes.length) + containerWidth / 2;
     d.y = d.fy = radius * Math.sin((2 * Math.PI * i) / nodes.length) + containerHeight / 2;
-    d.radius = 7; // Initial radius of nodes
+    d.radius = 9; // Initial radius of nodes
   });
 
   const link = svg.append("g")
@@ -35,7 +35,7 @@ d3.json("nodes.json").then(function(data) {
     .data(links)
     .enter()
     .append("line")
-    .attr("stroke-width", function(d) { return Math.sqrt(0.2 || 1); })
+    .attr("stroke-width", 0.9)
     .attr("x1", function(d) { return d.source.x; })
     .attr("y1", function(d) { return d.source.y; })
     .attr("x2", function(d) { return d.target.x; })
@@ -50,7 +50,7 @@ d3.json("nodes.json").then(function(data) {
     .data(nodes)
     .enter()
     .append("circle")
-    .attr("fill", "gray")
+    .attr("fill", "#222")
     .attr("filter", "url(#glow)")  // Apply the glow filter here
     .attr("cx", function(d) { return d.x; })
     .attr("cy", function(d) { return d.y; })
@@ -110,158 +110,108 @@ d3.json("nodes.json").then(function(data) {
   // Load and parse the NDJSON data
   // Load and parse the NDJSON data
   
-    function loadMessages() {
-      d3.text("messages.ndjson")
-        .then(function(text) {
-          const messages = text.split('\n').filter(Boolean).map(JSON.parse);
-
-          // Define the gradient
-          const defs = svg.append('defs');
-          
-          const blueGradient = defs.append('linearGradient')
-            .attr('id', 'gradient')
-            .attr('x1', '0%')
+  function loadMessages() {
+    d3.text("messages.ndjson")
+      .then(function(text) {
+        const messages = text.split('\n').filter(Boolean).map(JSON.parse);
+        
+        const defs = svg.append('defs');
+  
+        // Define gradients for each direction for each color
+        const gradients = {
+          'blueGradientLTR': createGradient(defs, 'blueGradientLTR', '#add8e6'),
+          'blueGradientRTL': createGradient(defs, 'blueGradientRTL', '#add8e6', true),
+          'gradientGoldLTR': createGradient(defs, 'gradientGoldLTR', '#FFD700'),
+          'gradientGoldRTL': createGradient(defs, 'gradientGoldRTL', '#FFD700', true),
+          'gradientGreenLTR': createGradient(defs, 'gradientGreenLTR', '#98FB98'),
+          'gradientGreenRTL': createGradient(defs, 'gradientGreenRTL', '#98FB98', true),
+          'gradientPurpleLTR': createGradient(defs, 'gradientPurpleLTR', '#D8BFD8'),
+          'gradientPurpleRTL': createGradient(defs, 'gradientPurpleRTL', '#D8BFD8', true),
+          'gradientPinkLTR': createGradient(defs, 'gradientPinkLTR', '#FFB6C1'),
+          'gradientPinkRTL': createGradient(defs, 'gradientPinkRTL', '#FFB6C1', true),
+          'gradientCrimsonLTR': createGradient(defs, 'gradientCrimsonLTR', '#DC143C'),
+          'gradientCrimsonRTL': createGradient(defs, 'gradientCrimsonRTL', '#DC143C', true),
+        };
+  
+        // Helper function for creating a gradient
+        function createGradient(defs, id, color, reverse = false) {
+          const gradient = defs.append('linearGradient')
+            .attr('id', id)
+            .attr('x1', reverse ? '100%' : '0%')
             .attr('y1', '0%')
-            .attr('x2', '100%')
+            .attr('x2', reverse ? '0%' : '100%')
             .attr('y2', '0%')
             .attr('spreadMethod', 'reflect');
-
-          blueGradient.append('stop')
+  
+          gradient.append('stop')
             .attr('offset', '0%')
-            .attr('stop-color', '#add8e6')  // Light blue color
+            .attr('stop-color', color)
             .attr('stop-opacity', 1);
-
-          blueGradient.append('stop')
+  
+          gradient.append('stop')
             .attr('offset', '100%')
-            .attr('stop-color', '#add8e6')  // Light blue color
+            .attr('stop-color', color)
             .attr('stop-opacity', 0);
-
-                    // Light gold gradient
-          const gradientGold = defs.append('linearGradient')
-          .attr('id', 'gradientGold')
-          .attr('x1', '0%')
-          .attr('y1', '0%')
-          .attr('x2', '100%')
-          .attr('y2', '0%')
-          .attr('spreadMethod', 'reflect');
-
-          gradientGold.append('stop')
-          .attr('offset', '0%')
-          .attr('stop-color', '#FFD700')  // Gold color
-          .attr('stop-opacity', 1);
-
-          gradientGold.append('stop')
-          .attr('offset', '100%')
-          .attr('stop-color', '#FFD700')  // Gold color
-          .attr('stop-opacity', 0);
-
-          // Light green gradient
-          const gradientGreen = defs.append('linearGradient')
-          .attr('id', 'gradientGreen')
-          .attr('x1', '0%')
-          .attr('y1', '0%')
-          .attr('x2', '100%')
-          .attr('y2', '0%')
-          .attr('spreadMethod', 'reflect');
-
-          gradientGreen.append('stop')
-          .attr('offset', '0%')
-          .attr('stop-color', '#98FB98')  // Light green color
-          .attr('stop-opacity', 1);
-
-          gradientGreen.append('stop')
-          .attr('offset', '100%')
-          .attr('stop-color', '#98FB98')  // Light green color
-          .attr('stop-opacity', 0);
-
-          // Light purple gradient
-          const gradientPurple = defs.append('linearGradient')
-          .attr('id', 'gradientPurple')
-          .attr('x1', '0%')
-          .attr('y1', '0%')
-          .attr('x2', '100%')
-          .attr('y2', '0%')
-          .attr('spreadMethod', 'reflect');
-
-          gradientPurple.append('stop')
-          .attr('offset', '0%')
-          .attr('stop-color', '#D8BFD8')  // Light purple color
-          .attr('stop-opacity', 1);
-
-          gradientPurple.append('stop')
-          .attr('offset', '100%')
-          .attr('stop-color', '#D8BFD8')  // Light purple color
-          .attr('stop-opacity', 0);
-
-          // Light pink gradient
-          const gradientPink = defs.append('linearGradient')
-          .attr('id', 'gradientPink')
-          .attr('x1', '0%')
-          .attr('y1', '0%')
-          .attr('x2', '100%')
-          .attr('y2', '0%')
-          .attr('spreadMethod', 'reflect');
-
-          gradientPink.append('stop')
-          .attr('offset', '0%')
-          .attr('stop-color', '#FFB6C1')  // Light pink color
-          .attr('stop-opacity', 1);
-
-          gradientPink.append('stop')
-          .attr('offset', '100%')
-          .attr('stop-color', '#FFB6C1')  // Light pink color
-          .attr('stop-opacity', 0);
-
-        const gradientCrimson = defs.append('linearGradient')
-        .attr('id', 'gradientCrimson')
-        .attr('x1', '0%')
-        .attr('y1', '0%')
-        .attr('x2', '100%')
-        .attr('y2', '0%')
-        .attr('spreadMethod', 'reflect');
-      
-      gradientCrimson.append('stop')
-        .attr('offset', '0%')
-        .attr('stop-color', '#DC143C')  // Crimson color
-        .attr('stop-opacity', 1);
-      
-      gradientCrimson.append('stop')
-        .attr('offset', '100%')
-        .attr('stop-color', '#DC143C')  // Crimson color
-        .attr('stop-opacity', 0);
-      
-
+  
+          return gradient;
+        }
+  
+        // Process each message
+        messages.forEach(function(message, index) {
+          const sourceNode = idToNode.get(message.message_from);
+          const targetNode = idToNode.get(message.message_to);
+          const messageType = message.message;  
+  
           let gradient; 
-
-          // Process each message
-          messages.forEach(function(message, index) {
-            const sourceNode = idToNode.get(message.message_from);
-            const targetNode = idToNode.get(message.message_to);
-            const messageType = message.message;  
-            
+          if (sourceNode.x < targetNode.x) {
             switch (messageType) {
-                case "ADD_TRANSACTION" :
-                  gradient = gradientGreen; 
-                  break;
-                case "QUORUM_READY" :
-                  gradient = blueGradient;
-                  break; 
-                case "PING" :
-                  gradient = gradientGold; 
-                  break;
-                case "RECEIVE_MEMPOOL" :
-                  gradient = gradientPurple; 
-                  break;
-                case "RECEIVE_SIGNATURE" :
-                  gradient = gradientPink; 
-                  break;
-                case "RECEIVE_SKELETON" :
-                  gradient = gradientCrimson; 
-                  break; 
-                default :
-                  gradient = gradientGreen;
-                  break;  
+              case "ADD_TRANSACTION" :
+                gradient = gradients['gradientGreenRTL']; 
+                break;
+              case "QUORUM_READY" :
+                gradient = gradients['blueGradientRTL'];
+                break; 
+              case "PING" :
+                gradient = gradients['gradientGoldRTL']; 
+                break;
+              case "RECEIVE_MEMPOOL" :
+                gradient = gradients['gradientPurpleRTL']; 
+                break;
+              case "RECEIVE_SIGNATURE" :
+                gradient = gradients['gradientPinkRTL']; 
+                break;
+              case "RECEIVE_SKELETON" :
+                gradient = gradients['gradientCrimsonRTL']; 
+                break; 
+              default :
+                gradient = gradients['gradientGreenRTL'];
+                break;  
             }
+          } else {
+            switch (messageType) {
+              case "ADD_TRANSACTION" :
+                gradient = gradients['gradientGreenLTR']; 
+                break;
+              case "QUORUM_READY" :
+                gradient = gradients['blueGradientLTR'];
+                break; 
+              case "PING" :
+                gradient = gradients['gradientGoldLTR']; 
+                break;
+              case "RECEIVE_MEMPOOL" :
+                gradient = gradients['gradientPurpleLTR']; 
+                break;
+              case "RECEIVE_SIGNATURE" :
+                gradient = gradients['gradientPinkLTR']; 
+                break;
+              case "RECEIVE_SKELETON" :
+                gradient = gradients['gradientCrimsonLTR']; 
+                break; 
+              default :
+                gradient = gradients['gradientGreenLTR'];
+                break;  
+            }
+          }
 
             // If either of the nodes does not exist, skip this message
             if (!sourceNode || !targetNode) {
@@ -299,23 +249,32 @@ d3.json("nodes.json").then(function(data) {
 
             // Animate the dash offset to make it appear as though the line is being drawn
             // Animate the dash offset to make it appear as though the line is being drawn
-            path
-              .attr("stroke-dasharray", `${pathLength} ${pathLength}`)  // Set the dash and gap lengths to the length of the path
-              .attr("stroke-dashoffset", pathLength)  // Set the offset to the length of the path
-              .transition()
-              .duration(1000)
-              .delay(index * 100)  // Delay each message to prevent them from all animating at once
-              .attrTween("stroke-dashoffset", function() {
-                return d3.interpolate(pathLength, 0);
-              })
-              .attrTween("stroke-dasharray", function() {
-                return d3.interpolate("0 " + pathLength, pathLength + " 0");
-              })
-              .attr("stroke-opacity", 1)  // Increase the stroke opacity to 1 to make the line visible
-              .transition()  // Add a new transition to make the line disappear
-              .duration(1000)
-              .attr("stroke-opacity", 0)  // Fade out the line by reducing its opacity to 0
-              .remove();  // After the line has faded out, remove it from the SVG
+           path
+    .attr("stroke-dasharray", `${pathLength} ${pathLength}`)  // Set the dash and gap lengths to the length of the path
+    .attr("stroke-dashoffset", pathLength)  // Set the offset to the length of the path
+    .attr("stroke-width", 1)  // Set initial stroke-width
+    .transition()
+    .duration(1000)
+    .delay(index * 100)  // Delay each message to prevent them from all animating at once
+
+    .attrTween("stroke-dashoffset", function() {
+        return function(t) {
+            const offset = d3.interpolate(pathLength, 0)(t);
+            const width = (offset > pathLength / 2) ? 2 * (1 - offset / pathLength) : 2 * (offset / pathLength);
+            this.setAttribute("stroke-width", Math.max(width, 1));
+            return offset;
+        };
+    })
+    .attrTween("stroke-dasharray", function() {
+        return d3.interpolate("0 " + pathLength, pathLength + " 0");
+    })
+    .attr("stroke-opacity", 1)  // Increase the stroke opacity to 1 to make the line visible
+    .transition()  // Add a new transition to make the line disappear
+    .duration(1000)
+    .attr("stroke-opacity", 0)  // Fade out the line by reducing its opacity to 0
+    .remove();  // After the line has faded out, remove it from the SVG
+
+
           });
         })
         .catch(function(error) {

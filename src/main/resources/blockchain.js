@@ -158,7 +158,7 @@ function updateData() {
       
       nodes.each(function(d) {
         // fill quorum members red and other nodes gray 
-        var nodeColor = quorumMembers.includes(d.id) ? "#add8e6" : "grey";
+        var nodeColor = quorumMembers.includes(d.id) ? "#add8e6" : "#222";
         d3.select(this).attr('fill', nodeColor);
 
       });
