@@ -25,6 +25,22 @@ function addNewBlock(blockData) {
   // store block number 
   var blockNum = blockData[index].block; 
 
+  
+    // Append a new line representing the chain
+    var newLine = svgBlocks.append("line")
+      .attr("class", "chain")
+      .attr("x1", -blockSize)
+      .attr("y1", (heightBlocks - blockSize) - 15 + blockSize / 2) // Center of block
+      .attr("x2", -blockSize)
+      .attr("y2", (heightBlocks - blockSize) - 15 + blockSize / 2) // Center of block
+      .attr("stroke", "black")
+      .attr("stroke-width", 2)
+      .transition()
+      .duration(1000)
+      .attr("x2", 0); // End line where new block begins
+  
+
+
   // Append a new block
   var newBlock = svgBlocks.append("rect")
     .attr("class", "block")
@@ -75,6 +91,7 @@ function addNewBlock(blockData) {
     .duration(1000)
     .attr("x",blockSize/2);
 
+    
   // Increment index
   index++;
 }
@@ -107,6 +124,16 @@ function animateBlocks() {
     .duration(1000)
     .attr("x", function(d, i) {
         return (blockSize + blockPadding) * (index - i) + blockSize / 2;
+    });
+
+    svgBlocks.selectAll(".chain")
+    .transition()
+    .duration(1000)
+    .attr("x1", function(d, i) {
+      return (blockSize + blockPadding) * (index - i);
+    })
+    .attr("x2", function(d, i) {
+      return (blockSize + blockPadding) * (index - i) - blockSize;
     });
 }
 
