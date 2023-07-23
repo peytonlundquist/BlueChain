@@ -1,8 +1,2 @@
-{"message":"PING","message_to":"8010","message_from":"8006"}
-{"message":"PING","message_to":"8005","message_from":"8023"}
-{"message":"PING","message_to":"8014","message_from":"8024"}
-{"message":"PING","message_to":"8000","message_from":"8020"}
-{"message":"PING","message_to":"8001","message_from":"8004"}
-{"message":"PING","message_to":"8024","message_from":"8000"}
-{"message":"PING","message_to":"8006","message_from":"8019"}
-{"message":"PING","message_to":"8009","message_from":"8018"}
+{"message":"PING","message_to":"8018","message_from":"8013"}
+{"message":"PING","message_to":"8000","message_from":"8006"}

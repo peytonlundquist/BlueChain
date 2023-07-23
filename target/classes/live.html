@@ -15,8 +15,83 @@
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300&display=swap" rel="stylesheet">
   <style>
 
+
+.dark-theme {
+    --bs-dark: #1d1e22;
+    --bs-gray: #f0f0f0;
+}
+
+body.dark-theme {
+    background-color: var(--bs-dark);
+    color: var(--bs-gray);
+}
+
+
+/* Additional component styling for dark theme */
+body.dark-theme .table, body.dark-theme .key-panel, body.dark-theme .container-svg {
+    background-color: var(--bs-dark);
+    color: var(--bs-gray);
+}
+    :root {
+        --color-bg-dark: #222;
+        --color-text-light: #f1f1f1;
+        --color-text-dark: #111;
+        --color-accent: #00e4ff;
+    }
+
+    [data-theme="dark"] {
+        background-color: var(--color-bg-dark);
+        color: var(--color-text-light);
+    }
+
+    [data-theme="dark"] #linkid [Attributes] {
+      stroke: #fff !important;
+    }
+
+    [data-theme="dark"] body,
+    [data-theme="dark"] .bg-dark,
+    [data-theme="dark"] .navbar,
+    [data-theme="dark"] .table,
+    [data-theme="dark"] .container,
+    [data-theme="dark"] .key-panel,
+    [data-theme="dark"] .navbar-dark {
+        background-color: var(--color-bg-dark) !important;
+        color: var(--color-text-light) !important;
+    }
+
+    [data-theme="dark"] .navbar-brand,
+    [data-theme="dark"] .nav-link,
+    [data-theme="dark"] .dropdown-item,
+    [data-theme="dark"] h1,
+    [data-theme="dark"] .block,
+    [data-theme="dark"] text {
+        color: var(--color-text-light) !important;
+    }
+
+    [data-theme="dark"] .navbar-toggler-icon {
+        filter: invert(1);
+    }
+
+    [data-theme="dark"] .table thead th {
+        border-bottom: 1px solid var(--color-text-light) !important;
+    }
+
+    [data-theme="dark"] .key-panel table {
+        border-bottom: 1px solid var(--color-text-light) !important;
+    }
+
+    [data-theme="dark"] .table td,
+    [data-theme="dark"] .table th {
+        border-top: 1px solid var(--color-text-light) !important;
+    }
+
+    [data-theme="dark"] .dropdown-menu {
+        background-color: var(--color-bg-dark) !important;
+        color: var(--color-text-light) !important;
+    }
     body {
       overflow:hidden;
+      background-color: #f0f0f0;
     }
    /* .links line {
       stroke: grey; 
@@ -95,30 +170,36 @@
       grid-column: 2 !important; /* position it in the second (middle) column */
     }
 
-    .key-panel {
+        .key-panel {
         display: grid; 
         flex-direction: column;
         justify-content: center;
         font-family: 'Montserrat', sans-serif;
+        font-weight: bold;
         align-items: center;
         height: 100%;
         width: 100%;
     }
 
-    .key-panel table {
-        grid-column: 3 !important; 
-        width: 100%;
-        text-align: center;
-        border-collapse: collapse;
-    }
+      .key-panel table {
+          grid-column: 3 !important; 
+          width: 100%;
+          text-align: center;
+          border-collapse: collapse;
+      }
 
-    .key-panel th, .key-panel td {
-        padding: 10px;
-    }
+      .key-panel th, .key-panel td {
+          padding: 10px;
+      }
 
-    .key-panel td svg {
-        margin: auto;  /* Center the gradient rectangles in their cells */
-    }
+      .key-panel td svg {
+          margin: auto;  /* Center the gradient rectangles in their cells */
+      }
+
+      .key-panel thead {
+          border-bottom: 1px solid black; /* Add a 2px solid black line under the table headers */
+      }
+
     .container-svg {
       height:55vh; 
       padding-top: 5px;
@@ -153,7 +234,7 @@
     .block:hover {
       cursor: pointer;
       /*transform: scale(1.1); */
-      fill: #00d4ff; 
+      fill: #D6EEFF; 
       transition: all ease-in-out .3s;
     }
 
@@ -209,6 +290,8 @@
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
       <a class="navbar-brand" href="#">BLUEVISION</a>
+      <button id="themeToggle">Toggle Dark Mode</button>
+
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
       <div class="collapse navbar-collapse" id="navbarSupportedContent">
         <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
@@ -237,8 +320,8 @@
               <thead>
                   <tr>
                       <th>tx</th>
-                      <th>to</th>
                       <th>from</th>
+                      <th>to</th>
                       <th>amount</th>
                   </tr>
               </thead>
@@ -263,8 +346,8 @@
                             //row.style.opacity = "0"; // Initially set opacity to 0
                             row.innerHTML = `
                                 <td>${obj.transaction}</td>
-                                <td>${obj.to}</td>
                                 <td>${obj.from}</td>
+                                <td>${obj.to}</td>
                                 <td>${obj.amount}</td>
                             `;
                             // If there is a first child, insert before it, otherwise appendChild (which will happen when the table is initially empty)
@@ -317,8 +400,8 @@
       <table>
         <thead>
           <tr>
-            <th>message type</th>
-            <th>message color</th>
+            <th>message</th>
+            <th>color</th>
           </tr>
         </thead>
         <tbody>
@@ -326,15 +409,39 @@
             <td>add transaction</td>
             <td>
               <svg width="20" height="20">
-                <rect width="20" height="20" fill="url(#gradientGreen)"/>
+                <rect width="20" height="20" fill="#3FD02C"/>
               </svg>
             </td>
           </tr>
           <tr>
-            <td>quorum ready</td>
+            <td>form quorum</td>
             <td>
               <svg width="20" height="20">
-                <rect width="20" height="20" fill="url(#gradient)"/>
+                <rect width="20" height="20" fill="#3A86FF"/>
+              </svg>
+            </td>
+          </tr>
+          <tr>
+            <td>send mempool</td>
+            <td>
+              <svg width="20" height="20">
+                <rect width="20" height="20" fill="#A140B3"/>
+              </svg>
+            </td>
+          </tr>
+          <tr>
+            <td>sign block</td>
+            <td>
+              <svg width="20" height="20">
+                <rect width="20" height="20" fill="#FB5607">
+              </svg>
+            </td>
+          </tr>
+          <tr>
+            <td>send block</td>
+            <td>
+              <svg width="20" height="20">
+                <rect width="20" height="20" fill="#B82538"/>
               </svg>
             </td>
           </tr>
@@ -342,31 +449,7 @@
             <td>ping</td>
             <td>
               <svg width="20" height="20">
-                <rect width="20" height="20" fill="url(#gradientGold)"/>
-              </svg>
-            </td>
-          </tr>
-          <tr>
-            <td>receive mempool</td>
-            <td>
-              <svg width="20" height="20">
-                <rect width="20" height="20" fill="url(#gradientPurple)"/>
-              </svg>
-            </td>
-          </tr>
-          <tr>
-            <td>receive signature</td>
-            <td>
-              <svg width="20" height="20">
-                <rect width="20" height="20" fill="url(#gradientPink)"/>
-              </svg>
-            </td>
-          </tr>
-          <tr>
-            <td>receive skeleton</td>
-            <td>
-              <svg width="20" height="20">
-                <rect width="20" height="20" fill="url(#gradientCrimson)"/>
+                <rect width="20" height="20" fill="#FFBE0B"/>
               </svg>
             </td>
           </tr>
@@ -393,5 +476,10 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
   <!-- Core theme JS-->
   <script src="https://cdn.jsdelivr.net/gh/jettcblack/bluevision-css@main/scripts.js"></script>
+  <script>
+    document.getElementById('themeToggle').addEventListener('click', function() {
+      document.body.classList.toggle('dark-theme');
+    });
+    </script>
 </body>
 </html>

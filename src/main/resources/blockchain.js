@@ -11,65 +11,57 @@ svgBlocks.attr("width", widthBlocks).attr("height", heightBlocks);
 var blockSize = 125;
 var blockPadding = 20;
 
-
-
 // Initialize the index for blockData
 var index = 0;
 
 // Function to add a new block
 function addNewBlock(blockData) {
-
   // Animate the transition of the blocks
   animateBlocks();
-  
-  // store block number 
+
+  // Store block number 
   var blockNum = blockData[index].block; 
 
-  
-    // Append a new line representing the chain
-    var newLine = svgBlocks.append("line")
-      .attr("class", "chain")
-      .attr("x1", -blockSize)
-      .attr("y1", (heightBlocks - blockSize) - 15 + blockSize / 2) // Center of block
-      .attr("x2", -blockSize)
-      .attr("y2", (heightBlocks - blockSize) - 15 + blockSize / 2) // Center of block
-      .attr("stroke", "black")
-      .attr("stroke-width", 2)
-      .transition()
-      .duration(1000)
-      .attr("x2", 0); // End line where new block begins
-  
-
+  // Append a new line representing the chain
+  svgBlocks.append("line")
+    .attr("class", "chain")
+    .attr("x1", -blockSize)
+    .attr("y1", (heightBlocks - blockSize) - 15 + blockSize / 2) // Center of block
+    .attr("x2", -blockSize)
+    .attr("y2", (heightBlocks - blockSize) - 15 + blockSize / 2) // Center of block
+    .attr("stroke", "black")
+    .attr("stroke-width", 2)
+    .transition()
+    .duration(1000)
+    .attr("x2", 0); // End line where new block begins
 
   // Append a new block
-  var newBlock = svgBlocks.append("rect")
+  svgBlocks.append("rect")
     .attr("class", "block")
     .attr("x", -blockSize)
     .attr("y", (heightBlocks - blockSize) - 15)
     .attr("width", blockSize)
     .attr("height", blockSize)
-      .on("click", function(d) {
-        window.location.href = "consensus.html?block=" + blockNum; 
-      })
+    .on("click", function(d) {
+      window.location.href = "consensus.html?block=" + blockNum; 
+    })
     .transition()
     .duration(1000)
     .attr("x", 0);
-  
-
 
   // Append a new block label
-  var newBlockLabel = svgBlocks.append("text")
+  svgBlocks.append("text")
     .attr("class", "block-label")
     .attr("x", -blockSize / 2)
     .attr("y" , (heightBlocks - blockSize / 1.25) -15)
     .attr("text-anchor", "middle")
     .attr("fill", "black")
-    .text("block " +blockData[index].block)
+    .text("block " + blockData[index].block)
     .transition()
     .duration(1000)
     .attr("x", blockSize / 2);
 
-  var newBlockHashLabel = svgBlocks.append("text")
+  svgBlocks.append("text")
     .attr("class","hash-label")
     .attr("x",-blockSize/2)
     .attr("y", (heightBlocks-blockSize/2) -15) 
@@ -80,7 +72,7 @@ function addNewBlock(blockData) {
     .duration(1000)
     .attr("x",blockSize/2);
 
-  var newBlockTxLabel = svgBlocks.append("text")
+  svgBlocks.append("text")
     .attr("class","tx-label")
     .attr("x",-blockSize/2)
     .attr("y", (heightBlocks-blockSize/5) - 15) 
@@ -91,7 +83,6 @@ function addNewBlock(blockData) {
     .duration(1000)
     .attr("x",blockSize/2);
 
-    
   // Increment index
   index++;
 }
@@ -116,17 +107,17 @@ function animateBlocks() {
     .transition()
     .duration(1000)
     .attr("x", function(d, i) {
-        return (blockSize + blockPadding) * (index - i) + blockSize / 2;
+      return (blockSize + blockPadding) * (index - i) + blockSize / 2;
     });
 
   svgBlocks.selectAll(".tx-label")
     .transition()
     .duration(1000)
     .attr("x", function(d, i) {
-        return (blockSize + blockPadding) * (index - i) + blockSize / 2;
+      return (blockSize + blockPadding) * (index - i) + blockSize / 2;
     });
 
-    svgBlocks.selectAll(".chain")
+  svgBlocks.selectAll(".chain")
     .transition()
     .duration(1000)
     .attr("x1", function(d, i) {
@@ -136,49 +127,11 @@ function animateBlocks() {
       return (blockSize + blockPadding) * (index - i) - blockSize;
     });
 }
-
-
-
 function inQuorum(members,blockTitle) {
-    if(members.includes(blockTitle)) {
-        return true; 
-    } return false; 
+  if(members.includes(blockTitle)) {
+      return true; 
+  } return false; 
 }
-
-function updateData() {
-    d3.text("network.ndjson").then(function(text) {
-      var updatedBlockData = text.split("\n").filter(Boolean).map(JSON.parse);
-      
-      var lastBlock = updatedBlockData[updatedBlockData.length - 1];
-      var quorumMembers = lastBlock.quorum;
-      
-      // selects nodes
-      var svg = d3.select("svg");
-      var nodes = svg.selectAll("circle");
-      
-      nodes.each(function(d) {
-        // fill quorum members red and other nodes gray 
-        var nodeColor = quorumMembers.includes(d.id) ? "#add8e6" : "#222";
-        d3.select(this).attr('fill', nodeColor);
-
-      });
-
-  
-
-
-      // Update the visualization
-      if (updatedBlockData.length > blockData.length) {
-        for (var i = blockData.length; i < updatedBlockData.length; i++) {
-          addNewBlock(updatedBlockData);
-        }
-        blockData = updatedBlockData;
-      }
-    }).catch(function(error) {
-      console.log("Error loading data:", error);
-    });
-  }
-  
-
 
 
 // Initial data load
@@ -195,3 +148,30 @@ d3.text("network.ndjson").then(function(text) {
 }).catch(function(error) {
   console.log("Error loading data:", error);
 });
+
+function updateData() {
+    d3.text("network.ndjson").then(function(text) {
+      var updatedBlockData = text.split("\n").filter(Boolean).map(JSON.parse);
+      var lastBlock = updatedBlockData[updatedBlockData.length - 1];
+      var quorumMembers = lastBlock.quorum;
+      
+      // selects nodes
+      var svg = d3.select("svg");
+      var nodes = svg.selectAll("circle");
+      
+      nodes.each(function(d) {
+        // fill quorum members red and other nodes gray 
+        var nodeColor = quorumMembers.includes(d.id) ? "#3A86FF" : "#222";
+        d3.select(this).attr('fill', nodeColor);
+
+      });
+      if (updatedBlockData.length > blockData.length) {
+        for (var i = blockData.length; i < updatedBlockData.length; i++) {
+          addNewBlock(updatedBlockData);
+        }
+        blockData = updatedBlockData;
+      }
+    }).catch(function(error) {
+      console.log("Error loading data:", error);
+    });
+}

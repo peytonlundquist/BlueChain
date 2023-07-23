@@ -17,6 +17,7 @@
 
     body {
       overflow:hidden;
+      background-color: #f0f0f0;
     }
    /* .links line {
       stroke: grey; 
@@ -107,12 +108,64 @@
       font-size: 15px; /* Adjust as needed */
     }
 
+    .hash-element {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 15px;
+      font-weight: bold;
+      color: #333;
+      background-color: #f0f0f0;
+      padding: 10px;
+      border-radius: 5px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* Update the styles for the generator and qMember elements */
+    .generator {
+      display: flex;
+      flex-direction: row;
+      align-items: center; /* Add this to center the content vertically */
+    }
+
+    .generator-svg {
+      font-size: 14px;
+      font-weight: bold;
+      color: #333;
+      background-color: #f0f0f0;
+      padding: 10px;
+      border-radius: 5px;
+      display: flex; /* Use flexbox */
+      justify-content: center; /* Center horizontally */
+      align-items: center; /* Center vertically */
+      flex-direction: column; /* Stack the content vertically */
+      text-align: center; /* Center the text inside the SVG */
+      margin-left: 20px;
+      width: 100px; /* Set a fixed width for the SVG container */
+      height: 100px; /* Set a fixed height for the SVG container */
+      border: 2px solid black;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 15px;
+      font-weight: bold;
+      filter: drop-shadow(0 0 2px #969696);
+    }
+    .qMember {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 15px;
+      font-weight: bold;
+      color: #333;
+      padding: 10px;
+      border-radius: 5px;
+      stroke-width: 5px;
+      stroke: black;
+    }
+
     .tx-label {
       font-family:'Montserrat', sans-serif;
       font-size: 15px; /* Adjust as needed */
     }
 
-    .information {
+    .information, .explanation {
       display: flex;
       flex-basis: 35%;
       justify-content: center;
@@ -200,7 +253,8 @@
 
 
     .information {
-    
+      
+      clear:both; 
       font-family: 'Montserrat', sans-serif; 
       font-size: 20px;
   
@@ -244,10 +298,7 @@
      
     }
 
-    .hash-label {
-      border: "2px solid black";
-      stroke-width: 2px;
-    }
+  
 
   
 
@@ -358,6 +409,7 @@
   <script src="consensusGraph.js"></script>
   <script src="consensusBlockchain.js"></script>
   <script src="deriveQuorum.js"></script>
+  <script src="formQuorum.js"></script>
   
 
   <!-- Bootstrap core JS-->
