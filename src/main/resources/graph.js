@@ -217,7 +217,7 @@ function loadMessages() {
             };
           })
           .transition()
-          .delay(500)
+          
           .remove();
       })
     })
@@ -225,7 +225,7 @@ function loadMessages() {
       console.log("Error loading messages:", error);
     })
     .finally(function() {
-      setTimeout(loadMessages, 100);
+      setTimeout(loadMessages, 200);
     });
 }
 

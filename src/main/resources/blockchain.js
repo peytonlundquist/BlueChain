@@ -144,7 +144,7 @@ d3.text("network.ndjson").then(function(text) {
   }
 
   // Start updating the data every 3 seconds
-  setInterval(updateData, 5000);
+  setInterval(updateData, 6000);
 }).catch(function(error) {
   console.log("Error loading data:", error);
 });
