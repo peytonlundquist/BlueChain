@@ -458,7 +458,7 @@ public class Wallet {
             for (int i = 0; i < j; i++) {
                 randAccount = (int) (Math.random() * (j + 1)); 
                 System.out.print("#"); 
-                Thread.sleep(1000);
+                Thread.sleep(2500);
                 testSubmitTransaction(String.valueOf(i), DSA.bytesToString(accounts.get(randAccount).getKeyPair().getPublic().getEncoded()),(int)(Math.random() * 100));
             }
             System.out.print("]");

@@ -1,5 +1,5 @@
-window.onload = function() {
-  setTimeout(function() {
+function deriveQuorum() {
+
     var textElement = document.querySelector('.information');
     var generatorElement = document.querySelector('.generator');
     const hashLabels = document.querySelectorAll(".hash-label");
@@ -16,8 +16,7 @@ window.onload = function() {
         const urlParams = new URLSearchParams(window.location.search);
         const blockNumber = Number(urlParams.get('block'));
 
-        // Function to animate the hash value moving through the generator
-        function animateHashThroughGenerator() {
+      
           var leftMostBlock = document.querySelector('#blocks-svg').lastElementChild;
           var rect = leftMostBlock.getBoundingClientRect();
 
@@ -25,7 +24,7 @@ window.onload = function() {
           hashElement.className = 'hash-element';
           hashElement.style.position = 'absolute';
           hashElement.style.left = `${rect.left}px`;
-          hashElement.style.top = `${rect.top - rect.height - 110}px`; // Adjust the top position as needed
+          hashElement.style.top = `${rect.top - rect.height - 150}px`; // Adjust the top position as needed
           hashElement.style.width = `${rect.width + 20}px`;
           hashElement.style.height = `${rect.height}px`;
           hashElement.textContent = lastHashLabel;
@@ -54,7 +53,7 @@ window.onload = function() {
                   generatorSvg.className = 'generator-svg';
                   generatorSvg.style.position = 'absolute';
                   generatorSvg.style.left = `${hashElement.getBoundingClientRect().right + 20}px`; // Adjust the left position as needed
-                  generatorSvg.style.top = `${hashElement.getBoundingClientRect().top}px`;
+                  generatorSvg.style.top = `${hashElement.getBoundingClientRect().top - 25}px`;
                   generatorSvg.style.width = '100px';
                   generatorSvg.style.height = '100px';
                   generatorSvg.style.border = "2px solid black";
@@ -118,7 +117,7 @@ window.onload = function() {
                         begin: function() {
                           // Update the information div
                           var infoDiv = document.querySelector('.information');
-                          infoDiv.innerHTML = '<br><br><br><br><br>This animation demonstrates how the hash value is processed by the generator to produce the quorum members.<br><br>The hash value of the last block is used as a seed in a random number generator between all nodes.<br><br>This ensures that whilst the quorum is indeed random, each node generates the same quorum members to construct the next block.<br>Now the next step is to form the quorum connections, so press the button when ready!';
+                          infoDiv.innerHTML = "<br><br><br><br>The quorum refers to the selected subset of nodes that will construct and validate blocks before they are added to the blockchain.<br><br>This animation demonstrates how the block data of the last block is hashed, and this value is passed into the random quorum generator as a seed to produce the quorum members.<br><br>Now the next step is to form the quorum connections, so press the button when ready!";
                           
                           var button = document.createElement("button");
                           button.className = "step-buttons"; 
@@ -161,10 +160,9 @@ window.onload = function() {
               });
             }
           });
-        }
+     
 
-        // Attach the animateHashThroughGenerator function to the "derive quorum" button click event
-        document.getElementById("derive-quorum").addEventListener("click", animateHashThroughGenerator);
+       
       });
-  }, 1000); // 3000 milliseconds = 3 seconds
+
 };

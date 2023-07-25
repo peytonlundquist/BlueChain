@@ -3,7 +3,7 @@ function constructBlock() {
 
     const infoDiv = d3.select('.information')
         .style("opacity", 0)
-        .html('Now, each quorum member uses their resolved mempool to construct their own block, called the quorum block.<br><br>They will place their transactions in their mempool, which they all have compared and made sure was equal, and use these transactions to construct their block.<br><br>Once the block is constructed, they will then sign their block by using their private key and the hash of the block they created.<br><br>So the next step is to sign the block, do it when ready!')
+        .html('Now, each quorum member uses their synchronized mempool to construct their own block, called the quorum block.<br><br>They will place their transactions from their mempool into the block, along with a pointer to the last block (so the blocks link together), and a merkle root hash that confirms validity of the transactions.<br><br>Once the block is constructed, they will then sign off on the block they created and send their signatures to the other quorum members.')
         .transition()
         .duration(3000)
         .style("opacity", 1)

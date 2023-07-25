@@ -123,7 +123,7 @@ function compileMempool() {
 
     const infoDiv = d3.select('.information')
         .style("opacity", 0)
-        .html('So what is the mempool?<br><br>The mempool is where transactions gather in the network after being verified and wait to be placed inside a block.<br><br>Whenever quorum members form, they will send the transactions from their mempool to one another to make sure everyone has the same transactions when constructing the next block for the network. You can see the transactions from the mempool being sent around the quorum members now.<br><br>After they all resolve the mempool, the next step is to construct a block for each member. So press construct block when ready!')
+        .html('The mempool is where transactions gather in the network and wait to be placed inside a block.<br><br>Whenever quorum members form, they will send the transactions from their mempool to one another to make sure everyone has the same transactions when constructing the next block for the network.<br><br>You can see the transactions from the mempool being sent around the quorum members with this animation.<br><br>After they all synchronize their mempools, the next step is to construct a block for each member.')
         .transition()
         .duration(3000)
         .style("opacity", 1)

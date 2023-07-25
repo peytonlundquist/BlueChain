@@ -21,7 +21,7 @@ function signBlock() {
 
     d3.select('.information')
         .style("opacity", 0)
-        .html("What does signing the block actually mean?<br><br>After each quorum member constructs their block, they will then sign their block using the hash the block they created generated, and their private key.<br><br>The private key is basically their secret address, and by signing the block with this, it ensures the validity of the member's block.<br><br>After each member signs their block, they will send their signature to the other quorum members to compare answers.<br><br>Once each member gets the other's signature, it will be time to vote on the correct signature!")
+        .html("After each quorum member constructs their block, they will then sign their block using the hash of the block they created and their private key.<br><br>The private key refers to their secret address in the network, and by signing the block with this, it ensures the integrity of the member's creation.<br><br>After each member signs their block, they will send their signature to the other quorum members to compare answers.<br><br>Once each member gets the others' signatures, it will be time to vote on the correct block signature!")
         .transition()
         .duration(2000)
         .style("opacity", 1)

@@ -35,7 +35,7 @@ function voteBlock() {
                 .attr('class', 'step-buttons')
                 .attr('id', 'send-block')
                 .style('opacity', 0)
-                .on('click', () => voteBlock())
+                .on('click', () => sendBlock())
                 .style('transition', 'opacity 2s');
 
             setTimeout(() => {

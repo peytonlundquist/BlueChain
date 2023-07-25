@@ -155,8 +155,8 @@
       flex-direction: column; /* Stack the content vertically */
       text-align: center; /* Center the text inside the SVG */
       margin-left: 20px;
-      width: 100px; /* Set a fixed width for the SVG container */
-      height: 100px; /* Set a fixed height for the SVG container */
+      width:100px;
+      height:50px;
       border: 2px solid black;
       font-family: 'Montserrat', sans-serif;
       font-size: 15px;
@@ -379,9 +379,7 @@
                 button.innerHTML = "Derive Quorum";
                 
                 // Add event listener to the button
-                button.addEventListener('click', function() {
-                  // place your deriveQuorum.js code here
-                });
+                button.addEventListener('click', () => deriveQuorum()); 
         
                 // Append the button to the div
                 infoDiv.appendChild(button);
@@ -428,7 +426,8 @@
   <script src="constructBlock.js"></script>
   <script src="signBlock.js"></script>
   <script src="voteBlock.js"></script>
-
+  <script src="sendBlock.js"></script>
+  <script src="addBlock.js"></script>
   <!-- Bootstrap core JS-->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
   <!-- Core theme JS-->

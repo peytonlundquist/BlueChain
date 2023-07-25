@@ -16,6 +16,10 @@
             background-color:black !important;
         } 
 
+        body {
+          background-color: #f0f0f0;
+        }
+
         .navbar-brand {
             font-family: 'Montserrat',sans-serif;
         }
@@ -24,6 +28,32 @@
           font-family: 'Montserrat', sans-serif;
         }
 
+      
+
+        .form-text {
+          margin-top: 2rem;
+        }
+
+        #form-info {
+          margin-top:50px;
+          font-size: 36px;
+          fill: black; 
+        }
+
+        .about {
+          background-color: #efefef;
+          font-family: 'Montserrat', sans-serif;
+          font-size: 18px;
+          text-align: left;
+          margin-top: 20px;
+          border-top: 1px solid black;
+          margin-bottom: 20px;
+          border-bottom: 1px solid black;
+        }
+
+        ul {
+          font-size: 16px;
+        }
         </style>
     </head>
 
@@ -35,18 +65,15 @@
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
                 <div class="collapse navbar-collapse" id="navbarSupportedContent">
                     <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
-                        <li class="nav-item"><a class="nav-link active" aria-current="page" href="index.html">Home</a></li>
-                        <!--
-                        <li class="nav-item"><a class="nav-link" href="#">Link</a></li>
+                        <!--<li class="nav-item"><a class="nav-link active" aria-current="page" href="index.html">Home</a></li>-->
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" id="navbarDropdown" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Dropdown</a>
+                            <a class="nav-link dropdown-toggle" id="navbarDropdown" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Menu</a>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                                <li><a class="dropdown-item" href="#">Action</a></li>
-                                <li><a class="dropdown-item" href="#">Another action</a></li>
+                                <li><a class="dropdown-item" href="#">BlueEdu</a></li>
+                                <li><a class="dropdown-item" href="https://rose-hickory-85b.notion.site/188eac4957ab4f8aada97e663edd54dc?v=712efdcd77be4c7ebe7916b82ff9afa7">BlueChain Docs</a></li>
                                 <li><hr class="dropdown-divider" /></li>
-                                <li><a class="dropdown-item" href="#">Something else here</a></li>
+                                <li><a class="dropdown-item" href="index.html">Home</a></li>
                             </ul>
-                        -->
                         </li>
                     </ul>
                 </div>
@@ -57,6 +84,7 @@
             <div class="text-center mt-5">
                 <h1>configuring the bluechain network</h1>
                 <form class="form-text">       
+                  <p id="form-info">How many nodes do you want in the network?</p>
                     <input type="text" id="nodeCount" class="form-label" name="nodes" placeholder="Node Count" required="" autofocus=""/>
                     <br>
                     <a id="launchButton" class="btn btn-lg btn-primary btn-block" class="button">Launch Network</a>  
@@ -82,10 +110,19 @@
                       });
                     </script>
                   </form>
-                <p class="lead">Here you will decide the number of nodes that will run the network and keep the BlueChain ledger.</p>
-                <p class="lead">You will also decide the minimum transactions that the nodes need to receive in order to construct a block.</p>
             </div>
         </div>
+        
+        <!-- About info-
+        <div class="about">
+          <p style="font-size: 22px; margin-top: 10px; margin-left: 500px;"><b>Information</b></p>
+          <p style="margin-left: 500px;">How are other configurations set?</p>
+          <ul style="margin-left: 500px;">
+            <li><b>Number of quorum members:</b> square root of # of nodes, rounded down</li>
+            <li><b>Number of maximum transactions:</b> floor of half of the # of nodes</li>
+            <li><b>Number of minimum transactions:</b> maximum transactions - 5</li>
+          </ul>
+        </div> --> 
         <!-- Bootstrap core JS-->
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
         <!-- Core theme JS-->

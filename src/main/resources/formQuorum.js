@@ -30,7 +30,7 @@ function formQuorum(qMembers) {
 
     const infoDiv = d3.select('.information')
     .style("opacity", 0)
-    .html('Now the quorum members form a special connection with one another, and the other nodes will wait for the quorum members to come to consensus.<br><br>The other nodes are still active listening for tranactions but from this point forward we will focus on quorum members.<br><br>Quorum members form a special connection with one another, and now they will confirm transactions in the mempool with one another, so they can all construct the same block.<br><br>So when you are ready, press compile mempool!')
+    .html('Now the quorum members form a special connection with one another, and the other nodes will simply listen for transactions coming in on the network whilst the quorum constructs the block.<br><br>From this point forward we will focus on quorum members and their processes in consensus.<br><br>After the quorum members connect to each other, the next step is to synchronize their mempools with the transactions they have so they can all construct a block.<br><br>When you are ready, press synchronize mempool!')
     .transition()
     .duration(3000)
     .style("opacity", 1)
@@ -102,7 +102,7 @@ function formQuorum(qMembers) {
                 d3.selectAll(".links")
                     .transition()
                     .duration(0)  // No delay for removal
-                    .remove();
+                  
             });
 
  
