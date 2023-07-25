@@ -1,12 +1,34 @@
 function constructBlock() {
+
+
+    const infoDiv = d3.select('.information')
+        .style("opacity", 0)
+        .html('Now, each quorum member uses their resolved mempool to construct their own block, called the quorum block.<br><br>They will place their transactions in their mempool, which they all have compared and made sure was equal, and use these transactions to construct their block.<br><br>Once the block is constructed, they will then sign their block by using their private key and the hash of the block they created.<br><br>So the next step is to sign the block, do it when ready!')
+        .transition()
+        .duration(3000)
+        .style("opacity", 1)
+        .end()
+        .then(() => {
+            const button = d3.select('.information').append('button')
+                .text('Sign Block')
+                .attr('class', 'step-buttons')
+                .attr('id', 'sign-block')
+                .style('opacity', 0)
+                .on('click', () => signBlock())  
+                .style('transition', 'opacity 2s');
+
+            setTimeout(() => {
+                button.style('opacity', 1);
+            }, 100);
+        });
     const svg = d3.select("#graph-svg");
 
     const nodes = svg.selectAll("circle").nodes();
     const mempools = svg.selectAll(".mempool").nodes();
 
     const radius = 100; 
-    const blockWidth = 80;
-    const blockHeight = 80;
+    const blockWidth = 60;
+    const blockHeight = 60;
     const lineHeight = 20;
 
     let centroidX = 0, centroidY = 0;
@@ -48,7 +70,8 @@ function constructBlock() {
         })
         .attr("width", blockWidth)
         .attr("height", blockHeight)
-        .style('opacity', 0);
+        .style('opacity', 0)
+        .style("filter", "drop-shadow(0 0 2px #111111)");
     
     blocks.transition().duration(2000)
         .style('opacity', 1);
@@ -77,6 +100,7 @@ function constructBlock() {
             }
         })
         .attr("text-anchor", "middle") // align text to the center
+        .style('opacity',0)
         .each(function(d) {
             const transactions = d.textContent.split("\n");
             d3.select(this).selectAll('tspan')
@@ -91,30 +115,14 @@ function constructBlock() {
                     return d;
                 });
         });
+    
+        labels.transition().duration(2000)
+            .style('opacity',1); 
 
     svg.selectAll(".mempool")
         .transition().duration(2000)
         .style('opacity', 0)
         .remove();
 
-    const infoDiv = d3.select('.information')
-        .style("opacity", 0)
-        .html('Now, each quorum member uses their resolved mempool to construct their own block, called the quorum block.<br><br>They will place their transactions in their mempool, which they all have compared and made sure was equal, and use these transactions to construct their block.<br><br>Once the block is constructed, they will then sign their block by using their private key and the hash of the block they created.<br><br>So the next step is to sign the block, do it when ready!')
-        .transition()
-        .duration(3000)
-        .style("opacity", 1)
-        .end()
-        .then(() => {
-            const button = d3.select('.information').append('button')
-                .text('Sign Block')
-                .attr('class', 'step-buttons')
-                .attr('id', 'sign-block')
-                .style('opacity', 0)
-                .on('click', constructBlock)  
-                .style('transition', 'opacity 2s');
-
-            setTimeout(() => {
-                button.style('opacity', 1);
-            }, 100);
-        });
+    
 }

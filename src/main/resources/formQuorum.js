@@ -37,7 +37,7 @@ function formQuorum(qMembers) {
     .end()  // Wait for the transition to end
     .then(() => {  // After transition ended, append the button
       const button = d3.select('.information').append('button')
-          .text('Compile Mempool')
+          .text('Synchronize Mempool')
           .attr('class', 'step-buttons')
           .attr('id', 'compile-mempool')
           .style('opacity', 0) // start with 0 opacity
@@ -78,7 +78,7 @@ function formQuorum(qMembers) {
                 return !isIncluded;
             })
             .transition()
-            .duration(5000)
+            .duration(3000)
             .style("opacity", 0)
             .end()  // Wait for the fade out transition to end
             .then(() => {  // Then start a new transition to remove the elements
@@ -95,7 +95,7 @@ function formQuorum(qMembers) {
         
         d3.selectAll(".links")
             .transition()
-            .duration(5000)
+            .duration(3000)
             .style("opacity", 0)
             .end()  // Wait for the fade out transition to end
             .then(() => {  // Then start a new transition to remove the elements
@@ -150,7 +150,7 @@ function formQuorum(qMembers) {
                 .attr("stroke-dasharray", `${pathLength} ${pathLength}`)
                 .attr("stroke-dashoffset", pathLength)
                 .transition()
-                .duration(2000)
+                .duration(1000)
                 .delay(1000 * i)
                 .attrTween("stroke-dashoffset", function() {
                   return d3.interpolate(pathLength, 0);

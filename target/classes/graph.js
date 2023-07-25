@@ -225,7 +225,7 @@ function loadMessages() {
       console.log("Error loading messages:", error);
     })
     .finally(function() {
-      setTimeout(loadMessages, 250);
+      setTimeout(loadMessages, 200);
     });
 }
 
