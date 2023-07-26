@@ -1,1 +1,2 @@
-{"message":"PING","message_to":"8008","message_from":"8018"}
+{"message":"ADD_TRANSACTION","message_to":"8022","message_from":"8000"}
+{"message":"ADD_TRANSACTION","message_to":"8008","message_from":"8006"}

@@ -22,7 +22,7 @@ function voteBlock() {
 
     d3.select('.information')
         .style("opacity", 0)
-        .html("Now, each block has placed their vote for which block is correct.<br><br>For the block that gets the most votes, this is the block that the quorum members will propagate to the network.<br><br>When ready, you can send the block!")
+        .html("Now, each quorum member tallies the signatures from the other quorum members and compares the hashes each member generated.<br><br>For the block that hash gets the most votes, this is the block that the quorum members will add to their chain and then propagate to the network.<br><br>When ready, you can send the block to the rest of the network!")
         .transition()
         .duration(3000)
         .style("opacity", 1)

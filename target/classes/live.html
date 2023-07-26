@@ -296,12 +296,31 @@ body.dark-theme .table, body.dark-theme .key-panel, body.dark-theme .container-s
       <div class="collapse navbar-collapse" id="navbarSupportedContent">
         <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
           <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" id="navbarDropdown" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Dropdown</a>
-            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-              <li><a class="dropdown-item" href="#">BlueEdu</a></li>
-              <li><a class="dropdown-item" href="#">BlueChain Docs</a></li>
-              <li><hr class="dropdown-divider" /></li>
-              <li><a class="dropdown-item" href="{{url_for('home')}}">Home</a></li>
+            <a class="nav-link dropdown-toggle" id="navbarDropdown" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Information</a>
+            <ul class="dropdown-menu dropdown-menu-end" style="width: 500px; padding: 50px;" aria-labelledby="navbarDropdown">
+        
+                <div class="row">
+                  <div class="col-sm-6">
+                    <h5>Transaction Table</h5>
+                    <p>Whenever you press launch network, light nodes on the network (not pictured) will submit transactions to the full nodes (black and blue circles) in order to fuel the network. Most recent transactions are shown at the top.</p>
+                  </div>
+                  <div class="col-sm-6">
+                    <h5>Circular Network</h5>
+                    <p>This graph is a representation of the distributed, decentralized Bluechain peer-to-peer network. Regular full nodes are colored in black with quorum nodes at each block changing to blue.</p>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col-sm-6">
+                    <h5>Legend</h5>
+                    <p>The legend shows the representation of messages sent between nodes on the network. Each color represents a different communication between nodes, with descriptions for each color.</p>
+                  </div>
+                  <div class="col-sm-6">
+                    <h5>Blockchain</h5>
+                    <p>The blockchain is the data structure mutually held and agreed upon by the nodes in the network. Through communication of different messages, the nodes pack transactions and other data into blocks and link them together, making the blockchain immutable. Please click on any block in the chain in order to learn about the consensus process for blocks.</p>
+                  </div>
+                </div>
+              </ul>
+              
             </ul>
           </li>
         </ul>
