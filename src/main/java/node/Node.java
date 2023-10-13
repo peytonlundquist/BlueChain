@@ -1,17 +1,9 @@
 package node;
 
-import node.blockchain.*;
-import node.blockchain.healthcare.*;
-import node.blockchain.defi.DefiBlock;
-import node.blockchain.defi.DefiTransaction;
-import node.blockchain.defi.DefiTransactionValidator;
-import node.blockchain.merkletree.MerkleTree;
-import node.communication.*;
-import node.communication.messaging.Message;
-import node.communication.messaging.Messager;
-import node.communication.messaging.MessagerPack;
-import node.communication.utils.Hashing;
-import node.communication.utils.Utils;
+import static utils.DSA.*;
+import static utils.Hashing.getBlockHash;
+import static utils.Hashing.getSHAString;
+import static utils.Utils.*;
 
 import java.io.*;
 import java.math.BigInteger;
@@ -21,10 +13,19 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.util.*;
 
-import static node.communication.utils.DSA.*;
-import static node.communication.utils.Hashing.getBlockHash;
-import static node.communication.utils.Hashing.getSHAString;
-import static node.communication.utils.Utils.*;
+import blockchain.*;
+import blockchain.usecases.defi.DefiBlock;
+import blockchain.usecases.defi.DefiTransaction;
+import blockchain.usecases.defi.DefiTransactionValidator;
+import blockchain.usecases.healthcare.*;
+import communication.*;
+import communication.messaging.Message;
+import communication.messaging.Messager;
+import communication.messaging.MessagerPack;
+import utils.Address;
+import utils.Hashing;
+import utils.Utils;
+import utils.merkletree.MerkleTree;
 
 
 /**

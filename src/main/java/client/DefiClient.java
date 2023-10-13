@@ -10,13 +10,13 @@ import java.security.PrivateKey;
 import java.util.ArrayList;
 import java.util.HashSet;
 
-import node.blockchain.defi.Account;
-import node.blockchain.defi.DefiTransaction;
-import node.blockchain.merkletree.MerkleTreeProof;
-import node.communication.Address;
-import node.communication.messaging.Message;
-import node.communication.messaging.Messager;
-import node.communication.utils.DSA;
+import blockchain.usecases.defi.Account;
+import blockchain.usecases.defi.DefiTransaction;
+import communication.messaging.Message;
+import communication.messaging.Messager;
+import utils.Address;
+import utils.DSA;
+import utils.merkletree.MerkleTreeProof;
 
 public class DefiClient {
 

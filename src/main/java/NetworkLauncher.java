@@ -1,6 +1,6 @@
 import node.Node;
-import node.communication.Address;
-import node.communication.utils.Utils;
+import utils.Address;
+import utils.Utils;
 
 import java.io.File;
 import java.io.FileInputStream;

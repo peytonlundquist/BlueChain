@@ -6,9 +6,10 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Properties; 
 import java.util.regex.Pattern;
-import node.blockchain.merkletree.MerkleTreeProof;
-import node.communication.Address;
-import node.communication.messaging.Message;
+
+import communication.messaging.Message;
+import utils.Address;
+import utils.merkletree.MerkleTreeProof;
 
 public class Client {
 
@@ -21,15 +22,13 @@ public class Client {
     String use;
     DefiClient defiClient;
 
-    public Client(int port, int testIterations){
+    public Client(int port){
 
         /* Initializations */
         fullNodes = new ArrayList<>();
         reader = new BufferedReader(new InputStreamReader(System.in));
         updateLock = new Object();
-        defiClient = new DefiClient(updateLock, reader, myAddress, fullNodes);
 
-        if(testIterations > 0) defiClient.testNetwork(testIterations);
 
         /* Grab values from config file */
         String configFilePath = "src/main/java/config.properties";
@@ -106,6 +105,8 @@ public class Client {
 
         Acceptor acceptor = new Acceptor(this);
         acceptor.start();
+
+        defiClient = new DefiClient(updateLock, reader, myAddress, fullNodes);
     }
 
     public static void main(String[] args) throws IOException{
@@ -121,20 +122,19 @@ public class Client {
             if(args[0].equals("-port")){
                 port = Integer.valueOf(args[0]);
             }else if(args[0].equals("-test")){
-                Client wallet = new Client(port, Integer.valueOf(args[1]));
-                wallet.test = true;
-                //client.testNetwork();
+                Client defiClient = new Client(port);
+                defiClient.test = true;
+                defiClient.testNetwork( Integer.valueOf(args[1]));
                 System.exit(0); // We just test then exit
             }
         }
 
-        Client wallet = new Client(port, 0);
-        wallet.test = false; // This is not a test
+        Client client = new Client(port);
 
         while(!input.equals("exit") | !input.equals("e")){
             System.out.print(">");
             input = mainReader.readLine();
-            wallet.interpretInput(input);
+            client.interpretInput(input);
         }
     }
 
@@ -198,6 +198,13 @@ public class Client {
             System.out.println("Removed full node: " + removedAddress);
         }else{
             System.out.println("Invalid option");
+        }
+    }
+
+    public void testNetwork(int iterations){
+        if(use.equals("Defi")){
+            defiClient.test = true;
+            defiClient.testNetwork(iterations);
         }
     }
 
