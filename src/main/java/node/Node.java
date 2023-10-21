@@ -1,8 +1,7 @@
 package node;
 
 import static utils.DSA.*;
-import static utils.Hashing.getBlockHash;
-import static utils.Hashing.getSHAString;
+import static utils.Hashing.*;
 import static utils.Utils.*;
 
 import java.io.*;
@@ -14,17 +13,11 @@ import java.security.PrivateKey;
 import java.util.*;
 
 import blockchain.*;
-import blockchain.usecases.defi.DefiBlock;
-import blockchain.usecases.defi.DefiTransaction;
-import blockchain.usecases.defi.DefiTransactionValidator;
+import blockchain.usecases.defi.*;
 import blockchain.usecases.healthcare.*;
 import communication.*;
-import communication.messaging.Message;
-import communication.messaging.Messager;
-import communication.messaging.MessagerPack;
-import utils.Address;
-import utils.Hashing;
-import utils.Utils;
+import communication.messaging.*;
+import utils.*;
 import utils.merkletree.MerkleTree;
 
 
@@ -211,9 +204,7 @@ public class Node  {
 
     public void gossipTransaction(Transaction transaction){
         synchronized (lock){
-            for(Address address : localPeers){
-                Messager.sendOneWayMessage(address, new Message(Message.Request.ADD_TRANSACTION, transaction), myAddress);
-            }
+            Messager.sendOneWayMessageToGroup(new Message(Message.Request.ADD_TRANSACTION, transaction), localPeers, myAddress);
         }
     }
 
@@ -288,7 +279,7 @@ public class Node  {
             if(!myAddress.equals(quorumAddress)) {
                 try {
                     Thread.sleep(2000);
-                    MessagerPack mp = Messager.sendInterestingMessage(quorumAddress, new Message(Message.Request.QUORUM_READY), myAddress);
+                    MessagerPack mp = Messager.sendComplexMessage(quorumAddress, new Message(Message.Request.QUORUM_READY), myAddress);
                     Message messageReceived = mp.getMessage();
                     Message reply = new Message(Message.Request.PING);
 
@@ -387,7 +378,7 @@ public class Node  {
             for (Address quorumAddress : quorum) {
                 if (!myAddress.equals(quorumAddress)) {
                     try {
-                        MessagerPack mp = Messager.sendInterestingMessage(quorumAddress, new Message(Message.Request.RECEIVE_MEMPOOL, keys), myAddress);                        ;
+                        MessagerPack mp = Messager.sendComplexMessage(quorumAddress, new Message(Message.Request.RECEIVE_MEMPOOL, keys), myAddress);                        ;
                         Message messageReceived = mp.getMessage();
                         if(messageReceived.getRequest().name().equals("REQUEST_TRANSACTION")){
                             ArrayList<String> hashesRequested = (ArrayList<String>) messageReceived.getMetadata();
@@ -680,10 +671,7 @@ public class Node  {
                 throw new RuntimeException(e);
             }
 
-            for(Address address : localPeers){
-                Messager.sendOneWayMessage(address, new Message(Message.Request.RECEIVE_SKELETON, skeleton), myAddress);
-            }
-
+            Messager.sendOneWayMessageToGroup(new Message(Message.Request.RECEIVE_SKELETON, skeleton), localPeers, myAddress);
         }
     }
 
@@ -692,11 +680,8 @@ public class Node  {
             if(DEBUG_LEVEL == 1) {
                 System.out.println("Node " + myAddress.getPort() + ": sendSkeleton(local) invoked: BlockID " + skeleton.getBlockId());
             }
-            for(Address address : localPeers){
-                if(!address.equals(myAddress)){
-                    Messager.sendOneWayMessage(address, new Message(Message.Request.RECEIVE_SKELETON, skeleton), myAddress);
-                }
-            }
+
+            Messager.sendOneWayMessageToGroup(new Message(Message.Request.RECEIVE_SKELETON, skeleton), localPeers, myAddress);
         }
     }
 
@@ -1032,4 +1017,3 @@ public class Node  {
     private final String USE;
 
 }
-

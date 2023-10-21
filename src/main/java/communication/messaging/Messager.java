@@ -2,6 +2,7 @@ package communication.messaging;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.ArrayList;
 
 import utils.Address;
 
@@ -49,7 +50,7 @@ public class Messager{
      * @param myAddress
      * @return
      */
-    public static MessagerPack sendInterestingMessage(Address address, Message message, Address myAddress) {
+    public static MessagerPack sendComplexMessage(Address address, Message message, Address myAddress) {
         try {
             Socket s = new Socket(address.getHost(), address.getPort());
             InputStream in = s.getInputStream();
@@ -66,5 +67,13 @@ public class Messager{
             throw new RuntimeException(e);
         }
         return null;
+    }
+
+    public static void sendOneWayMessageToGroup(Message message, ArrayList<Address> addresses, Address myAddress){
+        for(Address address : addresses){
+            if(!address.equals(myAddress)){
+                Messager.sendOneWayMessage(address, message, myAddress);
+            }
+        }
     }
 }
