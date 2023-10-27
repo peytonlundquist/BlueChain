@@ -1,5 +1,6 @@
 import node.Node;
 import utils.Address;
+import utils.Config;
 import utils.Utils;
 
 import java.io.File;
@@ -35,21 +36,7 @@ public class NetworkLauncher {
                 "\n on localhost with no other scope of nodes";
         try {
             /* Grab values from config file */
-            String configFilePath = "src/main/java/config.properties";
-            FileInputStream fileInputStream = new FileInputStream(configFilePath);
-            Properties prop = new Properties();
-            prop.load(fileInputStream);
-
-            int numNodes = Integer.parseInt(prop.getProperty("NUM_NODES"));
-            int maxConnections = Integer.parseInt(prop.getProperty("MAX_CONNECTIONS"));
-            int minConnections = Integer.parseInt(prop.getProperty("MIN_CONNECTIONS"));
-            int startingPort = Integer.parseInt(prop.getProperty("STARTING_PORT"));
-            int quorumSize = Integer.parseInt(prop.getProperty("QUORUM"));
-            int minimumTransactions = Integer.parseInt(prop.getProperty("MINIMUM_TRANSACTIONS"));
-            int debugLevel = Integer.parseInt(prop.getProperty("DEBUG_LEVEL"));
-            String use = prop.getProperty("USE");
-
-
+            Config configValues = new utils.Config();
 
             /* List of node objects for the launcher to start*/
             ArrayList<Node> nodes = new ArrayList<Node>();
@@ -60,10 +47,9 @@ public class NetworkLauncher {
                 timedWaitDelay = Integer.parseInt(args[1]);
             }
 
-            for (int i = startingPort; i < startingPort + numNodes; i++) {
-                nodes.add(new Node(use, i, maxConnections, minConnections, numNodes, quorumSize, minimumTransactions, debugLevel));
+            for (int i = configValues.getStartingPort(); i < configValues.getStartingPort() + configValues.getNumNodes(); i++) {
+                nodes.add(new Node(configValues, i));
             }
-
 
             try {
                 Thread.sleep(timedWaitDelay);
@@ -90,10 +76,6 @@ public class NetworkLauncher {
             NetworkLauncher n = new NetworkLauncher();
             n.startNetworkClients(globalPeers, nodes); // Begins network connections
 
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
         } catch (NumberFormatException e){
             System.out.println("Error: args formatted incorrect" + e);
             System.out.println(usage);
