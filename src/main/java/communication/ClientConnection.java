@@ -11,6 +11,8 @@ import java.util.ArrayList;
 
 import communication.*;
 import communication.messaging.Message;
+import communication.messaging.Messager;
+import communication.messaging.Message.Request;
 
 /**
  * Attempts to establish bidirectional connection to specified amount of peers
@@ -31,35 +33,18 @@ public class ClientConnection extends Thread {
                 if (node.getLocalPeers().size() >= node.getMaxPeers()){
                     break;
                 }
-                try {
-                    if (node.eligibleConnection(address, false)) {
-                        Socket s = new Socket(address.getHost(), address.getPort());
-                        InputStream in = s.getInputStream();
-                        ObjectInputStream oin = new ObjectInputStream(in);
-                        OutputStream out = s.getOutputStream();
-                        ObjectOutputStream oout = new ObjectOutputStream(out);
-
-                        Message message = new Message(Message.Request.REQUEST_CONNECTION, node.getAddress());
-                        oout.writeObject(message);
-                        oout.flush();
-                        Message messageReceived = (Message) oin.readObject();
-
-                        if (messageReceived.getRequest().equals(Message.Request.ACCEPT_CONNECTION)) {
-                            node.establishConnection(address);
-                            if (node.getLocalPeers().size() == node.getMinConnections()) {
-                                return;
-                            }
+                if (node.eligibleConnection(address, false)) {                        
+                    Message messageReceived = Messager.sendTwoWayMessage(address, new Message(Request.REQUEST_CONNECTION, node.getAddress()), node.getAddress());
+                    if (messageReceived.getRequest().equals(Message.Request.ACCEPT_CONNECTION)) {
+                        node.establishConnection(address);
+                        if (node.getLocalPeers().size() == node.getMinConnections()) {
+                            return;
                         }
-                        s.close();
                     }
-                } catch (ConnectException e0) {
-
-                } catch (IOException e1) {
-                    System.out.println(e1);
-                } catch (ClassNotFoundException e2) {
-                    System.out.println(e2);
                 }
             }
         }
     }
+
+    
 }
