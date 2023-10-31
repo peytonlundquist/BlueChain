@@ -104,6 +104,8 @@ public class Node  {
     public ArrayList<Address> getLocalPeers(){return this.localPeers;}
     public HashMap<String, Transaction> getMempool(){return this.mempool;}
     public LinkedList<Block> getBlockchain(){return blockchain;}
+    public LockManager getLockManager(){return lockManager;}
+
 
     /**
      * Initializes blockchain
@@ -124,35 +126,7 @@ public class Node  {
         }
     }
 
-    /**
-     * Determines if a connection is eligible
-     * @param address Address to verify
-     * @param connectIfEligible Connect to address if it is eligible
-     * @return True if eligible, otherwise false
-     */
-    public boolean eligibleConnection(Address address, boolean connectIfEligible){
-        synchronized(lockManager.getLock("lock")) {
-            if (localPeers.size() < configValues.getMaxConnections() - 1 && (!address.equals(this.getAddress()) && !containsAddress(localPeers, address))) {
-                if(connectIfEligible){
-                    establishConnection(address);
-                }
-                return true;
-            }
-            return false;
-        }
-    }
-
-    /**
-     * Add a connection to our dynamic list of peers to speak with
-     * @param address
-     */
-    public void establishConnection(Address address){
-        synchronized (lockManager.getLock("lock")){
-            localPeers.add(address);
-        }
-    }
-
-    /**
+     /**
      * Iterate through a list of peers and attempt to establish a mutual connection
      * with a specified amount of nodes
      * @param globalPeers
@@ -178,18 +152,6 @@ public class Node  {
             throw new RuntimeException(e);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
-        }
-    }
-
-    public Address removeAddress(Address address){
-        synchronized (lockManager.getLock("lock")){
-            for (Address existingAddress : localPeers) {
-                if (existingAddress.equals(address)) {
-                    localPeers.remove(address);
-                    return address;
-                }
-            }
-            return null;
         }
     }
 

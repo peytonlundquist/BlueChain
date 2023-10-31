@@ -2,6 +2,7 @@ package communication;
 
 import node.Node;
 import utils.Address;
+import utils.Utils;
 
 import java.io.*;
 import java.net.Socket;
@@ -53,7 +54,7 @@ public class ServerConnection extends Thread {
         switch(incomingMessage.getRequest()){
             case REQUEST_CONNECTION:
                 Address address = (Address) incomingMessage.getMetadata();
-                if (node.eligibleConnection(address, true)) {
+                if (Utils.eligibleConnection(node, address, true)) {
                     outgoingMessage = new Message(Message.Request.ACCEPT_CONNECTION, node.getAddress());
                     oout.writeObject(outgoingMessage);
                     oout.flush();

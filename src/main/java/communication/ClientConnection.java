@@ -1,15 +1,9 @@
 package communication;
 
 import node.Node;
-import utils.Address;
-
-import java.io.*;
-import java.net.ConnectException;
-import java.net.Socket;
+import utils.*;
 import java.net.SocketException;
 import java.util.ArrayList;
-
-import communication.*;
 import communication.messaging.Message;
 import communication.messaging.Messager;
 import communication.messaging.Message.Request;
@@ -33,10 +27,10 @@ public class ClientConnection extends Thread {
                 if (node.getLocalPeers().size() >= node.getMaxPeers()){
                     break;
                 }
-                if (node.eligibleConnection(address, false)) {                        
+                if (Utils.eligibleConnection(node, address, false)) {                        
                     Message messageReceived = Messager.sendTwoWayMessage(address, new Message(Request.REQUEST_CONNECTION, node.getAddress()), node.getAddress());
                     if (messageReceived.getRequest().equals(Message.Request.ACCEPT_CONNECTION)) {
-                        node.establishConnection(address);
+                        Utils.establishConnection(node, address);
                         if (node.getLocalPeers().size() == node.getMinConnections()) {
                             return;
                         }
@@ -45,6 +39,4 @@ public class ClientConnection extends Thread {
             }
         }
     }
-
-    
 }
