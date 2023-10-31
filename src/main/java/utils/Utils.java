@@ -11,6 +11,7 @@ import java.util.Set;
 
 import blockchain.Block;
 import blockchain.Transaction;
+import node.Node;
 
 public class Utils {
 
@@ -89,4 +90,45 @@ public class Utils {
         }
         return false;
     }
+
+    /**
+     * Determines if a connection is eligible
+     * @param address Address to verify
+     * @param connectIfEligible Connect to address if it is eligible
+     * @return True if eligible, otherwise false
+     */
+    public static boolean eligibleConnection(Node node ,Address address, boolean connectIfEligible){
+        synchronized(node.getLockManager().getLock("lock")) {
+            if (node.getLocalPeers().size() < node.getMaxPeers() - 1 && (!address.equals(node.getAddress()) && !Utils.containsAddress(node.getLocalPeers(), address))) {
+                if(connectIfEligible){
+                    establishConnection(node ,address);
+                }
+                return true;
+            }
+            return false;
+        }
+    }
+
+    /**
+     * Add a connection to our dynamic list of peers to speak with
+     * @param address
+     */
+    public static void establishConnection(Node node, Address address){
+        synchronized (node.getLockManager().getLock("lock")){
+            node.getLocalPeers().add(address);
+        }
+    }
+
+    public Address removeAddress(Node node, Address address){
+        synchronized (node.getLockManager().getLock("lock")){
+            for (Address existingAddress : node.getLocalPeers()) {
+                if (existingAddress.equals(address)) {
+                    node.getLocalPeers().remove(address);
+                    return address;
+                }
+            }
+            return null;
+        }
+    }
+
 }
