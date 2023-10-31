@@ -54,16 +54,16 @@ public class Node  {
         this.configValues = configValues;
 
         /* Locks for Multithreading */
-        lockManager = new LockManager();
         Set<String> locks = new HashSet<>(Arrays.asList("lock", "quorumLock", "memPoolLock", "quorumReadyVotesLock", 
                                             "memPoolRoundsLock", "sigRoundsLock","blockLock", "accountsLock", "stateLock"));
-        lockManager.addLocks(locks);
+        lockManager = new LockManager(locks);
+        stateManager = new StateManager();
 
 
         /* Multithreaded Counters for Stateful Servant */
         memPoolRounds = 0;
         quorumReadyVotes = 0;
-        state = 0;
+        stateManager.stateChangeRequest(0);
 
         InetAddress ip;
 
@@ -162,13 +162,7 @@ public class Node  {
     }
 
     public void addTransaction(Transaction transaction){
-        while(state != 0){
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
+        stateManager.waitForState(0);
         verifyTransaction(transaction);
     }
 
@@ -220,8 +214,7 @@ public class Node  {
 
     //Reconcile blocks
     public void sendQuorumReady(){
-        //state = 1;
-        stateChangeRequest(1);
+        stateManager.stateChangeRequest(1);
         quorumSigs = new ArrayList<>();
         Block currentBlock = blockchain.getLast();
         ArrayList<Address> quorum = deriveQuorum(currentBlock, 0);
@@ -272,13 +265,7 @@ public class Node  {
     //Reconcile blocks
     public void receiveQuorumReady(ObjectOutputStream oout, ObjectInputStream oin){
         synchronized (lockManager.getLock("quorumReadyVotesLock")){
-            while(state != 1){
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
+            stateManager.waitForState(1);
 
             Block currentBlock = blockchain.getLast();
             ArrayList<Address> quorum = deriveQuorum(currentBlock, 0);
@@ -321,7 +308,7 @@ public class Node  {
 
     public void sendMempoolHashes() {
         synchronized (lockManager.getLock("memPoolLock")){
-            stateChangeRequest(2);
+            stateManager.stateChangeRequest(2);
 
             if(configValues.getDebugLevel() == 1) System.out.println("Node " + myAddress.getPort() + ": sendMempoolHashes invoked");
             
@@ -358,14 +345,7 @@ public class Node  {
     }
 
     public void receiveMempool(Set<String> keys, ObjectOutputStream oout, ObjectInputStream oin) {
-        while(state != 2){
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-
+        stateManager.waitForState(2);
         resolveMempool(keys, oout, oin);
     }
 
@@ -415,7 +395,7 @@ public class Node  {
     public void constructBlock(){
         synchronized(lockManager.getLock("memPoolLock")){
             if(configValues.getDebugLevel() == 1) System.out.println("Node " + myAddress.getPort() + ": constructBlock invoked");
-            stateChangeRequest(3);
+            stateManager.stateChangeRequest(3);
             
             /* Make sure compiled transactions don't conflict */
             HashMap<String, Transaction> blockTransactions = new HashMap<>();
@@ -483,13 +463,7 @@ public class Node  {
         synchronized (lockManager.getLock("sigRoundsLock")){
             if(configValues.getDebugLevel() == 1) { System.out.println("Node " + myAddress.getPort() + ": 1st part receiveQuorumSignature invoked. state: " + state);}
 
-            while(state != 3){
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
+            stateManager.waitForState(3);
 
             ArrayList<Address> quorum = deriveQuorum(blockchain.getLast(), 0);
 
@@ -530,8 +504,7 @@ public class Node  {
 
             if (configValues.getDebugLevel() == 1) {System.out.println("Node " + myAddress.getPort() + ": tallyQuorumSigs invoked");}
 
-            //state = 4;
-            stateChangeRequest(4);
+            stateManager.stateChangeRequest(4);
             ArrayList<Address> quorum = deriveQuorum(blockchain.getLast(), 0);
 
             if(!inQuorum()){
@@ -607,7 +580,6 @@ public class Node  {
 
     public void sendSkeleton(){
         synchronized (lockManager.getLock("lock")){
-            //state = 0;
 
             if(configValues.getDebugLevel() == 1) {
                 System.out.println("Node " + myAddress.getPort() + ": sendSkeleton invoked. qSigs " + quorumSigs);
@@ -639,14 +611,7 @@ public class Node  {
     }
 
     public void receiveSkeleton(BlockSkeleton blockSkeleton){
-        while(state != 0){
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-
+        stateManager.waitForState(0);
         validateSkeleton(blockSkeleton);
     }
 
@@ -738,19 +703,12 @@ public class Node  {
         }
     }
 
-    private void stateChangeRequest(int statetoChange){
-        synchronized(lockManager.getLock("stateLock")){
-            state = statetoChange;
-        }
-    }
-
     /**
      * Adds a block
      * @param block Block to add
      */
     public void addBlock(Block block){
-        stateChangeRequest(0);
-        // state = 0;
+        stateManager.stateChangeRequest(0);
         
         HashMap<String, Transaction> txMap = block.getTxList();
         HashSet<String> keys = new HashSet<>(txMap.keySet());
@@ -953,9 +911,8 @@ public class Node  {
     }
 
     private LockManager lockManager;
-    private int quorumReadyVotes, memPoolRounds;
-    private ArrayList<Address> globalPeers;
-    private ArrayList<Address> localPeers;
+    private int quorumReadyVotes, memPoolRounds, state;
+    private ArrayList<Address> globalPeers, localPeers;
     private HashMap<String, Transaction> mempool;
     private HashMap<String, Integer> accounts;
     private ArrayList<BlockSignature> quorumSigs;
@@ -965,5 +922,5 @@ public class Node  {
     private Block quorumBlock;
     private PrivateKey privateKey;
     private Config configValues;
-    private int state;
+    private StateManager stateManager;
 }
