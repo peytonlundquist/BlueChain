@@ -163,11 +163,6 @@ public class Node  {
 
     public void addTransaction(Transaction transaction){
         stateManager.waitForState(0);
-        verifyTransaction(transaction);
-    }
-
-
-    public void verifyTransaction(Transaction transaction){
         synchronized(lockManager.getLock("memPoolLock")){
             if(Utils.containsTransactionInMap(transaction, mempool)) return;
 
@@ -264,8 +259,8 @@ public class Node  {
 
     //Reconcile blocks
     public void receiveQuorumReady(ObjectOutputStream oout, ObjectInputStream oin){
+        stateManager.waitForState(1);
         synchronized (lockManager.getLock("quorumReadyVotesLock")){
-            stateManager.waitForState(1);
 
             Block currentBlock = blockchain.getLast();
             ArrayList<Address> quorum = deriveQuorum(currentBlock, 0);
@@ -346,11 +341,6 @@ public class Node  {
 
     public void receiveMempool(Set<String> keys, ObjectOutputStream oout, ObjectInputStream oin) {
         stateManager.waitForState(2);
-        resolveMempool(keys, oout, oin);
-    }
-
-
-    public void resolveMempool(Set<String> keys, ObjectOutputStream oout, ObjectInputStream oin) {
         synchronized(lockManager.getLock("memPoolRoundsLock")){
             if(configValues.getDebugLevel() == 1) System.out.println("Node " + myAddress.getPort() + ": receiveMempool invoked"); 
             ArrayList<Address> quorum = deriveQuorum(blockchain.getLast(), 0);
@@ -460,10 +450,9 @@ public class Node  {
     }
 
     public void receiveQuorumSignature(BlockSignature signature){
+        stateManager.waitForState(3);
         synchronized (lockManager.getLock("sigRoundsLock")){
             if(configValues.getDebugLevel() == 1) { System.out.println("Node " + myAddress.getPort() + ": 1st part receiveQuorumSignature invoked. state: " + state);}
-
-            stateManager.waitForState(3);
 
             ArrayList<Address> quorum = deriveQuorum(blockchain.getLast(), 0);
 
@@ -612,10 +601,6 @@ public class Node  {
 
     public void receiveSkeleton(BlockSkeleton blockSkeleton){
         stateManager.waitForState(0);
-        validateSkeleton(blockSkeleton);
-    }
-
-    public void validateSkeleton(BlockSkeleton blockSkeleton){
         synchronized (lockManager.getLock("blockLock")){
             Block currentBlock = blockchain.getLast();
 
