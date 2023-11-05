@@ -5,12 +5,29 @@ import java.util.HashSet;
 
 import blockchain.Transaction;
 import blockchain.TransactionValidator;
+import communication.messaging.Message;
+import communication.messaging.Messager;
+import utils.Address;
 import utils.DSA;
+import utils.LockManager;
+import utils.merkletree.MerkleTree;
 
 /**
  * An implementation of a TransactionValidator for the Defi use case
  */
 public class DefiTransactionValidator extends TransactionValidator{
+
+    private HashMap<String, Integer> accounts;
+    private HashMap<String, Address> accountsToAlert;
+    private LockManager lockManager;
+    
+
+    public DefiTransactionValidator(){
+        accounts = new HashMap<String, Integer>();
+        accountsToAlert = new HashMap<>();
+        lockManager = new LockManager();
+        lockManager.addLock("accountsLock");
+    }
     
     /**
      * Validates a transaction throughout blockchain and mempool
@@ -108,8 +125,41 @@ public class DefiTransactionValidator extends TransactionValidator{
     @Override
     public boolean validate(Object[] objects) {
         Transaction transaction = (Transaction) objects[0];
-        HashMap<String, Integer> accounts = (HashMap<String, Integer>) objects[1];
-        HashMap<String, Transaction> assumedTransactions = (HashMap<String, Transaction>) objects[2];
+        HashMap<String, Transaction> assumedTransactions = (HashMap<String, Transaction>) objects[1];
         return isValid(transaction, accounts, assumedTransactions);
+    }
+
+    public void alertWallet(HashMap<String, Transaction> txMap, MerkleTree mt, Address myAddress){
+        HashMap<String, DefiTransaction> defiTxMap = new HashMap<>();
+        HashSet<String> keys = new HashSet<>(txMap.keySet());
+
+        for(String key : keys){
+            DefiTransaction transactionInList = (DefiTransaction) txMap.get(key);
+            defiTxMap.put(key, transactionInList);
+        }
+
+        DefiTransactionValidator.updateAccounts(defiTxMap, accounts);
+
+        synchronized(lockManager.getLock("accountsLock")){
+            for(String account : accountsToAlert.keySet()){
+                // System.out.println(account);
+                for(String transHash : txMap.keySet()){
+                    DefiTransaction dtx = (DefiTransaction) txMap.get(transHash);
+                    // System.out.println(dtx.getFrom() + "---" + dtx.getTo());
+                    if(dtx.getFrom().equals(account) ||
+                    dtx.getTo().equals(account)){
+                        Messager.sendOneWayMessage(accountsToAlert.get(account), 
+                        new Message(Message.Request.ALERT_WALLET, mt.getProof(txMap.get(transHash))), myAddress);
+                        //System.out.println("sent update");
+                    }
+                }
+            }
+        }
+    }
+
+    public void addAccountsToAlert(String accountPubKey, Address address){
+        synchronized(lockManager.getLock("accountsLock")){
+            accountsToAlert.put(accountPubKey, address);
+        }
     }
 }

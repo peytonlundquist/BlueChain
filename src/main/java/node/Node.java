@@ -79,7 +79,16 @@ public class Node  {
         myAddress = new Address(port, host);
         localPeers = new ArrayList<>();
         mempool = new HashMap<>();
-        accountsToAlert = new HashMap<>();
+
+        /* Make tx validator */
+        if(configValues.getUse().equals("Defi")){
+            tv = new DefiTransactionValidator();
+        }else if(configValues.getUse().equals("HC")){
+            // Room to enable another configValues.getUse() case 
+            tv = new HCTransactionValidator();
+        }else{
+            tv = new DefiTransactionValidator();
+        }
 
         /* Public-Private (DSA) Keys*/
         KeyPair keys = generateDSAKeyPair();
@@ -114,7 +123,6 @@ public class Node  {
         blockchain = new LinkedList<Block>();
 
         if(configValues.getUse().equals("Defi")){
-            accounts = new HashMap<>();
             // DefiTransaction genesisTransaction = new DefiTransaction("Bob", "Alice", 100, "0");
             // HashMap<String, Transaction> genesisTransactions = new HashMap<String, Transaction>();
             // String hashOfTransaction = "";
@@ -181,18 +189,14 @@ public class Node  {
                 }
             }
 
-            TransactionValidator tv;
             Object[] validatorObjects = new Object[3];
 
-            if(configValues.getUse().equals("Defi")){
-                tv = new DefiTransactionValidator();
-            
+            if(configValues.getUse().equals("Defi")){            
                 validatorObjects[0] = transaction;
-                validatorObjects[1] = accounts;
-                validatorObjects[2] = mempool;
+                validatorObjects[1] = mempool;
 
             }else{
-                tv = new HCTransactionValidator(); // To be changed to another configValues.getUse() case in the future
+                //tv = new HCTransactionValidator(); // To be changed to another configValues.getUse() case in the future
             }
 
             if(!tv.validate(validatorObjects)){
@@ -249,7 +253,8 @@ public class Node  {
 
                     mp.getSocket().close();
                 } catch (IOException e) {
-                    System.out.println("Node " + myAddress.getPort() + ": sendQuorumReady Received IO Exception from node " + quorumAddress.getPort());
+                    System.out.println("Node " + myAddress.getPort() + ": sendQuorumReady Received IO Exception from node " + quorumAddress.getPort() + "Exception " 
+                    + e);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -390,23 +395,14 @@ public class Node  {
             /* Make sure compiled transactions don't conflict */
             HashMap<String, Transaction> blockTransactions = new HashMap<>();
 
-            TransactionValidator tv;
-            if(configValues.getUse().equals("Defi")){
-                tv = new DefiTransactionValidator();
-            }else if(configValues.getUse().equals("HC")){
-                // Room to enable another configValues.getUse() case 
-                tv = new HCTransactionValidator();
-            }else{
-                tv = new DefiTransactionValidator();
-            }
+            
             
             for(String key : mempool.keySet()){
                 Transaction transaction = mempool.get(key);
                 Object[] validatorObjects = new Object[3];
                 if(configValues.getUse().equals("Defi")){
                     validatorObjects[0] = transaction;
-                    validatorObjects[1] = accounts;
-                    validatorObjects[2] = blockTransactions;
+                    validatorObjects[1] = blockTransactions;
                 }else if(configValues.getUse().equals("HC")){
                     // Validator objects will change according to another configValues.getUse() case
                 }
@@ -696,7 +692,6 @@ public class Node  {
         stateManager.stateChangeRequest(0);
         
         HashMap<String, Transaction> txMap = block.getTxList();
-        HashSet<String> keys = new HashSet<>(txMap.keySet());
         ArrayList<Transaction> txList = new ArrayList<>();
         for(String hash : txMap.keySet()){
             txList.add(txMap.get(hash));
@@ -708,32 +703,12 @@ public class Node  {
         blockchain.add(block);
         System.out.println("Node " + myAddress.getPort() + ": " + chainString(blockchain) + " MP: " + mempool.values());
 
+
         if(configValues.getUse().equals("Defi")){
-            HashMap<String, DefiTransaction> defiTxMap = new HashMap<>();
-
-            for(String key : keys){
-                DefiTransaction transactionInList = (DefiTransaction) txMap.get(key);
-                defiTxMap.put(key, transactionInList);
-            }
-
-            DefiTransactionValidator.updateAccounts(defiTxMap, accounts);
-
-            synchronized(lockManager.getLock("accountsLock")){
-                for(String account : accountsToAlert.keySet()){
-                    // System.out.println(account);
-                    for(String transHash : txMap.keySet()){
-                        DefiTransaction dtx = (DefiTransaction) txMap.get(transHash);
-                        // System.out.println(dtx.getFrom() + "---" + dtx.getTo());
-                        if(dtx.getFrom().equals(account) ||
-                        dtx.getTo().equals(account)){
-                            Messager.sendOneWayMessage(accountsToAlert.get(account), 
-                            new Message(Message.Request.ALERT_WALLET, mt.getProof(txMap.get(transHash))), myAddress);
-                            //System.out.println("sent update");
-                        }
-                    }
-                }
-            }
+            DefiTransactionValidator dtv = (DefiTransactionValidator) tv;
+            dtv.alertWallet(txMap, mt, myAddress);
         }
+
 
         ArrayList<Address> quorum = deriveQuorum(blockchain.getLast(), 0);
 
@@ -819,15 +794,6 @@ public class Node  {
         return null;
     }
 
-    private HashMap<String, Address> accountsToAlert;
-
-    public void alertWallet(String accountPubKey, Address address){
-        synchronized(lockManager.getLock("accountsLock")){
-            accountsToAlert.put(accountPubKey, address);
-        }
-    }
-
-
     /**
      * Acceptor is a thread responsible for maintaining the server socket by
      * accepting incoming connection requests, and starting a new ServerConnection
@@ -846,7 +812,7 @@ public class Node  {
             while (true) {
                 try {
                     client = ss.accept();
-                    new ServerConnection(client, node).start();
+                    new ServerConnection(client, node, tv).start();
                 } catch (IOException e) {
                     System.out.println(e);
                     throw new RuntimeException(e);
@@ -899,7 +865,6 @@ public class Node  {
     private int quorumReadyVotes, memPoolRounds, state;
     private ArrayList<Address> globalPeers, localPeers;
     private HashMap<String, Transaction> mempool;
-    private HashMap<String, Integer> accounts;
     private ArrayList<BlockSignature> quorumSigs;
     private LinkedList<Block> blockchain;
     private final Address myAddress;
@@ -908,4 +873,6 @@ public class Node  {
     private PrivateKey privateKey;
     private Config configValues;
     private StateManager stateManager;
+    private TransactionValidator tv;
+
 }

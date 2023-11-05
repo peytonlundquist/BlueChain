@@ -15,7 +15,9 @@ import blockchain.Block;
 import blockchain.BlockSignature;
 import blockchain.BlockSkeleton;
 import blockchain.Transaction;
+import blockchain.TransactionValidator;
 import blockchain.usecases.defi.DefiTransaction;
+import blockchain.usecases.defi.DefiTransactionValidator;
 import communication.*;
 import communication.messaging.Message;
 
@@ -25,10 +27,12 @@ import communication.messaging.Message;
 public class ServerConnection extends Thread {
     private final Socket client;
     private final Node node;
+    private TransactionValidator tv;
 
-    public ServerConnection(Socket client, Node node) throws SocketException {
+    public ServerConnection(Socket client, Node node, TransactionValidator tv) throws SocketException {
         this.client = client;
         this.node = node;
+        this.tv = tv;
         setPriority(NORM_PRIORITY - 1);
     }
 
@@ -98,7 +102,8 @@ public class ServerConnection extends Thread {
                 break;
             case ALERT_WALLET:
                 Object[] data = (Object[]) incomingMessage.getMetadata();
-                node.alertWallet((String) data[0], (Address) data[1]);
+                DefiTransactionValidator dtv = (DefiTransactionValidator) tv;
+                dtv.addAccountsToAlert((String) data[0], (Address) data[1]);
                 break;
         }
     }
