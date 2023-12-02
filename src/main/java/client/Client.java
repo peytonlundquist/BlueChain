@@ -2,10 +2,11 @@ package client;
 
 import java.io.*;
 import java.net.*;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Properties; 
 import java.util.regex.Pattern;
+
+import com.github.lalyos.jfiglet.FigletFont;
 
 import communication.messaging.Message;
 import utils.Address;
@@ -111,7 +112,8 @@ public class Client {
 
     public static void main(String[] args) throws IOException{
 
-        System.out.println("============ BlueChain Wallet =============");
+        String asciiArt1 = FigletFont.convertOneLine("BlueChain Client");
+        System.out.println(asciiArt1);
 
         BufferedReader mainReader = new BufferedReader(new InputStreamReader(System.in));
  

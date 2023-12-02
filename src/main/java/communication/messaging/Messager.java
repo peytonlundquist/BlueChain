@@ -19,7 +19,7 @@ public class Messager{
             oout.flush();
             s.close();
         } catch (IOException e) {
-            System.out.println("Node " + myAddress.getPort() + ": sendOneWayMessage: Received IO Exception from node " + address.getPort());
+            System.out.println("Node " + myAddress.getPort() + ": sendOneWayMessage: Received IO Exception from node " + address.getPort() + " Exception " + e);
         }
     }
 

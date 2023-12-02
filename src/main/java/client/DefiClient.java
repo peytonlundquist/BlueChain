@@ -14,6 +14,7 @@ import blockchain.usecases.defi.Account;
 import blockchain.usecases.defi.DefiTransaction;
 import communication.messaging.Message;
 import communication.messaging.Messager;
+import me.tongfei.progressbar.ProgressBar;
 import utils.Address;
 import utils.DSA;
 import utils.merkletree.MerkleTreeProof;
@@ -243,19 +244,27 @@ public class DefiClient {
         System.out.println("Beginning Test");
 
         try {
+            
             testAddAccount("Satoshi");
             int expectedBalance = j * 10;
 
-            System.out.print("[");
+            ProgressBar pb = new ProgressBar("Test", j); // name, initial max
+            // Use ProgressBar("Test", 100, ProgressBarStyle.ASCII) if you want ASCII output style
+            pb.start(); // the progress bar starts timing
+            // Or you could combine these two lines like this:
+
+            pb.setExtraMessage("Testing..."); // Set extra message to display at the end of the bar
+            
+
             for(int i = 0; i < j; i++){
                     testAddAccount(String.valueOf(i));
-                    Thread.sleep(2000);
+                    Thread.sleep(500);
                     testSubmitTransaction(String.valueOf(i), DSA.bytesToString(accounts.get(0).getKeyPair().getPublic().getEncoded()), 10);
-                    System.out.print("#");
+                    pb.step(); 
             }
-            System.out.println("]");
+            pb.stop(); // stops the progress bar
             System.out.println("Sleeping wallet for last minute updates...");
-            Thread.sleep(50000);
+            Thread.sleep(100000);
             if(accounts.get(0).getBalance() == expectedBalance){
                 System.out.println("\n*********************Test passed.*********************");
             }else{
