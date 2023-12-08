@@ -87,7 +87,7 @@ public class ServerConnection extends Thread {
                 break;
             case RECEIVE_MEMPOOL:
                 Set<String> memPoolHashes = (HashSet<String>) incomingMessage.getMetadata();
-                node.receiveMempool(memPoolHashes, oout, oin);
+                node.receiveMempoolHashes(memPoolHashes, oout, oin);
                 break;
             case QUORUM_READY:
                 node.receiveQuorumReady(oout, oin);
