@@ -1,16 +1,8 @@
 package node;
 
-import node.blockchain.*;
-import node.blockchain.defi.DefiBlock;
-import node.blockchain.defi.DefiTransaction;
-import node.blockchain.defi.DefiTransactionValidator;
-import node.blockchain.merkletree.MerkleTree;
-import node.communication.*;
-import node.communication.messaging.Message;
-import node.communication.messaging.Messager;
-import node.communication.messaging.MessagerPack;
-import node.communication.utils.Hashing;
-import node.communication.utils.Utils;
+import static utils.DSA.*;
+import static utils.Hashing.*;
+import static utils.Utils.*;
 
 import java.io.*;
 import java.math.BigInteger;
@@ -20,10 +12,13 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.util.*;
 
-import static node.communication.utils.DSA.*;
-import static node.communication.utils.Hashing.getBlockHash;
-import static node.communication.utils.Hashing.getSHAString;
-import static node.communication.utils.Utils.*;
+import blockchain.*;
+import blockchain.usecases.defi.*;
+import blockchain.usecases.healthcare.*;
+import communication.*;
+import communication.messaging.*;
+import utils.*;
+import utils.merkletree.MerkleTree;
 
 
 /**
@@ -53,31 +48,22 @@ public class Node  {
      * @param maxPeers           Maximum amount of peer connections to maintain
      * @param initialConnections How many nodes we want to attempt to connect to on start
      */
-    public Node(String use, int port, int maxPeers, int initialConnections, int numNodes, int quorumSize, int minimumTransaction, int debugLevel) {
+    public Node(Config configValues, int port) {
 
         /* Configurations */
-        USE = use;
-        MIN_CONNECTIONS = initialConnections;
-        MAX_PEERS = maxPeers;
-        NUM_NODES = numNodes;
-        QUORUM_SIZE = quorumSize;
-        DEBUG_LEVEL = debugLevel;
-        MINIMUM_TRANSACTIONS = minimumTransaction;
+        this.configValues = configValues;
 
         /* Locks for Multithreading */
-        lock =  new Object();
-        quorumLock = new Object();
-        quorumReadyVotesLock = new Object();
-        memPoolRoundsLock = new Object();
-        sigRoundsLock = new Object();
-        accountsLock = new Object();
-        memPoolLock = new Object();
-        blockLock = new Object();
+        Set<String> locks = new HashSet<>(Arrays.asList("lock", "quorumLock", "memPoolLock", "quorumReadyVotesLock", 
+                                            "memPoolRoundsLock", "sigRoundsLock","blockLock", "accountsLock", "stateLock"));
+        lockManager = new LockManager(locks);
+        stateManager = new StateManager();
+
 
         /* Multithreaded Counters for Stateful Servant */
         memPoolRounds = 0;
         quorumReadyVotes = 0;
-        state = 0;
+        stateManager.stateChangeRequest(0);
 
         InetAddress ip;
 
@@ -93,7 +79,16 @@ public class Node  {
         myAddress = new Address(port, host);
         localPeers = new ArrayList<>();
         mempool = new HashMap<>();
-        accountsToAlert = new HashMap<>();
+
+        /* Make tx validator */
+        if(configValues.getUse().equals("Defi")){
+            tv = new DefiTransactionValidator();
+        }else if(configValues.getUse().equals("HC")){
+            // Room to enable another configValues.getUse() case 
+            tv = new HCTransactionValidator();
+        }else{
+            tv = new DefiTransactionValidator();
+        }
 
         /* Public-Private (DSA) Keys*/
         KeyPair keys = generateDSAKeyPair();
@@ -112,12 +107,14 @@ public class Node  {
     }
 
     /* A collection of getters */
-    public int getMaxPeers(){return this.MAX_PEERS;}
-    public int getMinConnections(){return this.MIN_CONNECTIONS;}
+    public int getMaxPeers(){return configValues.getMaxConnections();}
+    public int getMinConnections(){return configValues.getMinConnections();}
     public Address getAddress(){return this.myAddress;}
     public ArrayList<Address> getLocalPeers(){return this.localPeers;}
     public HashMap<String, Transaction> getMempool(){return this.mempool;}
     public LinkedList<Block> getBlockchain(){return blockchain;}
+    public LockManager getLockManager(){return lockManager;}
+
 
     /**
      * Initializes blockchain
@@ -125,48 +122,19 @@ public class Node  {
     public void initializeBlockchain(){
         blockchain = new LinkedList<Block>();
 
-        if(USE.equals("Defi")){
-            accounts = new HashMap<>();
+        if(configValues.getUse().equals("Defi")){
             // DefiTransaction genesisTransaction = new DefiTransaction("Bob", "Alice", 100, "0");
             // HashMap<String, Transaction> genesisTransactions = new HashMap<String, Transaction>();
             // String hashOfTransaction = "";
             // hashOfTransaction = getSHAString(genesisTransaction.toString());
             // genesisTransactions.put(hashOfTransaction, genesisTransaction);
             addBlock(new DefiBlock(new HashMap<String, Transaction>(), "000000", 0));
-        }else{
-
+        }else if(configValues.getUse().equals("HC")){
+            addBlock(new HCBlock(new HashMap<String, Transaction>(), "000000", 0));
         }
     }
 
-    /**
-     * Determines if a connection is eligible
-     * @param address Address to verify
-     * @param connectIfEligible Connect to address if it is eligible
-     * @return True if eligible, otherwise false
-     */
-    public boolean eligibleConnection(Address address, boolean connectIfEligible){
-        synchronized(lock) {
-            if (localPeers.size() < MAX_PEERS - 1 && (!address.equals(this.getAddress()) && !containsAddress(localPeers, address))) {
-                if(connectIfEligible){
-                    establishConnection(address);
-                }
-                return true;
-            }
-            return false;
-        }
-    }
-
-    /**
-     * Add a connection to our dynamic list of peers to speak with
-     * @param address
-     */
-    public void establishConnection(Address address){
-        synchronized (lock){
-            localPeers.add(address);
-        }
-    }
-
-    /**
+     /**
      * Iterate through a list of peers and attempt to establish a mutual connection
      * with a specified amount of nodes
      * @param globalPeers
@@ -195,43 +163,18 @@ public class Node  {
         }
     }
 
-    public Address removeAddress(Address address){
-        synchronized (lock){
-            for (Address existingAddress : localPeers) {
-                if (existingAddress.equals(address)) {
-                    localPeers.remove(address);
-                    return address;
-                }
-            }
-            return null;
-        }
-    }
-
     public void gossipTransaction(Transaction transaction){
-        synchronized (lock){
-            for(Address address : localPeers){
-                Messager.sendOneWayMessage(address, new Message(Message.Request.ADD_TRANSACTION, transaction), myAddress);
-            }
+        synchronized (lockManager.getLock("lock")){
+            Messager.sendOneWayMessageToGroup(new Message(Message.Request.ADD_TRANSACTION, transaction), localPeers, myAddress);
         }
     }
 
     public void addTransaction(Transaction transaction){
-        while(state != 0){
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        verifyTransaction(transaction);
-    }
-
-
-    public void verifyTransaction(Transaction transaction){
-        synchronized(memPoolLock){
+        stateManager.waitForState(0);
+        synchronized(lockManager.getLock("memPoolLock")){
             if(Utils.containsTransactionInMap(transaction, mempool)) return;
 
-            if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + ": verifyTransaction: " + 
+            if(configValues.getDebugLevel() == 1){System.out.println("Node " + myAddress.getPort() + ": verifyTransaction: " + 
 
             transaction.getUID() + ", blockchain size: " + blockchain.size());}
             LinkedList<Block> clonedBlockchain = new LinkedList<>();
@@ -241,52 +184,47 @@ public class Node  {
             for(Block block : clonedBlockchain){
                 if(block.getTxList().containsKey(getSHAString(transaction.getUID()))){
                     // We have this transaction in a block
-                    if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + ": trans :" + transaction.getUID() + " found in prev block " + block.getBlockId());}
+                    if(configValues.getDebugLevel() == 1){System.out.println("Node " + myAddress.getPort() + ": trans :" + transaction.getUID() + " found in prev block " + block.getBlockId());}
                     return;
                 }
             }
 
-            TransactionValidator tv;
             Object[] validatorObjects = new Object[3];
 
-            if(USE.equals("Defi")){
-                tv = new DefiTransactionValidator();
-            
+            if(configValues.getUse().equals("Defi")){            
                 validatorObjects[0] = transaction;
-                validatorObjects[1] = accounts;
-                validatorObjects[2] = mempool;
+                validatorObjects[1] = mempool;
 
             }else{
-                tv = new DefiTransactionValidator(); // To be changed to another use case in the future
+                //tv = new HCTransactionValidator(); // To be changed to another configValues.getUse() case in the future
             }
 
             if(!tv.validate(validatorObjects)){
-                if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + "Transaction not valid");}
+                if(configValues.getDebugLevel() == 1){System.out.println("Node " + myAddress.getPort() + "Transaction not valid");}
                 return;
             }
 
             mempool.put(getSHAString(transaction.getUID()), transaction);
             gossipTransaction(transaction);
 
-            if(DEBUG_LEVEL == 1){System.out.println("Node " + myAddress.getPort() + ": Added transaction. MP:" + mempool.values());}
+            if(configValues.getDebugLevel() == 1){System.out.println("Node " + myAddress.getPort() + ": Added transaction. MP:" + mempool.values());}
         }         
     }
 
     //Reconcile blocks
     public void sendQuorumReady(){
-        //state = 1;
-        stateChangeRequest(1);
+        stateManager.stateChangeRequest(1);
         quorumSigs = new ArrayList<>();
         Block currentBlock = blockchain.getLast();
         ArrayList<Address> quorum = deriveQuorum(currentBlock, 0);
 
-        if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + " sent quorum is ready for q: " + quorum);
+        if(configValues.getDebugLevel() == 1) System.out.println("Node " + myAddress.getPort() + " sent quorum is ready for q: " + quorum);
 
         for(Address quorumAddress : quorum){
             if(!myAddress.equals(quorumAddress)) {
                 try {
                     Thread.sleep(2000);
-                    MessagerPack mp = Messager.sendInterestingMessage(quorumAddress, new Message(Message.Request.QUORUM_READY), myAddress);
+                    MessagerPack mp = Messager.sendComplexMessage(quorumAddress, new Message(Message.Request.QUORUM_READY), myAddress);
                     Message messageReceived = mp.getMessage();
                     Message reply = new Message(Message.Request.PING);
 
@@ -300,7 +238,7 @@ public class Node  {
                         }else if (blockId < currentBlock.getBlockId()){
                             // tell them they are behind
                             reply = new Message(Message.Request.RECONCILE_BLOCK, currentBlock.getBlockId());
-                            if(DEBUG_LEVEL == 1) {
+                            if(configValues.getDebugLevel() == 1) {
                                 System.out.println("Node " + myAddress.getPort() + ": sendQuorumReady RECONCILE");
                             }
                         }else if (blockId > currentBlock.getBlockId()){
@@ -315,7 +253,8 @@ public class Node  {
 
                     mp.getSocket().close();
                 } catch (IOException e) {
-                    System.out.println("Node " + myAddress.getPort() + ": sendQuorumReady Received IO Exception from node " + quorumAddress.getPort());
+                    System.out.println("Node " + myAddress.getPort() + ": sendQuorumReady Received IO Exception from node " + quorumAddress.getPort() + "Exception " 
+                    + e);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -325,24 +264,18 @@ public class Node  {
 
     //Reconcile blocks
     public void receiveQuorumReady(ObjectOutputStream oout, ObjectInputStream oin){
-        synchronized (quorumReadyVotesLock){
-            while(state != 1){
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
+        stateManager.waitForState(1);
+        synchronized (lockManager.getLock("quorumReadyVotesLock")){
 
             Block currentBlock = blockchain.getLast();
             ArrayList<Address> quorum = deriveQuorum(currentBlock, 0);
 
-            if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + ": receiveQuorumReady invoked for " + quorum );
+            if(configValues.getDebugLevel() == 1) System.out.println("Node " + myAddress.getPort() + ": receiveQuorumReady invoked for " + quorum );
 
             try {
 
                 if(!inQuorum()){
-                    if(DEBUG_LEVEL == 1) {
+                    if(configValues.getDebugLevel() == 1) {
                         System.out.println("Node " + myAddress.getPort() + ": not in quorum? q: " + quorum + " my addr: " + myAddress);
                     }
                     oout.writeObject(new Message(Message.Request.RECONCILE_BLOCK, new Object[]{currentBlock.getBlockId(), getBlockHash(currentBlock, 0)}));
@@ -374,10 +307,10 @@ public class Node  {
     }
 
     public void sendMempoolHashes() {
-        synchronized (memPoolLock){
-            stateChangeRequest(2);
+        synchronized (lockManager.getLock("memPoolLock")){
+            stateManager.stateChangeRequest(2);
 
-            if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + ": sendMempoolHashes invoked");
+            if(configValues.getDebugLevel() == 1) System.out.println("Node " + myAddress.getPort() + ": sendMempoolHashes invoked");
             
             HashSet<String> keys = new HashSet<String>(mempool.keySet());
             ArrayList<Address> quorum = deriveQuorum(blockchain.getLast(), 0);
@@ -385,17 +318,17 @@ public class Node  {
             for (Address quorumAddress : quorum) {
                 if (!myAddress.equals(quorumAddress)) {
                     try {
-                        MessagerPack mp = Messager.sendInterestingMessage(quorumAddress, new Message(Message.Request.RECEIVE_MEMPOOL, keys), myAddress);                        ;
+                        MessagerPack mp = Messager.sendComplexMessage(quorumAddress, new Message(Message.Request.RECEIVE_MEMPOOL, keys), myAddress);                        ;
                         Message messageReceived = mp.getMessage();
                         if(messageReceived.getRequest().name().equals("REQUEST_TRANSACTION")){
                             ArrayList<String> hashesRequested = (ArrayList<String>) messageReceived.getMetadata();
-                            if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + ": sendMempoolHashes: requested trans: " + hashesRequested);
+                            if(configValues.getDebugLevel() == 1) System.out.println("Node " + myAddress.getPort() + ": sendMempoolHashes: requested trans: " + hashesRequested);
                             ArrayList<Transaction> transactionsToSend = new ArrayList<>();
                             for(String hash : keys){
                                 if(mempool.containsKey(hash)){
                                     transactionsToSend.add(mempool.get(hash));
                                 }else{
-                                    if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + ": sendMempoolHashes: requested trans not in mempool. MP: " + mempool);
+                                    if(configValues.getDebugLevel() == 1) System.out.println("Node " + myAddress.getPort() + ": sendMempoolHashes: requested trans not in mempool. MP: " + mempool);
                                 }
                             }
                             mp.getOout().writeObject(new Message(Message.Request.RECEIVE_MEMPOOL, transactionsToSend));
@@ -412,21 +345,9 @@ public class Node  {
     }
 
     public void receiveMempool(Set<String> keys, ObjectOutputStream oout, ObjectInputStream oin) {
-        while(state != 2){
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-
-        resolveMempool(keys, oout, oin);
-    }
-
-
-    public void resolveMempool(Set<String> keys, ObjectOutputStream oout, ObjectInputStream oin) {
-        synchronized(memPoolRoundsLock){
-            if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + ": receiveMempool invoked"); 
+        stateManager.waitForState(2);
+        synchronized(lockManager.getLock("memPoolRoundsLock")){
+            if(configValues.getDebugLevel() == 1) System.out.println("Node " + myAddress.getPort() + ": receiveMempool invoked"); 
             ArrayList<Address> quorum = deriveQuorum(blockchain.getLast(), 0);
             ArrayList<String> keysAbsent = new ArrayList<>();
             for (String key : keys) {
@@ -439,7 +360,7 @@ public class Node  {
                     oout.writeObject(new Message(Message.Request.PING));
                     oout.flush();
                 } else {
-                    if(DEBUG_LEVEL == 1) {System.out.println("Node " + myAddress.getPort() + ": receiveMempool requesting transactions for: " + keysAbsent); }
+                    if(configValues.getDebugLevel() == 1) {System.out.println("Node " + myAddress.getPort() + ": receiveMempool requesting transactions for: " + keysAbsent); }
                     oout.writeObject(new Message(Message.Request.REQUEST_TRANSACTION, keysAbsent));
                     oout.flush();
                     Message message = (Message) oin.readObject();
@@ -447,7 +368,7 @@ public class Node  {
                     
                     for(Transaction transaction : transactionsReturned){
                         mempool.put(getSHAString(transaction.getUID()), transaction);
-                        if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + ": recieved transactions: " + keysAbsent);
+                        if(configValues.getDebugLevel() == 1) System.out.println("Node " + myAddress.getPort() + ": recieved transactions: " + keysAbsent);
                     }
                 }
             } catch (ClassNotFoundException e) {
@@ -458,7 +379,7 @@ public class Node  {
             }
 
             memPoolRounds++;
-            if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + ": receiveMempool invoked: mempoolRounds: " + memPoolRounds); 
+            if(configValues.getDebugLevel() == 1) System.out.println("Node " + myAddress.getPort() + ": receiveMempool invoked: mempoolRounds: " + memPoolRounds); 
             if(memPoolRounds == quorum.size() - 1){
                 memPoolRounds = 0;
                 constructBlock();
@@ -467,44 +388,37 @@ public class Node  {
     }
 
     public void constructBlock(){
-        synchronized(memPoolLock){
-            if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + ": constructBlock invoked");
-            stateChangeRequest(3);
+        synchronized(lockManager.getLock("memPoolLock")){
+            if(configValues.getDebugLevel() == 1) System.out.println("Node " + myAddress.getPort() + ": constructBlock invoked");
+            stateManager.stateChangeRequest(3);
             
             /* Make sure compiled transactions don't conflict */
             HashMap<String, Transaction> blockTransactions = new HashMap<>();
 
-            TransactionValidator tv;
-            if(USE.equals("Defi")){
-                tv = new DefiTransactionValidator();
-            }else{
-                // Room to enable another use case 
-                tv = new DefiTransactionValidator();
-            }
+            
             
             for(String key : mempool.keySet()){
                 Transaction transaction = mempool.get(key);
                 Object[] validatorObjects = new Object[3];
-                if(USE.equals("Defi")){
+                if(configValues.getUse().equals("Defi")){
                     validatorObjects[0] = transaction;
-                    validatorObjects[1] = accounts;
-                    validatorObjects[2] = blockTransactions;
-                }else{
-                    // Validator objects will change according to another use case
+                    validatorObjects[1] = blockTransactions;
+                }else if(configValues.getUse().equals("HC")){
+                    // Validator objects will change according to another configValues.getUse() case
                 }
                 tv.validate(validatorObjects);
                 blockTransactions.put(key, transaction);
             }
 
             try {
-                if(USE.equals("Defi")){
+                if(configValues.getUse().equals("Defi")){
                     quorumBlock = new DefiBlock(blockTransactions,
                         getBlockHash(blockchain.getLast(), 0),
                                 blockchain.size());
                 }else{
 
-                    // Room to enable another use case 
-                    quorumBlock = new DefiBlock(blockTransactions,
+                    // Room to enable another configValues.getUse() case 
+                    quorumBlock = new HCBlock(blockTransactions,
                         getBlockHash(blockchain.getLast(), 0),
                                 blockchain.size());
                 }
@@ -528,44 +442,37 @@ public class Node  {
         BlockSignature blockSignature = new BlockSignature(sig, blockHash, myAddress);
         sendOneWayMessageQuorum(new Message(Message.Request.RECEIVE_SIGNATURE, blockSignature));
 
-        if(DEBUG_LEVEL == 1) {System.out.println("Node " + myAddress.getPort() + ": sendSigOfBlockHash invoked for hash: " + blockHash.substring(0, 4));}
+        if(configValues.getDebugLevel() == 1) {System.out.println("Node " + myAddress.getPort() + ": sendSigOfBlockHash invoked for hash: " + blockHash.substring(0, 4));}
     }
 
     public void receiveQuorumSignature(BlockSignature signature){
-        synchronized (sigRoundsLock){
-            if(DEBUG_LEVEL == 1) { System.out.println("Node " + myAddress.getPort() + ": 1st part receiveQuorumSignature invoked. state: " + state);}
-
-            while(state != 3){
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
+        stateManager.waitForState(3);
+        synchronized (lockManager.getLock("sigRoundsLock")){
+            if(configValues.getDebugLevel() == 1) { System.out.println("Node " + myAddress.getPort() + ": 1st part receiveQuorumSignature invoked. state: " + state);}
 
             ArrayList<Address> quorum = deriveQuorum(blockchain.getLast(), 0);
 
             if(!containsAddress(quorum, signature.getAddress())){
-                if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + ": false sig from " + signature.getAddress());
+                if(configValues.getDebugLevel() == 1) System.out.println("Node " + myAddress.getPort() + ": false sig from " + signature.getAddress());
                 return;
             }
 
             if(!inQuorum()){
-                if(DEBUG_LEVEL == 1) System.out.println("Node " + myAddress.getPort() + ": not in quorum? q: " + quorum + " my addr: " + myAddress); 
+                if(configValues.getDebugLevel() == 1) System.out.println("Node " + myAddress.getPort() + ": not in quorum? q: " + quorum + " my addr: " + myAddress); 
                 return;
             } 
 
             quorumSigs.add(signature);
             int blockId = blockchain.size() - 1;
 
-            if(DEBUG_LEVEL == 1) {
+            if(configValues.getDebugLevel() == 1) {
                 System.out.println("Node " + myAddress.getPort() + ": receiveQuorumSignature invoked from " + 
                 signature.getAddress().toString() + " qSigs: " + quorumSigs + " quorum: " + quorum + " block " + quorumBlock.getBlockId());
             }
 
             if(quorumSigs.size() == quorum.size() - 1){
                 if(!inQuorum()){
-                    if(DEBUG_LEVEL == 1) {
+                    if(configValues.getDebugLevel() == 1) {
                         System.out.println("Node " + myAddress.getPort() + ": not in quorum? q: " + quorum + " my addr: " + myAddress);
                     }
                     System.out.println("Node " + myAddress.getPort() + ": rQs: not in quorum? q: " + quorum + " my addr: " + myAddress + " block: " + blockId);
@@ -577,13 +484,12 @@ public class Node  {
     }
 
     public void tallyQuorumSigs(){
-        synchronized (blockLock) {
+        synchronized (lockManager.getLock("blockLock")) {
             resetMempool();
 
-            if (DEBUG_LEVEL == 1) {System.out.println("Node " + myAddress.getPort() + ": tallyQuorumSigs invoked");}
+            if (configValues.getDebugLevel() == 1) {System.out.println("Node " + myAddress.getPort() + ": tallyQuorumSigs invoked");}
 
-            //state = 4;
-            stateChangeRequest(4);
+            stateManager.stateChangeRequest(4);
             ArrayList<Address> quorum = deriveQuorum(blockchain.getLast(), 0);
 
             if(!inQuorum()){
@@ -628,7 +534,7 @@ public class Node  {
                     winningHash = hash;
                 }
             }
-            if (DEBUG_LEVEL == 1) {
+            if (configValues.getDebugLevel() == 1) {
                 System.out.println("Node " + myAddress.getPort() + ": tallyQuorumSigs: Winning hash votes = " + hashVotes.get(winningHash));
             }
             if (hashVotes.get(winningHash) == quorum.size()) {
@@ -652,16 +558,15 @@ public class Node  {
     }
 
     private void resetMempool(){
-        synchronized(memPoolLock){
+        synchronized(lockManager.getLock("memPoolLock")){
             mempool = new HashMap<>();
         }
     }
 
     public void sendSkeleton(){
-        synchronized (lock){
-            //state = 0;
+        synchronized (lockManager.getLock("lock")){
 
-            if(DEBUG_LEVEL == 1) {
+            if(configValues.getDebugLevel() == 1) {
                 System.out.println("Node " + myAddress.getPort() + ": sendSkeleton invoked. qSigs " + quorumSigs);
             }
             BlockSkeleton skeleton = null;
@@ -676,47 +581,30 @@ public class Node  {
                 throw new RuntimeException(e);
             }
 
-            for(Address address : localPeers){
-                Messager.sendOneWayMessage(address, new Message(Message.Request.RECEIVE_SKELETON, skeleton), myAddress);
-            }
-
+            Messager.sendOneWayMessageToGroup(new Message(Message.Request.RECEIVE_SKELETON, skeleton), localPeers, myAddress);
         }
     }
 
     public void sendSkeleton(BlockSkeleton skeleton){
-        synchronized (lock){
-            if(DEBUG_LEVEL == 1) {
+        synchronized (lockManager.getLock("lock")){
+            if(configValues.getDebugLevel() == 1) {
                 System.out.println("Node " + myAddress.getPort() + ": sendSkeleton(local) invoked: BlockID " + skeleton.getBlockId());
             }
-            for(Address address : localPeers){
-                if(!address.equals(myAddress)){
-                    Messager.sendOneWayMessage(address, new Message(Message.Request.RECEIVE_SKELETON, skeleton), myAddress);
-                }
-            }
+
+            Messager.sendOneWayMessageToGroup(new Message(Message.Request.RECEIVE_SKELETON, skeleton), localPeers, myAddress);
         }
     }
 
     public void receiveSkeleton(BlockSkeleton blockSkeleton){
-        while(state != 0){
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-
-        validateSkeleton(blockSkeleton);
-    }
-
-    public void validateSkeleton(BlockSkeleton blockSkeleton){
-        synchronized (blockLock){
+        stateManager.waitForState(0);
+        synchronized (lockManager.getLock("blockLock")){
             Block currentBlock = blockchain.getLast();
 
             if(currentBlock.getBlockId() + 1 != blockSkeleton.getBlockId()){
-                //if(DEBUG_LEVEL == 1) { System.out.println("Node " + myAddress.getPort() + ": receiveSkeleton(local) currentblock not synced with skeleton. current id: " + currentBlock.getBlockId() + " new: " + blockSkeleton.getBlockId()); }
+                //if(configValues.getDebugLevel() == 1) { System.out.println("Node " + myAddress.getPort() + ": receiveSkeleton(local) currentblock not synced with skeleton. current id: " + currentBlock.getBlockId() + " new: " + blockSkeleton.getBlockId()); }
                 return;
             }else{
-                if(DEBUG_LEVEL == 1) { System.out.println("Node " + myAddress.getPort() + ": receiveSkeleton(local) invoked. Hash: " + blockSkeleton.getHash());}
+                if(configValues.getDebugLevel() == 1) { System.out.println("Node " + myAddress.getPort() + ": receiveSkeleton(local) invoked. Hash: " + blockSkeleton.getHash());}
             }
 
             ArrayList<Address> quorum = deriveQuorum(currentBlock, 0);
@@ -724,7 +612,7 @@ public class Node  {
             String hash = blockSkeleton.getHash();
 
             if(blockSkeleton.getSignatures().size() < 1){
-                if(DEBUG_LEVEL == 1) { System.out.println("Node " + myAddress.getPort() + ": No signatures. blockskeletonID: " + blockSkeleton.getBlockId() + ". CurrentBlockID: " + currentBlock.getBlockId() 
+                if(configValues.getDebugLevel() == 1) { System.out.println("Node " + myAddress.getPort() + ": No signatures. blockskeletonID: " + blockSkeleton.getBlockId() + ". CurrentBlockID: " + currentBlock.getBlockId() 
                 + " quorum: " + quorum ); }
             }
 
@@ -734,16 +622,16 @@ public class Node  {
                     if(verifySignatureFromRegistry(hash, blockSignature.getSignature(), address)){
                         verifiedSignatures++;
                     }else{
-                        if(DEBUG_LEVEL == 1) { System.out.println("Node " + myAddress.getPort() + ": Failed to validate signature. blockskeletonID: " + blockSkeleton.getBlockId() + ". CurrentBlockID: " + currentBlock.getBlockId()); };
+                        if(configValues.getDebugLevel() == 1) { System.out.println("Node " + myAddress.getPort() + ": Failed to validate signature. blockskeletonID: " + blockSkeleton.getBlockId() + ". CurrentBlockID: " + currentBlock.getBlockId()); };
                     }
                 }else{
-                    if(DEBUG_LEVEL == 1) { System.out.println("Node " + myAddress.getPort() + ": blockskeletonID: " + blockSkeleton.getBlockId() + ". CurrentBlockID: " + currentBlock.getBlockId()
+                    if(configValues.getDebugLevel() == 1) { System.out.println("Node " + myAddress.getPort() + ": blockskeletonID: " + blockSkeleton.getBlockId() + ". CurrentBlockID: " + currentBlock.getBlockId()
                     + " quorum: " + quorum + ". Address: " + address);}
                 }
             }
 
             if(verifiedSignatures != quorum.size() - 1){
-                if(DEBUG_LEVEL == 1) { System.out.println("Node " + myAddress.getPort() + ": sigs not verified for block " + blockSkeleton.getBlockId() + 
+                if(configValues.getDebugLevel() == 1) { System.out.println("Node " + myAddress.getPort() + ": sigs not verified for block " + blockSkeleton.getBlockId() + 
                 ". Verified sigs: " + verifiedSignatures + ". Needed: " + quorum.size() + " - 1."); }
                 return;
             }
@@ -756,8 +644,8 @@ public class Node  {
     }
 
     public Block constructBlockWithSkeleton(BlockSkeleton skeleton){
-        synchronized (memPoolLock){
-            if(DEBUG_LEVEL == 1) {
+        synchronized (lockManager.getLock("memPoolLock")){
+            if(configValues.getDebugLevel() == 1) {
                 System.out.println("Node " + myAddress.getPort() + ": constructBlockWithSkeleton(local) invoked");
             }
             ArrayList<String> keys = skeleton.getKeys();
@@ -773,7 +661,7 @@ public class Node  {
 
             Block newBlock;
 
-            if(USE.equals("Defi")){
+            if(configValues.getUse().equals("Defi")){
                 try {
                     newBlock = new DefiBlock(blockTransactions,
                             getBlockHash(blockchain.getLast(), 0),
@@ -783,7 +671,7 @@ public class Node  {
                 }
             }else{
                 try {
-                    newBlock = new DefiBlock(blockTransactions,
+                    newBlock = new HCBlock(blockTransactions,
                             getBlockHash(blockchain.getLast(), 0),
                             blockchain.size());
                 } catch (NoSuchAlgorithmException e) {
@@ -796,23 +684,14 @@ public class Node  {
         }
     }
 
-    private Object stateLock = new Object();
-    private void stateChangeRequest(int statetoChange){
-        synchronized(stateLock){
-            state = statetoChange;
-        }
-    }
-
     /**
      * Adds a block
      * @param block Block to add
      */
     public void addBlock(Block block){
-        stateChangeRequest(0);
-        // state = 0;
+        stateManager.stateChangeRequest(0);
         
         HashMap<String, Transaction> txMap = block.getTxList();
-        HashSet<String> keys = new HashSet<>(txMap.keySet());
         ArrayList<Transaction> txList = new ArrayList<>();
         for(String hash : txMap.keySet()){
             txList.add(txMap.get(hash));
@@ -824,41 +703,21 @@ public class Node  {
         blockchain.add(block);
         System.out.println("Node " + myAddress.getPort() + ": " + chainString(blockchain) + " MP: " + mempool.values());
 
-        if(USE.equals("Defi")){
-            HashMap<String, DefiTransaction> defiTxMap = new HashMap<>();
 
-            for(String key : keys){
-                DefiTransaction transactionInList = (DefiTransaction) txMap.get(key);
-                defiTxMap.put(key, transactionInList);
-            }
-
-            DefiTransactionValidator.updateAccounts(defiTxMap, accounts);
-
-            synchronized(accountsLock){
-                for(String account : accountsToAlert.keySet()){
-                    // System.out.println(account);
-                    for(String transHash : txMap.keySet()){
-                        DefiTransaction dtx = (DefiTransaction) txMap.get(transHash);
-                        // System.out.println(dtx.getFrom() + "---" + dtx.getTo());
-                        if(dtx.getFrom().equals(account) ||
-                        dtx.getTo().equals(account)){
-                            Messager.sendOneWayMessage(accountsToAlert.get(account), 
-                            new Message(Message.Request.ALERT_WALLET, mt.getProof(txMap.get(transHash))), myAddress);
-                            //System.out.println("sent update");
-                        }
-                    }
-                }
-            }
+        if(configValues.getUse().equals("Defi")){
+            DefiTransactionValidator dtv = (DefiTransactionValidator) tv;
+            dtv.alertWallet(txMap, mt, myAddress);
         }
+
 
         ArrayList<Address> quorum = deriveQuorum(blockchain.getLast(), 0);
 
-        if(DEBUG_LEVEL == 1) {
+        if(configValues.getDebugLevel() == 1) {
             System.out.println("Node " + myAddress.getPort() + ": Added block " + block.getBlockId() + ". Next quorum: " + quorum);
         }
 
         if(inQuorum()){
-            while(mempool.size() < MINIMUM_TRANSACTIONS){
+            while(mempool.size() < configValues.getMinimumTransactions()){
                 try {
                     Thread.sleep(3000);
                 } catch (InterruptedException e) {
@@ -879,7 +738,7 @@ public class Node  {
     }
 
     public boolean inQuorum(){
-        synchronized (quorumLock){
+        synchronized (lockManager.getLock("quorumLock")){
             ArrayList<Address> quorum = deriveQuorum(blockchain.getLast(), 0);
             Boolean quorumMember = false;
             for(Address quorumAddress : quorum){
@@ -892,7 +751,7 @@ public class Node  {
     }
 
     public boolean inQuorum(Block block){
-        synchronized (quorumLock){
+        synchronized (lockManager.getLock("quorumLock")){
             if(block.getBlockId() - 1 != blockchain.getLast().getBlockId()){ // 
                 return false;
             }
@@ -914,14 +773,14 @@ public class Node  {
                 ArrayList<Address> quorum = new ArrayList<>(); // New list for returning a quorum, list of addr
                 blockHash = Hashing.getBlockHash(block, nonce); // gets the hash of the block
                 BigInteger bigInt = new BigInteger(blockHash, 16); // Converts the hex hash in to a big Int
-                bigInt = bigInt.mod(BigInteger.valueOf(NUM_NODES)); // we mod the big int I guess
+                bigInt = bigInt.mod(BigInteger.valueOf(configValues.getNumNodes())); // we mod the big int I guess
                 int seed = bigInt.intValue(); // This makes our seed
                 Random random = new Random(seed); // Makes our random in theory the same across all healthy nodes
                 int quorumNodeIndex; // The index from our global peers from which we select nodes to participate in next quorum
                 Address quorumNode; // The address of thenode from the quorumNode Index to go in to the quorum
                 //System.out.println("Node " + myAddress.getPort() + ": blockhash" + chainString(blockchain));
-                while(quorum.size() < QUORUM_SIZE){
-                    quorumNodeIndex = random.nextInt(NUM_NODES); // may be wrong but should still work
+                while(quorum.size() < configValues.getQuorumSize()){
+                    quorumNodeIndex = random.nextInt(configValues.getNumNodes()); // may be wrong but should still work
                     quorumNode = globalPeers.get(quorumNodeIndex);
                     if(!containsAddress(quorum, quorumNode)){
                         quorum.add(globalPeers.get(quorumNodeIndex));
@@ -934,15 +793,6 @@ public class Node  {
         }
         return null;
     }
-
-    private HashMap<String, Address> accountsToAlert;
-
-    public void alertWallet(String accountPubKey, Address address){
-        synchronized(accountsLock){
-            accountsToAlert.put(accountPubKey, address);
-        }
-    }
-
 
     /**
      * Acceptor is a thread responsible for maintaining the server socket by
@@ -962,7 +812,7 @@ public class Node  {
             while (true) {
                 try {
                     client = ss.accept();
-                    new ServerConnection(client, node).start();
+                    new ServerConnection(client, node, tv).start();
                 } catch (IOException e) {
                     System.out.println(e);
                     throw new RuntimeException(e);
@@ -995,7 +845,7 @@ public class Node  {
                         Thread.sleep(10000);
                         Message messageReceived = Messager.sendTwoWayMessage(address, new Message(Message.Request.PING), myAddress);
 
-                        /* Use heartbeat to also output the block chain of the node */
+                        /* configValues.getUse() heartbeat to also output the block chain of the node */
 
                     } catch (InterruptedException e) {
                         System.out.println("Received Interrupted Exception from node " + address.getPort());
@@ -1011,21 +861,18 @@ public class Node  {
         }
     }
 
-    private final int MAX_PEERS, NUM_NODES, QUORUM_SIZE, MIN_CONNECTIONS, DEBUG_LEVEL, MINIMUM_TRANSACTIONS;
-    private final Object lock, quorumLock, memPoolLock, quorumReadyVotesLock, memPoolRoundsLock, sigRoundsLock, blockLock, accountsLock;
-    private int quorumReadyVotes, memPoolRounds;
-    private ArrayList<Address> globalPeers;
-    private ArrayList<Address> localPeers;
+    private LockManager lockManager;
+    private int quorumReadyVotes, memPoolRounds, state;
+    private ArrayList<Address> globalPeers, localPeers;
     private HashMap<String, Transaction> mempool;
-    HashMap<String, Integer> accounts;
     private ArrayList<BlockSignature> quorumSigs;
     private LinkedList<Block> blockchain;
     private final Address myAddress;
     private ServerSocket ss;
     private Block quorumBlock;
     private PrivateKey privateKey;
-    private int state;
-    private final String USE;
+    private Config configValues;
+    private StateManager stateManager;
+    private TransactionValidator tv;
 
 }
-
