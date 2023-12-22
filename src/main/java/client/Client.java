@@ -12,6 +12,9 @@ import communication.messaging.Message;
 import utils.Address;
 import utils.merkletree.MerkleTreeProof;
 
+/**
+ * Represents a client application for interacting with the BlueChain network.
+ */
 public class Client {
 
     BufferedReader reader; // To read user input
@@ -23,6 +26,10 @@ public class Client {
     String use;
     DefiClient defiClient;
 
+    /**
+     * Constructs a Client instance.
+     * @param port The port to bind the client's server socket.
+     */
     public Client(int port){
 
         /* Initializations */
@@ -179,6 +186,10 @@ public class Client {
         } 
     }
 
+    /**
+     * Update the list of full nodes we are communicating with in the network
+     * @throws IOException If an I/O error occurs.
+     */
     public void updateFullNode() throws IOException{
         System.out.println("Updating Full Nodes. \nAdd or remove? ('a' or 'r'): ");
         String response = reader.readLine();
@@ -203,6 +214,10 @@ public class Client {
         }
     }
 
+    /**
+     * Test the network by simulating transactions.
+     * @param iterations The number of test iterations.
+     */
     public void testNetwork(int iterations){
         if(use.equals("Defi")){
             defiClient.test = true;
@@ -210,6 +225,9 @@ public class Client {
         }
     }
 
+    /**
+     *  A thread for accepting incoming connections.
+     */
     class Acceptor extends Thread {
         Client wallet;
 

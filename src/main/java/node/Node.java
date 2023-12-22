@@ -41,11 +41,10 @@ import utils.merkletree.MerkleTree;
 public class Node  {
 
     /**
-     * Node constructor creates node and begins server socket to accept connections
+     * Constructs a Node and initiates a server socket to accept connections.
      *
-     * @param port               Port
-     * @param maxPeers           Maximum amount of peer connections to maintain
-     * @param initialConnections How many nodes we want to attempt to connect to on start
+     * @param configValues       Config values for the node.
+     * @param port               Port number on which the node will listen for connections.
      */
     public Node(Config configValues, int port) {
 
@@ -116,27 +115,22 @@ public class Node  {
 
 
     /**
-     * Initializes blockchain
+     * Initializes the blockchain based on the configured use case.
      */
     public void initializeBlockchain(){
         blockchain = new LinkedList<Block>();
 
         if(configValues.getUse().equals("Defi")){
-            // DefiTransaction genesisTransaction = new DefiTransaction("Bob", "Alice", 100, "0");
-            // HashMap<String, Transaction> genesisTransactions = new HashMap<String, Transaction>();
-            // String hashOfTransaction = "";
-            // hashOfTransaction = getSHAString(genesisTransaction.toString());
-            // genesisTransactions.put(hashOfTransaction, genesisTransaction);
             addBlock(new DefiBlock(new HashMap<String, Transaction>(), "000000", 0));
         }else if(configValues.getUse().equals("HC")){
             addBlock(new HCBlock(new HashMap<String, Transaction>(), "000000", 0));
         }
     }
 
-     /**
-     * Iterate through a list of peers and attempt to establish a mutual connection
-     * with a specified amount of nodes
-     * @param globalPeers
+    /**
+     * Attempts to establish connections with a specified number of nodes from a list of global peers.
+     *
+     * @param globalPeers List of global peers to connect to.
      */
     public void requestConnections(ArrayList<Address> globalPeers){
         try {
@@ -162,12 +156,22 @@ public class Node  {
         }
     }
 
+    /**
+     * Gossips a transaction to the network.
+     *
+     * @param transaction The transaction to gossip.
+     */
     public void gossipTransaction(Transaction transaction){
         synchronized (lockManager.getLock("lock")){
             Messager.sendOneWayMessageToGroup(new Message(Message.Request.ADD_TRANSACTION, transaction), localPeers, myAddress);
         }
     }
 
+    /**
+     * Adds a transaction to the mempool after validation and gossiping.
+     *
+     * @param transaction The transaction to add.
+     */
     public void addTransaction(Transaction transaction){
         stateManager.waitForState(0);
         synchronized(lockManager.getLock("memPoolLock")){
@@ -210,7 +214,9 @@ public class Node  {
         }         
     }
 
-    //Reconcile blocks
+    /**
+     * Sends a quorum ready signal to a list of quorum peers.
+     */
     public void sendQuorumReady(){
         stateManager.stateChangeRequest(1);
         quorumSigs = new ArrayList<>();
@@ -261,7 +267,12 @@ public class Node  {
         }
     }
 
-    //Reconcile blocks
+    /**
+     * Receives and processes a quorum ready signal from a peer.
+     *
+     * @param oout Output stream to send a response.
+     * @param oin  Input stream to receive the signal.
+     */
     public void receiveQuorumReady(ObjectOutputStream oout, ObjectInputStream oin){
         stateManager.waitForState(1);
         synchronized (lockManager.getLock("quorumReadyVotesLock")){
@@ -305,6 +316,10 @@ public class Node  {
         }
     }
 
+    /**
+     * Sends the hash values of the transactions in the mempool to a quorum of peers,
+     * allowing them to request missing transactions.
+     */
     public void sendMempoolHashes() {
         synchronized (lockManager.getLock("memPoolLock")){
             stateManager.stateChangeRequest(2);
@@ -343,6 +358,14 @@ public class Node  {
         }
     }
 
+    /**
+     * Receives the hash values of transactions from a peer, identifies missing transactions
+     * in the local mempool, and requests the missing transactions.
+     *
+     * @param keys  Set of hash values representing transactions in the mempool.
+     * @param oout  Output stream to send a response.
+     * @param oin   Input stream to receive the signal.
+     */
     public void receiveMempoolHashes(Set<String> keys, ObjectOutputStream oout, ObjectInputStream oin) {
         stateManager.waitForState(2);
         synchronized(lockManager.getLock("memPoolRoundsLock")){
@@ -386,6 +409,10 @@ public class Node  {
         }
     }
 
+    /**
+     * Constructs a block from the transactions in the mempool, validates the transactions,
+     * and initiates the process of obtaining signatures from the quorum.
+     */
     public void constructBlock(){
         synchronized(lockManager.getLock("memPoolLock")){
             if(configValues.getDebugLevel() == 1) System.out.println("Node " + myAddress.getPort() + ": constructBlock invoked");
@@ -430,6 +457,10 @@ public class Node  {
         }
     }
 
+    /**
+     * Signs the hash of the constructed block and sends the signature to the quorum.
+     * Invoked after constructing a block.
+     */
     public void sendQuorumSignature(){
         String blockHash;
         byte[] sig;
@@ -444,6 +475,12 @@ public class Node  {
         if(configValues.getDebugLevel() == 1) {System.out.println("Node " + myAddress.getPort() + ": sendSigOfBlockHash invoked for hash: " + blockHash.substring(0, 4));}
     }
 
+    /**
+     * Receives quorum signatures, verifies them, and processes them to reach consensus on the block.
+     * Invoked after receiving signatures from a quorum of peers.
+     *
+     * @param signature The signature of the block hash.
+     */
     public void receiveQuorumSignature(BlockSignature signature){
         stateManager.waitForState(3);
         synchronized (lockManager.getLock("sigRoundsLock")){
@@ -482,6 +519,11 @@ public class Node  {
         }
     }
 
+    /**
+     * Tallies the received quorum signatures, determines the winning hash, and adds the block
+     * to the blockchain if consensus is reached.
+     * Invoked after receiving all signatures from the quorum.
+     */
     public void tallyQuorumSigs(){
         synchronized (lockManager.getLock("blockLock")) {
             resetMempool();
@@ -556,12 +598,21 @@ public class Node  {
         }
     }
 
+    /**
+     * Clears the transaction mempool after constructing a block and achieving consensus.
+     * Invoked to prepare the mempool for new transactions.
+     */
     private void resetMempool(){
         synchronized(lockManager.getLock("memPoolLock")){
             mempool = new HashMap<>();
         }
     }
 
+    /**
+     * Constructs a BlockSkeleton from the current quorum block and signatures,
+     * then sends it to the local group of peers.
+     * Invoked after constructing a block and obtaining quorum signatures.
+     */
     public void sendSkeleton(){
         synchronized (lockManager.getLock("lock")){
 
@@ -584,6 +635,12 @@ public class Node  {
         }
     }
 
+    /**
+     * Sends a pre-constructed BlockSkeleton to the local group of peers.
+     * Invoked when receiving a BlockSkeleton from another node.
+     *
+     * @param skeleton The pre-constructed BlockSkeleton to be sent.
+     */
     public void sendSkeleton(BlockSkeleton skeleton){
         synchronized (lockManager.getLock("lock")){
             if(configValues.getDebugLevel() == 1) {
@@ -594,6 +651,12 @@ public class Node  {
         }
     }
 
+    /**
+     * Receives a BlockSkeleton from another node, validates the signatures, and
+     * adds the corresponding block to the blockchain if validations succeed.
+     *
+     * @param blockSkeleton The received BlockSkeleton.
+     */
     public void receiveSkeleton(BlockSkeleton blockSkeleton){
         stateManager.waitForState(0);
         synchronized (lockManager.getLock("blockLock")){
@@ -642,6 +705,13 @@ public class Node  {
         }
     }
 
+    /**
+     * Constructs a new block using the transactions specified in the given BlockSkeleton.
+     * Invoked after receiving a valid BlockSkeleton from another node.
+     *
+     * @param skeleton The BlockSkeleton containing transaction details.
+     * @return The constructed Block.
+     */
     public Block constructBlockWithSkeleton(BlockSkeleton skeleton){
         synchronized (lockManager.getLock("memPoolLock")){
             if(configValues.getDebugLevel() == 1) {
@@ -684,8 +754,10 @@ public class Node  {
     }
 
     /**
-     * Adds a block
-     * @param block Block to add
+     * Adds a block to the blockchain, updates the merkle root hash, and alerts
+     * the wallet if applicable. Also triggers the next quorum readiness check.
+     *
+     * @param block The block to be added.
      */
     public void addBlock(Block block){
         stateManager.stateChangeRequest(0);
@@ -727,6 +799,11 @@ public class Node  {
         }
     }
 
+    /**
+     * Sends a one-way message to all nodes in the current quorum, excluding itself.
+     *
+     * @param message The message to be sent.
+     */
     public void sendOneWayMessageQuorum(Message message){
         ArrayList<Address> quorum = deriveQuorum(blockchain.getLast(), 0, configValues, globalPeers);
         for(Address quorumAddress : quorum){
@@ -736,6 +813,11 @@ public class Node  {
         }
     }
 
+    /**
+     * Checks whether the current node is a member of the quorum.
+     *
+     * @return True if the node is in the quorum, otherwise false.
+     */
     public boolean inQuorum(){
         synchronized (lockManager.getLock("quorumLock")){
             ArrayList<Address> quorum = Utils.deriveQuorum(blockchain.getLast(), 0, configValues, globalPeers);
@@ -749,6 +831,12 @@ public class Node  {
         }
     }
 
+    /**
+     * Checks whether the current node is a member of the quorum for a specific block.
+     *
+     * @param block The block for which to check the quorum.
+     * @return True if the node is in the quorum, otherwise false.
+     */
     public boolean inQuorum(Block block){
         synchronized (lockManager.getLock("quorumLock")){
             if(block.getBlockId() - 1 != blockchain.getLast().getBlockId()){ // 

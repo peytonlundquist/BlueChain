@@ -7,9 +7,17 @@ import java.util.LinkedList;
 import blockchain.Transaction;
 import utils.Hashing;
 
+/**
+ * Represents a Merkle Tree data structure for a list of transactions.
+ */
 public class MerkleTree {
     protected Node rootNode;
 
+    /**
+     * Constructs a MerkleTree object based on a list of transactions.
+     *
+     * @param txList The list of transactions to build the Merkle Tree.
+     */
     public MerkleTree(ArrayList<Transaction> txList){
         txList.sort(new TransactionComparator());
         LinkedList<Node> nodeQueue = new LinkedList<>();
@@ -49,10 +57,21 @@ public class MerkleTree {
         }
     }
 
+    /**
+     * Gets the root node of the Merkle Tree.
+     *
+     * @return The root node.
+     */
     public Node getRootNode(){
         return rootNode;
     }
-
+    
+    /**
+     * Generates a Merkle Tree proof for a specific transaction.
+     *
+     * @param transaction The transaction for which to generate the proof.
+     * @return The Merkle Tree proof.
+     */
     public MerkleTreeProof getProof(Transaction transaction){
         LinkedList<Node> nodeQueue = new LinkedList<>();
         nodeQueue.addLast(rootNode);
@@ -111,6 +130,9 @@ public class MerkleTree {
         return new MerkleTreeProof(retHashes, transaction, rootNode.getHash());
     } 
 
+    /**
+     * Prints the structure of the Merkle Tree.
+     */
     public void printTree(){
         LinkedList<Node> nodeQueue = new LinkedList<>();
         nodeQueue.addLast(rootNode);
@@ -133,6 +155,9 @@ public class MerkleTree {
         }
     }
     
+    /**
+     * Comparator for sorting transactions based on their UID hash.
+     */
     class TransactionComparator implements Comparator<Transaction> {
 
         @Override
@@ -141,6 +166,9 @@ public class MerkleTree {
         }
     }
 
+    /**
+     * Represents a node in the Merkle Tree.
+     */
     public class Node {
         private String hash;
         private Node parent;

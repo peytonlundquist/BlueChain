@@ -21,7 +21,9 @@ public class DefiTransactionValidator extends TransactionValidator{
     private HashMap<String, Address> accountsToAlert;
     private LockManager lockManager;
     
-
+    /**
+     * Constructs a DefiTransactionValidator with initializations for account tracking and locks.
+     */
     public DefiTransactionValidator(){
         accounts = new HashMap<String, Integer>();
         accountsToAlert = new HashMap<>();
@@ -36,55 +38,56 @@ public class DefiTransactionValidator extends TransactionValidator{
      * @param assumedT The transactions we assume to valid so far
      * @return
      */
-    public static boolean isValid(Transaction t, HashMap<String, Integer> accounts, HashMap<String, Transaction> assumedT){
-        DefiTransaction transaction = (DefiTransaction) t; // Convert the generic transaction to be a DefiTransaction
+    public boolean isValid(Transaction t, HashMap<String, Integer> accounts, HashMap<String, Transaction> assumedT){
+        synchronized(lockManager.getLock("accountsLock")){
+            DefiTransaction transaction = (DefiTransaction) t; // Convert the generic transaction to be a DefiTransaction
         
-        HashMap<String, DefiTransaction> assumedTransactions = new HashMap<>();
-        HashSet<String> keys = new HashSet<>(assumedT.keySet());
+            HashMap<String, DefiTransaction> assumedTransactions = new HashMap<>();
+            HashSet<String> keys = new HashSet<>(assumedT.keySet());
 
-        /* Converting each Transaction to DefiTransaction */
-        for(String key : keys){
-            DefiTransaction transactionInList = (DefiTransaction) assumedT.get(key);
-            assumedTransactions.put(key, transactionInList);
-        }
-        
-        /* Two contexts to validate. Non quorum node need to validate 
-        against their mempool. Quorum node needs to validate against 
-        compiled mempool */
-
-        /* We want to assume transactions added to our mempool are valid 
-        and take priority. If there is a conflict from a new transaction 
-        and existing ones we choose existing ones */
-
-        HashMap<String, Integer> tempAccounts = new HashMap<>(accounts); // We make a temp set of accounts which contain all previous accounts
-        updateAccounts(assumedTransactions, tempAccounts); // We updated the temp accounts with the mempool, creating a "what-if" scenario where each transaction in mempool is valid
-
-        /* Check mempool also for double dipping */
-
-        /* Validate Transaction */
-        String fromAccount = transaction.getFrom();
-        int amount = transaction.getAmount();
-
-        if(amount < 0) return false; // No negatives
-
-        if(!tempAccounts.containsKey(fromAccount)) {
-            if(amount != 10){ // This is our cheat for now
-                return false;
+            /* Converting each Transaction to DefiTransaction */
+            for(String key : keys){
+                DefiTransaction transactionInList = (DefiTransaction) assumedT.get(key);
+                assumedTransactions.put(key, transactionInList);
             }
-        }else{
-            int balance = tempAccounts.get(fromAccount);
-            if(amount > balance) return false; // Too much money trying to be spent
+            
+            /* Two contexts to validate. Non quorum node need to validate 
+            against their mempool. Quorum node needs to validate against 
+            compiled mempool */
+
+            /* We want to assume transactions added to our mempool are valid 
+            and take priority. If there is a conflict from a new transaction 
+            and existing ones we choose existing ones */
+
+            HashMap<String, Integer> tempAccounts = new HashMap<>(accounts); // We make a temp set of accounts which contain all previous accounts
+            updateAccounts(assumedTransactions, tempAccounts); // We updated the temp accounts with the mempool, creating a "what-if" scenario where each transaction in mempool is valid
+
+            /* Check mempool also for double dipping */
+
+            /* Validate Transaction */
+            String fromAccount = transaction.getFrom();
+            int amount = transaction.getAmount();
+
+            if(amount < 0) return false; // No negatives
+
+            if(!tempAccounts.containsKey(fromAccount)) {
+                if(amount != 10){ // This is our cheat for now
+                    return false;
+                }
+            }else{
+                int balance = tempAccounts.get(fromAccount);
+                if(amount > balance) return false; // Too much money trying to be spent
+            }
+            
+            /* Let's validate the signature */
+            String publicKeyString = transaction.getFrom(); // We get the public key in string format
+            byte[] publicKeyBytes = DSA.stringToBytes(publicKeyString); // Convert back to bytes for DSA
+            byte[] sigOfUID = transaction.getSigUID(); // Get signature of UID
+            String UID = transaction.getUID();    // Get UID
+
+            if(!DSA.verifySignature(UID, sigOfUID, publicKeyBytes)) return false; // Validate that the sender signed the transaction
+            return true;
         }
-        
-        /* Let's validate the signature */
-        String publicKeyString = transaction.getFrom(); // We get the public key in string format
-        byte[] publicKeyBytes = DSA.stringToBytes(publicKeyString); // Convert back to bytes for DSA
-        byte[] sigOfUID = transaction.getSigUID(); // Get signature of UID
-        String UID = transaction.getUID();    // Get UID
-
-        if(!DSA.verifySignature(UID, sigOfUID, publicKeyBytes)) return false; // Validate that the sender signed the transaction
-
-        return true;
     }
 
     /**
@@ -122,6 +125,11 @@ public class DefiTransactionValidator extends TransactionValidator{
         }
     }
 
+    /**
+     * Validates a transaction and updates the wallet of the transaction participants.
+     * @param objects An array of objects containing the transaction and assumed transactions.
+     * @return true if the transaction is valid, false otherwise.
+     */
     @Override
     public boolean validate(Object[] objects) {
         Transaction transaction = (Transaction) objects[0];
@@ -129,6 +137,12 @@ public class DefiTransactionValidator extends TransactionValidator{
         return isValid(transaction, accounts, assumedTransactions);
     }
 
+    /**
+     * Alerts the wallet of relevant participants about updates in their accounts.
+     * @param txMap The map of transactions.
+     * @param mt The MerkleTree associated with the transactions.
+     * @param myAddress The address of the node sending the alerts.
+     */
     public void alertWallet(HashMap<String, Transaction> txMap, MerkleTree mt, Address myAddress){
         HashMap<String, DefiTransaction> defiTxMap = new HashMap<>();
         HashSet<String> keys = new HashSet<>(txMap.keySet());
@@ -138,9 +152,9 @@ public class DefiTransactionValidator extends TransactionValidator{
             defiTxMap.put(key, transactionInList);
         }
 
-        DefiTransactionValidator.updateAccounts(defiTxMap, accounts);
-
         synchronized(lockManager.getLock("accountsLock")){
+            DefiTransactionValidator.updateAccounts(defiTxMap, accounts);
+
             for(String account : accountsToAlert.keySet()){
                 // System.out.println(account);
                 for(String transHash : txMap.keySet()){
@@ -157,6 +171,11 @@ public class DefiTransactionValidator extends TransactionValidator{
         }
     }
 
+    /**
+     * Adds accounts to be alerted about updates in their wallets.
+     * @param accountPubKey The public key hash of the account.
+     * @param address The address associated with the account.
+     */
     public void addAccountsToAlert(String accountPubKey, Address address){
         synchronized(lockManager.getLock("accountsLock")){
             accountsToAlert.put(accountPubKey, address);

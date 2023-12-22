@@ -29,6 +29,14 @@ public class DefiClient {
     ArrayList<Address> fullNodes; // List of full nodes we want to use
     boolean test; // Boolean for test vs normal output
 
+
+    /**
+     * Constructs a DefiClient instance.
+     * @param updateLock The lock for multithreading.
+     * @param reader The BufferedReader for reading user input.
+     * @param myAddress The address of the client.
+     * @param fullNodes The list of full nodes to interact with.
+     */
     public DefiClient(Object updateLock, BufferedReader reader, Address myAddress, ArrayList<Address> fullNodes){
         this.reader = reader;
         this.updateLock = updateLock;
@@ -40,6 +48,10 @@ public class DefiClient {
 
     }
 
+    /**
+     * Adds a new account to the client.
+     * @throws IOException If an I/O error occurs.
+     */
     protected void addAccount() throws IOException{
         synchronized(updateLock){
             System.out.println("Adding account. Account NickName?: ");
@@ -71,6 +83,10 @@ public class DefiClient {
         }
     }
 
+    /**
+     * Submits a new transaction to the Defi network.
+     * @throws IOException If an I/O error occurs.
+     */
     protected void submitTransaction() throws IOException{
         System.out.println("Generating Transaction");
         System.out.println("Deposit address?");
@@ -109,6 +125,11 @@ public class DefiClient {
         }
     }
 
+    /**
+     * Submits a transaction to a specific full node.
+     * @param transaction The DefiTransaction to submit.
+     * @param address The address of the full node.
+     */
     protected void submitTransaction(DefiTransaction transaction, Address address){
         try {
             Socket s = new Socket(address.getHost(), address.getPort());
@@ -128,6 +149,9 @@ public class DefiClient {
         }
     }
 
+    /**
+     * Prints information about the client's accounts and their balances.
+     */
     protected void printAccounts(){
         System.out.println("=============== Accounts ================");
         for(Account account :  accounts){
@@ -137,6 +161,10 @@ public class DefiClient {
         System.out.print(">");
     }
 
+    /**
+     * Updates the client's accounts based on a MerkleTreeProof.
+     * @param mtp The MerkleTreeProof containing the transaction information.
+     */
     protected void updateAccounts(MerkleTreeProof mtp){
         synchronized(updateLock){
 
@@ -184,7 +212,14 @@ public class DefiClient {
         }
     }
 
-
+    /**
+     * Tests the addition of a new account to the client for simulation purposes.
+     * Generates a new key pair, creates a new account, and adds it to the account list.
+     * Sends an alert to the network about the new account.
+     *
+     * @param nickname The nickname for the new account.
+     * @throws IOException If an I/O error occurs.
+     */
     protected void testAddAccount(String nickname) throws IOException{
         synchronized(updateLock){
 
@@ -210,6 +245,16 @@ public class DefiClient {
         }
     }
 
+    /**
+     * Tests the submission of a transaction to the Defi network for simulation purposes.
+     * Retrieves the chosen account, generates a new DefiTransaction, signs it,
+     * and submits the transaction to each full node in the network.
+     *
+     * @param nickname The nickname of the sending account.
+     * @param to The deposit address for the transaction.
+     * @param amount The amount to be sent in the transaction.
+     * @throws IOException If an I/O error occurs.
+     */
     protected void testSubmitTransaction(String nickname, String to, int amount) throws IOException{
         Account chosenAccount = null;
         for(Account account : accounts){
@@ -239,20 +284,18 @@ public class DefiClient {
         }
     }
 
+    /**
+     * Performs a network test with the specified number of iterations.
+     * @param iterations The number of test iterations.
+     */
     void testNetwork(int j){
-
         System.out.println("Beginning Test");
-
-        try {
-            
+        try {            
             testAddAccount("Satoshi");
             int expectedBalance = j * 10;
 
-            ProgressBar pb = new ProgressBar("Test", j); // name, initial max
-            // Use ProgressBar("Test", 100, ProgressBarStyle.ASCII) if you want ASCII output style
+            ProgressBar pb = new ProgressBar("Test", j);
             pb.start(); // the progress bar starts timing
-            // Or you could combine these two lines like this:
-
             pb.setExtraMessage("Testing..."); // Set extra message to display at the end of the bar
             
 
@@ -280,6 +323,9 @@ public class DefiClient {
         }
     }
 
+    /**
+     * Prints the usage information for the BlueChain Wallet.
+     */
     protected void printUsage(){
         System.out.println("BlueChain Wallet Usage:");
         System.out.println("a: Add a new account");

@@ -22,13 +22,23 @@ import communication.*;
 import communication.messaging.Message;
 
 /**
- * Deterministic thread which implements the node's protocol
+ * Deterministic thread which implements the node's protocol.
+ * Handles communication with a connected client, processing incoming messages
+ * and responding accordingly based on the node's protocol.
  */
 public class ServerConnection extends Thread {
     private final Socket client;
     private final Node node;
     private TransactionValidator tv;
 
+    /**
+     * Constructs a new ServerConnection instance.
+     *
+     * @param client The Socket representing the connected client.
+     * @param node The Node instance associated with this connection.
+     * @param tv The TransactionValidator instance for handling transactions.
+     * @throws SocketException If an error occurs while creating the thread.
+     */
     public ServerConnection(Socket client, Node node, TransactionValidator tv) throws SocketException {
         this.client = client;
         this.node = node;
@@ -36,6 +46,10 @@ public class ServerConnection extends Thread {
         setPriority(NORM_PRIORITY - 1);
     }
 
+    /**
+     * Runs the ServerConnection thread. Reads incoming messages, processes them,
+     * and handles the communication protocol with the connected client.
+     */
     public void run() {
         try {
             OutputStream out = client.getOutputStream();
@@ -53,6 +67,14 @@ public class ServerConnection extends Thread {
         }
     }
 
+    /**
+     * Handles the incoming message based on the node's protocol.
+     *
+     * @param incomingMessage The incoming message from the connected client.
+     * @param oout The ObjectOutputStream for sending responses to the client.
+     * @param oin The ObjectInputStream for reading additional data from the client.
+     * @throws IOException If an I/O error occurs during message handling.
+     */
     public void handleRequest(Message incomingMessage, ObjectOutputStream oout, ObjectInputStream oin) throws IOException {
         Message outgoingMessage;
         switch(incomingMessage.getRequest()){

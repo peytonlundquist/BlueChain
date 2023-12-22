@@ -16,7 +16,7 @@ public class MerkleTreeExample {
         txList.add(new DefiTransaction("me", "you", 3, null));
         txList.add(new DefiTransaction("me", "you", 4, null));
 
-        txList.add(myTransaction);
+        txList.add(myTransaction); // If uncommented, membership should be true, otherwise false
 
         txList.add(new DefiTransaction("me", "you", 6, null));
         txList.add(new DefiTransaction("me", "you", 7, null));
@@ -28,7 +28,7 @@ public class MerkleTreeExample {
 
         MerkleTreeProof mtp = mt.getProof(myTransaction);
 
-        if(mtp.confirmMembership()){
+        if(mtp != null && mtp.confirmMembership()){
             System.out.println("Membership confirmed.");
         }else{
             System.out.println("Membership NOT confirmed.");

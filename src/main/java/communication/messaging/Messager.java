@@ -6,8 +6,18 @@ import java.util.ArrayList;
 
 import utils.Address;
 
+/**
+ * Utility class for handling messaging functionalities in a network.
+ */
 public class Messager{
-    
+
+    /**
+     * Sends a one-way message to the specified address.
+     *
+     * @param address The target address to send the message to.
+     * @param message The message to be sent.
+     * @param myAddress The sender's address.
+     */
     public static void sendOneWayMessage(Address address, Message message, Address myAddress) {
         try {
             Socket s = new Socket(address.getHost(), address.getPort());
@@ -23,6 +33,14 @@ public class Messager{
         }
     }
 
+    /**
+     * Sends a two-way message to the specified address and receives a response.
+     *
+     * @param address The target address to send the message to.
+     * @param message The message to be sent.
+     * @param myAddress The sender's address.
+     * @return The response message received from the target address.
+     */
     public static Message sendTwoWayMessage(Address address, Message message, Address myAddress) {
         try {
             Socket s = new Socket(address.getHost(), address.getPort());
@@ -44,11 +62,13 @@ public class Messager{
     }
 
     /**
-     * 
-     * @param address
-     * @param message
-     * @param myAddress
-     * @return
+     * Sends a complex message to the specified address and receives a response
+     * along with associated streams and socket.
+     *
+     * @param address The target address to send the message to.
+     * @param message The message to be sent.
+     * @param myAddress The sender's address.
+     * @return A MessagerPack containing the output/input streams, the response message, and the socket.
      */
     public static MessagerPack sendComplexMessage(Address address, Message message, Address myAddress) {
         try {
@@ -69,6 +89,13 @@ public class Messager{
         return null;
     }
 
+    /**
+     * Sends a one-way message to a group of addresses, excluding the sender's address.
+     *
+     * @param message The message to be sent.
+     * @param addresses The list of target addresses.
+     * @param myAddress The sender's address.
+     */
     public static void sendOneWayMessageToGroup(Message message, ArrayList<Address> addresses, Address myAddress){
         for(Address address : addresses){
             if(!address.equals(myAddress)){

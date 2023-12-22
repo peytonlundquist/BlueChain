@@ -9,14 +9,22 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 
 import blockchain.Block;
 import blockchain.Transaction;
 import node.Node;
 
+/**
+ * The Utils class provides utility methods for various common operations in the blockchain application.
+ */
 public class Utils {
 
+    /**
+     * Deep clones a HashMap containing Transaction objects.
+     *
+     * @param givenHashMap The HashMap to be cloned.
+     * @return A new HashMap with the same entries as the givenHashMap.
+     */
     public static HashMap<String, Transaction> deepCloneHashmap(HashMap<String, Transaction> givenHashMap){
         HashMap<String, Transaction> newHashMap = new HashMap<>();
         for(Map.Entry<String, Transaction> entry : givenHashMap.entrySet()){
@@ -25,7 +33,13 @@ public class Utils {
         return newHashMap;
     }
 
-
+    /**
+     * Deep clones an ArrayList of Block objects.
+     *
+     * @param blockchain The ArrayList to be cloned.
+     * @param blockLock  The lock object for synchronizing access to the blockchain.
+     * @return A new ArrayList with the same entries as the blockchain.
+     */
     public static ArrayList<Block> deepCloneBlockChain(ArrayList<Block> blockchain, Object blockLock){
         synchronized(blockLock){
             ArrayList<Block> newBlockchain = new ArrayList<>();
@@ -36,6 +50,12 @@ public class Utils {
         }
     }
 
+    /**
+     * Generates a string representation of the last six blocks in the blockchain.
+     *
+     * @param blockChain The linked list of blocks representing the blockchain.
+     * @return A string representation of the last six blocks in the blockchain.
+     */
     public static String chainString(LinkedList<Block> blockChain){
         String hash = null;
         String chainString = "Chain: [";
@@ -70,10 +90,11 @@ public class Utils {
     }
 
     /**
-     * Returns true if the provided address is in the list, otherwise false
-     * @param list
-     * @param address
-     * @return
+     * Checks if the provided address is present in the list.
+     *
+     * @param list    The list of addresses to be checked.
+     * @param address The address to be checked for presence.
+     * @return True if the address is present, otherwise false.
      */
     public static boolean containsAddress(ArrayList<Address> list, Address address){
         for (Address existingAddress : list) {
@@ -84,6 +105,13 @@ public class Utils {
         return false;
     }
 
+    /**
+     * Checks if the provided transaction is present in the given mempool.
+     *
+     * @param transaction The transaction to be checked for presence.
+     * @param mempool     The mempool to search for the transaction.
+     * @return True if the transaction is present, otherwise false.
+     */
     public static boolean containsTransactionInMap(Transaction transaction, HashMap<String, Transaction> mempool){
         for(Map.Entry<String, Transaction> entry : mempool.entrySet()){
             if (entry.getValue().equals(transaction)) {
@@ -94,10 +122,12 @@ public class Utils {
     }
 
     /**
-     * Determines if a connection is eligible
-     * @param address Address to verify
-     * @param connectIfEligible Connect to address if it is eligible
-     * @return True if eligible, otherwise false
+     * Checks if a connection is eligible and, if specified, establishes the connection.
+     *
+     * @param node                The node initiating the connection.
+     * @param address             The address to be checked for eligibility.
+     * @param connectIfEligible  If true, establishes the connection if eligible.
+     * @return True if the connection is eligible, otherwise false.
      */
     public static boolean eligibleConnection(Node node ,Address address, boolean connectIfEligible){
         synchronized(node.getLockManager().getLock("lock")) {
@@ -112,8 +142,10 @@ public class Utils {
     }
 
     /**
-     * Add a connection to our dynamic list of peers to speak with
-     * @param address
+     * Adds a connection to the dynamic list of peers.
+     *
+     * @param node    The node initiating the connection.
+     * @param address The address to be added to the list of peers.
      */
     public static void establishConnection(Node node, Address address){
         synchronized (node.getLockManager().getLock("lock")){
@@ -121,6 +153,13 @@ public class Utils {
         }
     }
 
+    /**
+     * Removes an address from the dynamic list of peers.
+     *
+     * @param node    The node initiating the removal.
+     * @param address The address to be removed.
+     * @return The removed address, or null if not found.
+     */
     public Address removeAddress(Node node, Address address){
         synchronized (node.getLockManager().getLock("lock")){
             for (Address existingAddress : node.getLocalPeers()) {
@@ -133,6 +172,15 @@ public class Utils {
         }
     }
 
+    /**
+     * Derives a quorum of addresses from the global peers based on a block's hash and nonce.
+     *
+     * @param block        The block for which to derive the quorum.
+     * @param nonce        The nonce value used in the mining process.
+     * @param configValues The configuration values for the blockchain.
+     * @param globalPeers  The list of global peers in the network.
+     * @return The derived quorum of addresses.
+     */
     public static ArrayList<Address> deriveQuorum(Block block, int nonce, Config configValues, ArrayList<Address> globalPeers){
         String blockHash;
         if(block != null && block.getPrevBlockHash() != null){

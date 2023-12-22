@@ -4,13 +4,20 @@ import java.io.*;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.Arrays;
 import java.util.Base64;
 
-import blockchain.Block;
-
+/**
+ * The DSA class provides utility methods for generating DSA key pairs, signing and verifying
+ * digital signatures, and handling public key operations.
+ */
 public class DSA {
-    /* Used https://www.javatpoint.com/java-digital-signature */
+
+    /**
+     * Generates a DSA key pair.
+     *
+     * @return The generated DSA key pair.
+     * @throws RuntimeException If an error occurs during key pair generation.
+     */
     public static KeyPair generateDSAKeyPair(){
         try {
             KeyPairGenerator keyGen = KeyPairGenerator.getInstance("DSA", "SUN");
@@ -25,6 +32,13 @@ public class DSA {
         }
     }
 
+    /**
+     * Writes the public key to a registry file.
+     *
+     * @param myAddress The address associated with the public key.
+     * @param key       The public key to be written to the registry.
+     * @throws RuntimeException If an error occurs while writing the public key to the registry.
+     */
     public static void writePubKeyToRegistry(Address myAddress, PublicKey key){
         String path = "./src/main/java/node/nodeRegistry/";
         String file = path + myAddress.getHost() + "_" + String.valueOf(myAddress.getPort()) + ".txt";
@@ -38,6 +52,14 @@ public class DSA {
         }
     }
 
+    /**
+     * Signs a hash using the provided private key.
+     *
+     * @param hash The hash to be signed.
+     * @param key  The private key used for signing.
+     * @return The digital signature.
+     * @throws RuntimeException If an error occurs during the signing process.
+     */
     public static byte[] signHash(String hash, PrivateKey key) {
         try {
             byte[] hashBytes = hash.getBytes();
@@ -50,6 +72,15 @@ public class DSA {
         }
     }
 
+    /**
+     * Verifies a digital signature using the provided public key.
+     *
+     * @param hash       The hash to be verified.
+     * @param signature  The digital signature to be verified.
+     * @param publicKey  The public key used for verification.
+     * @return True if the signature is valid, false otherwise.
+     * @throws RuntimeException If an error occurs during the verification process.
+     */
     public static boolean verifySignature(String hash, byte[] signature, byte[] publicKey){
         try {
             X509EncodedKeySpec pubKeySpec = new X509EncodedKeySpec(publicKey);
@@ -66,6 +97,15 @@ public class DSA {
         }
     }
 
+    /**
+     * Verifies a digital signature using the public key obtained from the registry.
+     *
+     * @param hash    The hash to be verified.
+     * @param signature  The digital signature to be verified.
+     * @param address The address associated with the public key in the registry.
+     * @return True if the signature is valid, false otherwise.
+     * @throws RuntimeException If an error occurs during the verification process.
+     */
     public static boolean verifySignatureFromRegistry(String hash, byte[] signature, Address address){
         try {
             String path = "./src/main/java/node/nodeRegistry/";
@@ -89,10 +129,22 @@ public class DSA {
         }
     }
 
+    /**
+     * Converts a Base64-encoded string to a byte array.
+     *
+     * @param byteString The Base64-encoded string.
+     * @return The corresponding byte array.
+     */
     public static byte[] stringToBytes(String byteString){
         return Base64.getDecoder().decode(byteString);
     }
 
+    /**
+     * Converts a byte array to a Base64-encoded string.
+     *
+     * @param bytes The byte array to be encoded.
+     * @return The Base64-encoded string.
+     */
     public static String bytesToString(byte[] bytes){
         return Base64.getEncoder().encodeToString(bytes);
     }
