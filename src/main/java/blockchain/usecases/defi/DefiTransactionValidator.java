@@ -67,11 +67,12 @@ public class DefiTransactionValidator extends TransactionValidator{
             /* Validate Transaction */
             String fromAccount = transaction.getFrom();
             int amount = transaction.getAmount();
+            String note = transaction.getNote();
 
             if(amount < 0) return false; // No negatives
 
             if(!tempAccounts.containsKey(fromAccount)) {
-                if(amount != 10){ // This is our cheat for now
+                if(!note.equals("Admin")){ // This is our cheat for now
                     return false;
                 }
             }else{
