@@ -12,6 +12,8 @@ import com.github.lalyos.jfiglet.FigletFont;
 import communication.messaging.Message;
 import utils.Address;
 import utils.merkletree.MerkleTreeProof;
+import blockchain.Transaction;
+import java.util.HashMap;
 
 /**
  * Represents a client application for interacting with the BlueChain network.
@@ -207,6 +209,10 @@ public class Client {
                     if(use.equals("HC")) hcClient.createNewPatient();
                     break;
 
+                case ("d"):
+                    if(use.equals("HC")) hcClient.showAllPatients();
+                    break;
+
                 /* Update full nodes */
                 case("u"):
                     updateFullNode();
@@ -270,6 +276,7 @@ public class Client {
             this.wallet = wallet;
         }
 
+        @SuppressWarnings("unchecked")
         public void run() {
             Socket client;
             while (true) {
@@ -284,10 +291,12 @@ public class Client {
                     if(incomingMessage.getRequest().name().equals("ALERT_WALLET")) {
                         MerkleTreeProof mtp = (MerkleTreeProof) incomingMessage.getMetadata();
                         defiClient.updateAccounts(mtp);
-                    } else if (incomingMessage.getRequest().name().equals("ALERT_HC_WALLET")) {
+                    } else if (incomingMessage.getRequest().name().equals("ALERT_HC_CLIENTS")) {
                         //System.out.println("Full Node has messaged me");
                         MerkleTreeProof mtp = (MerkleTreeProof) incomingMessage.getMetadata();
                         hcClient.updatePatientDetails(mtp);
+                    } else if (incomingMessage.getRequest().name().equals("SEND_LEDGER")) {
+                        hcClient.initializeClient((HashMap<String, Transaction>) incomingMessage.getMetadata());
                     }
                 } catch (IOException e) {
                     System.out.println(e);

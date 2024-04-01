@@ -857,6 +857,18 @@ public class Node  {
         }
     }
 
+    public void getAllTransactions(Address address) {
+        HashMap<String, Transaction> transactions = new HashMap<String, Transaction>();
+
+        if (blockchain.size() > 1) {
+            for (Block block : blockchain) {
+                transactions.putAll(block.getTxList());
+            }
+
+            Messager.sendOneWayMessage(address, new Message(Message.Request.SEND_LEDGER, transactions), myAddress);
+        }
+    }
+
     /**
      * Acceptor is a thread responsible for maintaining the server socket by
      * accepting incoming connection requests, and starting a new ServerConnection

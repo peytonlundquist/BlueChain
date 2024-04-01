@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.HashSet;
 
+import blockchain.Transaction;
 import blockchain.usecases.healthcare.Event;
 import blockchain.usecases.healthcare.HCTransaction;
 import blockchain.usecases.healthcare.Patient;
@@ -62,6 +63,55 @@ public class HCClient {
         this.patients = new ArrayList<Patient>();
 
         this.formatter = new SimpleDateFormat("dd-MM-yyyy HH:mm a");
+
+        // Messages the wallet to add this client on the list of clients to alert.
+        Object data = new Object();
+        data = myAddress;
+        Messager.sendOneWayMessage(new Address(fullNodes.get(0).getPort(), fullNodes.get(0).getHost()),
+        new Message(Message.Request.ALERT_HC_CLIENTS, data), myAddress);
+
+        // Messages the wallet to request ledger to update client.
+        Messager.sendOneWayMessage(new Address(fullNodes.get(0).getPort(), fullNodes.get(0).getHost()),
+        new Message(Message.Request.REQUEST_LEDGER, data), myAddress);
+    }
+
+    public void initializeClient(HashMap<String, Transaction> ledger) {
+        /*
+         * This method is meant to be called when the client is initalized. It will
+         * update the client's list of patients with the data from the ledger. In 
+         * order for this method to work, we need to be able to pull all the data from
+         * the ledger. Below is the psuedocode for how this method should work.
+         */
+
+        for (Transaction transaction : ledger.values()) {
+            HCTransaction hcTransaction = (HCTransaction) transaction;
+            if (hcTransaction.getEvent() instanceof CreatePatient) {
+                CreatePatient createPatient = (CreatePatient) hcTransaction.getEvent();
+                Patient patient = createPatient.getPatient();
+                patients.add(patient);
+            } else if (hcTransaction.getEvent() instanceof RecordUpdate) {
+                RecordUpdate recordUpdate = (RecordUpdate) hcTransaction.getEvent();
+                for (Patient patient : patients) {
+                    if (patient.getUID().equals(hcTransaction.getPatientUID())) {
+                        patient.addField(recordUpdate.getKey(), recordUpdate.getValue());
+                    }
+                }
+            } else if (hcTransaction.getEvent() instanceof Prescription) {
+                Prescription prescription = (Prescription) hcTransaction.getEvent();
+                for (Patient patient : patients) {
+                    if (patient.getUID().equals(hcTransaction.getPatientUID())) {
+                        patient.addEvent(prescription);
+                    }
+                }
+            } else if (hcTransaction.getEvent() instanceof Appointment) {
+                Appointment appointment = (Appointment) hcTransaction.getEvent();
+                for (Patient patient : patients) {
+                    if (patient.getUID().equals(hcTransaction.getPatientUID())) {
+                        patient.addEvent(appointment);
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -88,8 +138,8 @@ public class HCClient {
 
         Appointment appointment = new Appointment(date, location, provider);
         HCTransaction newTransaction = new HCTransaction(appointment, patientUID);
-        byte[] signedUID = patientUID.getBytes();
-        newTransaction.setSigUID(signedUID);
+        // byte[] signedUID = patientUID.getBytes();
+        // newTransaction.setSigUID(signedUID);
 
         submitToNodes(newTransaction);
 
@@ -190,13 +240,11 @@ public class HCClient {
         Date date = formatter.parse(dob);
 
         Patient patient = new Patient(fname, lname, date);
+        CreatePatient createPatient = new CreatePatient(patient);
 
-        patients.add(patient);
+        HCTransaction newTransaction = new HCTransaction(createPatient, patient.getUID());
 
-        Object data = new Object();
-        data = myAddress;
-        Messager.sendOneWayMessage(new Address(fullNodes.get(0).getPort(), fullNodes.get(0).getHost()),
-        new Message(Message.Request.ALERT_HC_WALLET, data), myAddress);
+        submitToNodes(newTransaction);
 
         System.out.println("\nPatient successfully created. Patient UID: " + patient.getUID());
     }
@@ -234,6 +282,13 @@ public class HCClient {
         System.out.println("Patient not found.");
     }
 
+    public void showAllPatients() {
+        System.out.println("\n--ALL PATIENTS--");
+        for(Patient patient : patients){
+            System.out.println(patient.toString());
+        }
+    }
+
     public void updatePatientDetails(MerkleTreeProof mtp) throws IOException {
         synchronized(updateLock){
 
@@ -253,21 +308,27 @@ public class HCClient {
             }
 
             if (!this.test) System.out.println("Updating patient details...");
-    
-            for(Patient patient : patients){ 
-                if (patient.getUID().equals(transaction.getPatientUID()))
-                    if (transaction.getEvent() instanceof RecordUpdate){
-                        RecordUpdate recordUpdate = (RecordUpdate) transaction.getEvent();
-                        patient.addField(recordUpdate.getKey(), recordUpdate.getValue());
-                    } else if (transaction.getEvent() instanceof Prescription){
-                        Prescription prescription = (Prescription) transaction.getEvent();
-                        patient.addEvent(prescription);
-                    } else if (transaction.getEvent() instanceof Appointment){
-                        Appointment appointment = (Appointment) transaction.getEvent();
-                        patient.addEvent(appointment);
+
+            if (transaction.getEvent() instanceof CreatePatient) {
+                CreatePatient createPatient = (CreatePatient) transaction.getEvent();
+                patients.add(createPatient.getPatient());
+            } else {
+                for(Patient patient : patients){ 
+                    if (patient.getUID().equals(transaction.getPatientUID())) {
+                        if (transaction.getEvent() instanceof RecordUpdate) {
+                            RecordUpdate recordUpdate = (RecordUpdate) transaction.getEvent();
+                            patient.addField(recordUpdate.getKey(), recordUpdate.getValue());
+                        } else if (transaction.getEvent() instanceof Prescription){
+                            Prescription prescription = (Prescription) transaction.getEvent();
+                            patient.addEvent(prescription);
+                        } else if (transaction.getEvent() instanceof Appointment){
+                            Appointment appointment = (Appointment) transaction.getEvent();
+                            patient.addEvent(appointment);
+                        }
                     }
                 }
             }
+        }
 
             if(!this.test) {
                 System.out.println("\nFull node has update. Updating patients...");
@@ -284,6 +345,11 @@ public class HCClient {
         for(Address address : fullNodes){
             submitTransaction(transaction, address);
         }
+
+        Object data = new Object();
+        data = myAddress;
+        Messager.sendOneWayMessage(new Address(fullNodes.get(0).getPort(), fullNodes.get(0).getHost()),
+        new Message(Message.Request.ALERT_HC_CLIENTS, data), myAddress);
     }
 
     /**
@@ -319,10 +385,10 @@ public class HCClient {
             
             Appointment newAppointment = new Appointment(new Date(), "TEST", provider);
 
-            Object data = new Object();
-            data = myAddress;
-            Messager.sendOneWayMessage(new Address(fullNodes.get(0).getPort(), fullNodes.get(0).getHost()),
-            new Message(Message.Request.ALERT_HC_WALLET, data), myAddress);
+            // Object data = new Object();
+            // data = myAddress;
+            // Messager.sendOneWayMessage(new Address(fullNodes.get(0).getPort(), fullNodes.get(0).getHost()),
+            // new Message(Message.Request.ALERT_HC_CLIENTS, data), myAddress);
 
             return newAppointment;
         }
@@ -397,6 +463,7 @@ public class HCClient {
         System.out.println("r: Update a patient's record");
         System.out.println("c: create a new patient");
         System.out.println("s: Show patient details");
+        System.out.println("d: Show all patients");
         System.out.println("u: Update full nodes");
     }
 }

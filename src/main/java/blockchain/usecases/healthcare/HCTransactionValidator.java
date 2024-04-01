@@ -112,7 +112,7 @@ public class HCTransactionValidator extends TransactionValidator {
                 for(String transHash : txMap.keySet()) {
                     HCTransaction hctx = (HCTransaction) txMap.get(transHash);
                     Messager.sendOneWayMessage(address, 
-                    new Message(Message.Request.ALERT_HC_WALLET, mt.getProof(txMap.get(transHash))), myAddress);
+                    new Message(Message.Request.ALERT_HC_CLIENTS, mt.getProof(txMap.get(transHash))), myAddress);
                 }
             }
         }

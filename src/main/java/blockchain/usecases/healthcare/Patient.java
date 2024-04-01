@@ -1,11 +1,12 @@
 package blockchain.usecases.healthcare;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.UUID;
 
-public class Patient {
+public class Patient implements Serializable{
 
     private String UID;
 
@@ -77,7 +78,7 @@ public class Patient {
 
     @Override
     public String toString() {
-        return "Name: " + this.firstName + " " + this.lastName + " | DOB: " + this.dob.toString();
+        return "Name: " + this.firstName + " " + this.lastName + " | DOB: " + this.dob.toString() + " | UID: " + this.UID;
         // Also return the fields entered by doctors
     }
 }

@@ -128,11 +128,15 @@ public class ServerConnection extends Thread {
                 DefiTransactionValidator dtv = (DefiTransactionValidator) tv;
                 dtv.addAccountsToAlert((String) data[0], (Address) data[1]);
                 break;
-            case ALERT_HC_WALLET:
+            case ALERT_HC_CLIENTS:
                 System.out.println("Message recieved");
                 Object mData = (Object) incomingMessage.getMetadata();
                 HCTransactionValidator hctv = (HCTransactionValidator) tv;
                 hctv.addClientsToAlert((Address) mData);
+                break;
+            case REQUEST_LEDGER:
+                Object mData2 = (Object) incomingMessage.getMetadata();
+                node.getAllTransactions((Address) mData2);
                 break;
         }
     }
