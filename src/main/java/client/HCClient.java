@@ -39,6 +39,8 @@ public class HCClient {
     private Address myAddress;
     private ArrayList<Address> fullNodes;
     protected boolean test;
+    private boolean patientClient;
+    private Patient currentPatient;
 
     HashSet<HCTransaction> seenTransactions;
     ArrayList<Patient> patients;
@@ -58,6 +60,8 @@ public class HCClient {
         this.updateLock = updateLock;
         this.myAddress = myAddress;
         this.fullNodes = fullNodes;
+        this.patientClient = false;
+        this.currentPatient = null;
 
         this.seenTransactions = new HashSet<>();
         this.patients = new ArrayList<Patient>();
@@ -76,13 +80,6 @@ public class HCClient {
     }
 
     public void initializeClient(HashMap<String, Transaction> ledger) {
-        /*
-         * This method is meant to be called when the client is initalized. It will
-         * update the client's list of patients with the data from the ledger. In 
-         * order for this method to work, we need to be able to pull all the data from
-         * the ledger. Below is the psuedocode for how this method should work.
-         */
-
         for (Transaction transaction : ledger.values()) {
             HCTransaction hcTransaction = (HCTransaction) transaction;
             if (hcTransaction.getEvent() instanceof CreatePatient) {
@@ -112,6 +109,10 @@ public class HCClient {
                 }
             }
         }
+    }
+
+    public void setPatientClient(boolean patientClient) {
+        this.patientClient = patientClient;
     }
 
     /**
@@ -202,9 +203,22 @@ public class HCClient {
      * @throws IOException Thrown if there is an error reading user input.
      */
     public void updateRecord() throws IOException {
+        String patientUID;
+
         System.out.println("Updating a patient's record");
-        System.out.println("Enter the patient's UID:");
-        String patientUID = reader.readLine();
+
+        if(patientClient && currentPatient == null){
+            System.out.println("You are not a patient. Please create an account to update a record.");
+            return;
+        } else if (patientClient) {
+            patientUID = currentPatient.getUID();
+        } else {
+            System.out.println("Updating a patient's record");
+            System.out.println("Enter the patient's UID:");
+            patientUID = reader.readLine();
+        }
+
+        
         System.out.println("Enter the record to update:");
         String key = reader.readLine();
         System.out.println("Enter the new value of the record:");
@@ -228,6 +242,11 @@ public class HCClient {
 
     // Might not be necessary, requires consultation.
     public void createNewPatient() throws IOException, ParseException {
+        if (patientClient && currentPatient != null) {
+            System.out.println("You are already a patient. Please log out to create a new account.");
+            return;
+        }
+
         formatter = new SimpleDateFormat("dd-MM-yyyy");
 
         System.out.println("Creating a new patient");
@@ -242,6 +261,11 @@ public class HCClient {
         Patient patient = new Patient(fname, lname, date);
         CreatePatient createPatient = new CreatePatient(patient);
 
+        if (patientClient) {
+            currentPatient = patient;
+            patients.add(currentPatient);
+        }
+
         HCTransaction newTransaction = new HCTransaction(createPatient, patient.getUID());
 
         submitToNodes(newTransaction);
@@ -250,36 +274,44 @@ public class HCClient {
     }
 
     public void showPatientDetails() throws IOException {
-        System.out.println("Enter the patient's UID:");
-        String patientUID = reader.readLine();
+        if (patientClient && currentPatient != null) {
+            printPatientDetails(currentPatient);
+        } else {
+            System.out.println("Enter the patient's UID:");
+            String patientUID = reader.readLine();
 
-        for(Patient patient : patients){
-            if(patient.getUID().equals(patientUID)){
-                HashMap<String, String> fields = patient.getFields();
-                ArrayList<Event> patientEvents = patient.getEvents();
-
-                System.out.println("\n--PATIENT DETAILS--");
-                System.out.println("First name: " + patient.getFirstName());
-                System.out.println("Last name: " + patient.getLastName());
-                System.out.println("Date of birth: " + patient.getDob());
-
-                for(String key : fields.keySet()){
-                    System.out.println(key + ": " + fields.get(key));
+            for(Patient patient : patients){
+                if(patient.getUID().equals(patientUID)){
+                    printPatientDetails(patient);
+                    return;
                 }
-
-                System.out.println("\nEVENTS:");
-
-                for (Event event : patientEvents) {
-                    System.out.println(event.toString());
-                }
-
-                System.out.println();
-
-                return;
             }
+            System.out.println("Patient not found.");
         }
 
-        System.out.println("Patient not found.");
+    }
+
+    private void printPatientDetails(Patient patient) {
+        HashMap<String, String> fields = patient.getFields();
+        ArrayList<Event> patientEvents = patient.getEvents();
+
+        System.out.println("\n--PATIENT DETAILS--");
+        System.out.println("First name: " + patient.getFirstName());
+        System.out.println("Last name: " + patient.getLastName());
+        System.out.println("Date of birth: " + patient.getDob());
+        System.out.println("Patient UID: " + patient.getUID());
+
+        for(String key : fields.keySet()){
+            System.out.println(key + ": " + fields.get(key));
+        }
+
+        System.out.println("\nEVENTS:");
+
+        for (Event event : patientEvents) {
+            System.out.println(event.toString());
+        }
+
+        System.out.println();
     }
 
     public void showAllPatients() {
@@ -465,5 +497,12 @@ public class HCClient {
         System.out.println("s: Show patient details");
         System.out.println("d: Show all patients");
         System.out.println("u: Update full nodes");
+    }
+
+    protected void printPatientUsage(){
+        System.out.println("BlueChain Patient Health Care Usage:");
+        System.out.println("c: Create a new account");
+        System.out.println("r: Update account record");
+        System.out.println("s: Show account details");
     }
 }

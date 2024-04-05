@@ -81,7 +81,7 @@ public class Node  {
         /* Make tx validator */
         if(configValues.getUse().equals("Defi")){
             tv = new DefiTransactionValidator();
-        }else if(configValues.getUse().equals("HC")){
+        }else if(configValues.getUse().equals("HC") || configValues.getUse().equals("HCP")){
             // Room to enable another configValues.getUse() case 
             tv = new HCTransactionValidator();
         }else{
@@ -122,7 +122,7 @@ public class Node  {
 
         if(configValues.getUse().equals("Defi")){
             addBlock(new DefiBlock(new HashMap<String, Transaction>(), "000000", 0));
-        }else if(configValues.getUse().equals("HC")){
+        }else if(configValues.getUse().equals("HC") || configValues.getUse().equals("HCP")){
             addBlock(new HCBlock(new HashMap<String, Transaction>(), "000000", 0));
         }
     }
@@ -430,7 +430,7 @@ public class Node  {
                 if(configValues.getUse().equals("Defi")){
                     validatorObjects[0] = transaction;
                     validatorObjects[1] = blockTransactions;
-                }else if(configValues.getUse().equals("HC")){
+                }else if(configValues.getUse().equals("HC") || configValues.getUse().equals("HCP")) {
                     // Validator objects will change according to another configValues.getUse() case
                     validatorObjects[0] = transaction;
                 }
@@ -842,7 +842,7 @@ public class Node  {
      * @return True if the node is in the quorum, otherwise false.
      */
     public boolean inQuorum(Block block){
-        synchronized (lockManager.getLock("quorumLock")){
+        synchronized (lockManager.getLock("quorumLock")){ // Only allows one thread to process this code at a time
             if(block.getBlockId() - 1 != blockchain.getLast().getBlockId()){ // 
                 return false;
             }
@@ -858,14 +858,20 @@ public class Node  {
     }
 
     public void getAllTransactions(Address address) {
-        HashMap<String, Transaction> transactions = new HashMap<String, Transaction>();
+        // If this throws a concurrent modification exeption, it's because it's not thread safe
+        // Made syncronized to avoid concurrent modification exception
+        // Lock: blocklock
 
-        if (blockchain.size() > 1) {
-            for (Block block : blockchain) {
-                transactions.putAll(block.getTxList());
+        synchronized (lockManager.getLock("blockLock")) {
+            HashMap<String, Transaction> transactions = new HashMap<String, Transaction>();
+
+            if (blockchain != null && blockchain.size() > 1){
+                for (Block block : blockchain) {
+                    transactions.putAll(block.getTxList());
+                }
+
+                Messager.sendOneWayMessage(address, new Message(Message.Request.SEND_LEDGER, transactions), myAddress);
             }
-
-            Messager.sendOneWayMessage(address, new Message(Message.Request.SEND_LEDGER, transactions), myAddress);
         }
     }
 

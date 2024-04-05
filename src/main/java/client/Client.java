@@ -26,7 +26,7 @@ public class Client {
     ArrayList<Address> fullNodes; // List of full nodes we want to use
     Object updateLock; // Lock for multithreading
     boolean test; // Boolean for test vs normal output
-    String use;
+    static String use;
     DefiClient defiClient;
 
     HCClient hcClient;
@@ -121,6 +121,10 @@ public class Client {
 
         defiClient = new DefiClient(updateLock, reader, myAddress, fullNodes);
         hcClient = new HCClient(updateLock, reader, myAddress, fullNodes);
+
+        if (use.equals("HCP")) {
+            hcClient.setPatientClient(true);
+        }
     }
 
     public static void main(String[] args) throws IOException, ParseException{
@@ -137,15 +141,15 @@ public class Client {
             if(args[0].equals("-port")){
                 port = Integer.valueOf(args[0]);
             }else if(args[0].equals("-test")){
-                /* if(use.equals("Defi")){
+                if(use.equals("Defi")){
                     Client defiClient = new Client(port);
                     defiClient.test = true;
                     defiClient.testNetwork( Integer.valueOf(args[1]));
-                } else { */
+                } else if (use.equals("HC")) {
                     Client hcClient = new Client(port);
                     hcClient.test = true;
                     hcClient.testNetwork( Integer.valueOf(args[1]));
-                //}
+                }
 
                 System.exit(0); // We just test then exit
             }
@@ -191,6 +195,7 @@ public class Client {
                 case("h"):
                     if(use.equals("Defi")) defiClient.printUsage();
                     if(use.equals("HC")) hcClient.printUsage();
+                    if(use.equals("HCP")) hcClient.printPatientUsage();
                     break;
 
                 case("n"):
@@ -198,15 +203,15 @@ public class Client {
                     break;
 
                 case("r"):
-                    if(use.equals("HC")) hcClient.updateRecord();
+                    if(use.equals("HC") || use.equals("HCP")) hcClient.updateRecord();
                     break;
 
                 case("s"):
-                    if(use.equals("HC")) hcClient.showPatientDetails();
+                    if(use.equals("HC") || use.equals("HCP")) hcClient.showPatientDetails();
                     break;
 
                 case("c"):
-                    if(use.equals("HC")) hcClient.createNewPatient();
+                    if(use.equals("HC") || use.equals("HCP")) hcClient.createNewPatient();
                     break;
 
                 case ("d"):
