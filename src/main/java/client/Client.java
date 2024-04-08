@@ -140,19 +140,31 @@ public class Client {
         if(args.length > 0){
             if(args[0].equals("-port")){
                 port = Integer.valueOf(args[0]);
-            }else if(args[0].equals("-test")){
-                if(use.equals("Defi")){
-                    Client defiClient = new Client(port);
-                    defiClient.test = true;
-                    defiClient.testNetwork( Integer.valueOf(args[1]));
-                } else if (use.equals("HC")) {
-                    Client hcClient = new Client(port);
-                    hcClient.test = true;
-                    hcClient.testNetwork( Integer.valueOf(args[1]));
+            }else if(args[0].equals("-testDefi")){
+                Client defiClient = new Client(port);
+
+                if (!use.equals("Defi")) {
+                    System.out.println("Client is not configured for Defi use. Please change the config file to use Defi.");
+                    System.exit(1);
                 }
 
-                System.exit(0); // We just test then exit
+                defiClient.test = true;
+                defiClient.testNetwork( Integer.valueOf(args[1]));
+
+            } else if (args[0].equals("-testHC")) {
+                Client hcClient = new Client(port);
+
+                if (!use.equals("HC")) {
+                    System.out.println("Client is not configured for HC use. Please change the config file to use HC.");
+                    System.exit(1);
+                }
+
+                hcClient.test = true;
+                hcClient.testNetwork( Integer.valueOf(args[1]));
+
             }
+
+            System.exit(0);
         }
 
         Client client = new Client(port);
@@ -203,7 +215,7 @@ public class Client {
                     break;
 
                 case("r"):
-                    if(use.equals("HC") || use.equals("HCP")) hcClient.updateRecord();
+                    if(use.equals("HC")) hcClient.updateRecord();
                     break;
 
                 case("s"):
