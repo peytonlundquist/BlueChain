@@ -206,19 +206,9 @@ public class HCClient {
         String patientUID;
 
         System.out.println("Updating a patient's record");
-
-        if(patientClient && currentPatient == null){
-            System.out.println("You are not a patient. Please create an account to update a record.");
-            return;
-        } else if (patientClient) {
-            patientUID = currentPatient.getUID();
-        } else {
-            System.out.println("Updating a patient's record");
-            System.out.println("Enter the patient's UID:");
-            patientUID = reader.readLine();
-        }
-
-        
+        System.out.println("Enter the patient's UID:");
+        patientUID = reader.readLine();
+    
         System.out.println("Enter the record to update:");
         String key = reader.readLine();
         System.out.println("Enter the new value of the record:");
@@ -362,10 +352,10 @@ public class HCClient {
             }
         }
 
-            if(!this.test) {
-                System.out.println("\nFull node has update. Updating patients...");
-                System.out.print(">");
-            }
+        if(!this.test) {
+            System.out.println("\nFull node has update. Updating patients...");
+            System.out.print(">");
+        }
     }
 
     /**
@@ -432,15 +422,18 @@ public class HCClient {
      * @param event The event to submit.
      * @param patientUID The UID of the patient.
      */
-    protected void testSubmitTransaction(Event event, String patientUID) {
+    protected void testSubmitToNodes(HCTransaction transaction) {
 
-        HCTransaction newTransaction = new HCTransaction(event, patientUID);
-        String signedUID = newTransaction.getUID() + event.toString();
-        newTransaction.setSigUID(signedUID.getBytes());
+        //Add signature to transaction
 
         for(Address address : fullNodes){
-            submitTransaction(newTransaction, address);
+            submitTransaction(transaction, address);
         }
+
+        Object data = new Object();
+        data = myAddress;
+        Messager.sendOneWayMessage(new Address(fullNodes.get(0).getPort(), fullNodes.get(0).getHost()),
+        new Message(Message.Request.ALERT_HC_CLIENTS, data), myAddress);
     }
 
     /**
@@ -460,8 +453,17 @@ public class HCClient {
             
             for(int i = 0; i < j; i++){
                     String provider = "Provider " + i;
-                    Appointment apt = testAddAppointment(provider);
-                    testSubmitTransaction(apt, patient.getUID());
+                    HCTransaction transaction;
+                    
+                    if(i % 2 == 0) {
+                        Appointment apt = new Appointment(new Date(), "123 st", provider);
+                        transaction = new HCTransaction(apt, patient.getUID());
+                    } else {
+                        Prescription rx = new Prescription("Medication", provider, "123 st", new Date(), 1);
+                        transaction = new HCTransaction(rx, patient.getUID());
+                    }
+
+                    testSubmitToNodes(transaction);
                     Thread.sleep(2000);
                     pb.step();
             }
@@ -502,7 +504,6 @@ public class HCClient {
     protected void printPatientUsage(){
         System.out.println("BlueChain Patient Health Care Usage:");
         System.out.println("c: Create a new account");
-        System.out.println("r: Update account record");
         System.out.println("s: Show account details");
     }
 }
