@@ -79,6 +79,14 @@ public class HCClient {
         new Message(Message.Request.REQUEST_LEDGER, data), myAddress);
     }
 
+    /**
+     * Initializes the client with the Block chain ledger. It will add all the patients and their
+     * events to the client. The ledger is accessed by the client sending the message:
+     * REQUEST_LEDGER to the nodes. The nodes will then send the ledger to the client. Each transaction
+     * in the leger is added to the list of patients as well as their events.
+     * 
+     * @param ledger The BlockChain ledger to initialize the client with.
+     */
     public void initializeClient(HashMap<String, Transaction> ledger) {
         for (Transaction transaction : ledger.values()) {
             HCTransaction hcTransaction = (HCTransaction) transaction;
@@ -119,6 +127,7 @@ public class HCClient {
      * Creates a new appointment. Prompts the user for the patient's UID, the appointment's date, 
      * location, and provider. It then creates a transaction containing the appointment event and
      * submits it to the full nodes.
+     * 
      * @throws IOException Thrown if there is an error reading user input.
      * @throws ParseException Thrown if there is an error parsing the date.
      */
@@ -139,8 +148,6 @@ public class HCClient {
 
         Appointment appointment = new Appointment(date, location, provider);
         HCTransaction newTransaction = new HCTransaction(appointment, patientUID);
-        // byte[] signedUID = patientUID.getBytes();
-        // newTransaction.setSigUID(signedUID);
 
         submitToNodes(newTransaction);
 
@@ -163,6 +170,7 @@ public class HCClient {
     public void createPerscription() throws IOException, ParseException{
         formatter = new SimpleDateFormat("dd-MM-yyyy");
 
+        // Prompts user for perscription information
         System.out.println("Creating a new perscription");
         System.out.println("Enter the patient's UID:");
         String patientUID = reader.readLine();
@@ -179,13 +187,13 @@ public class HCClient {
         String address = reader.readLine();
         System.out.println();
 
+        // Creates a new perscription event and transaction. Transaction is sent to nodes
         Prescription prescription = new Prescription(medication, provider, address, date, count);
         HCTransaction newTransaction = new HCTransaction(prescription, patientUID);
-        byte[] signedUID = patientUID.getBytes();
-        newTransaction.setSigUID(signedUID);
 
         submitToNodes(newTransaction);
 
+        // Prints back the perscription information to the user
         System.out.println("\n--PERSCRIPTION CREATED--");
         System.out.println("Patient UID: " + patientUID);
         System.out.println("Perscription date: " + date);
@@ -203,19 +211,17 @@ public class HCClient {
      * @throws IOException Thrown if there is an error reading user input.
      */
     public void updateRecord() throws IOException {
-        String patientUID;
-
+        // Prompts user for patient record information
         System.out.println("Updating a patient's record");
         System.out.println("Enter the patient's UID:");
-        patientUID = reader.readLine();
-    
+        String patientUID = reader.readLine();
         System.out.println("Enter the record to update:");
         String key = reader.readLine();
         System.out.println("Enter the new value of the record:");
         String value = reader.readLine();
         System.out.println();
 
-        // Date is the current date that the record is updated
+        // Creates a new record update event and transaction. Transaction is sent to nodes
         RecordUpdate recordUpdate = new RecordUpdate(new Date(), key, value);
         HCTransaction newTransaction = new HCTransaction(recordUpdate, patientUID);
         byte[] signedUID = patientUID.getBytes();
@@ -223,6 +229,7 @@ public class HCClient {
 
         submitToNodes(newTransaction);
 
+        // Prints back the updated record information to the user
         System.out.println("\n--RECORD UPDATED--");
         System.out.println("Patient UID: " + patientUID);
         System.out.println("Record to Update: " + key);
@@ -232,6 +239,7 @@ public class HCClient {
 
     // Might not be necessary, requires consultation.
     public void createNewPatient() throws IOException, ParseException {
+        // If patient client, check if patient already exists
         if (patientClient && currentPatient != null) {
             System.out.println("You are already a patient. Please log out to create a new account.");
             return;
@@ -239,6 +247,7 @@ public class HCClient {
 
         formatter = new SimpleDateFormat("dd-MM-yyyy");
 
+        // Prompts user for patient information
         System.out.println("Creating a new patient");
         System.out.println("Enter the patient's first name:");
         String fname = reader.readLine();
@@ -248,14 +257,17 @@ public class HCClient {
         String dob = reader.readLine();
         Date date = formatter.parse(dob);
 
+        // Creates a new patient. 
         Patient patient = new Patient(fname, lname, date);
         CreatePatient createPatient = new CreatePatient(patient);
 
+        // If patient client, set current patient to the new patient
         if (patientClient) {
             currentPatient = patient;
             patients.add(currentPatient);
         }
 
+        // Creates a new transaction and submits it to the nodes
         HCTransaction newTransaction = new HCTransaction(createPatient, patient.getUID());
 
         submitToNodes(newTransaction);
@@ -263,13 +275,19 @@ public class HCClient {
         System.out.println("\nPatient successfully created. Patient UID: " + patient.getUID());
     }
 
+    /**
+     * Shows the patient details after prompting for patient UID. If the client is a patient 
+     * client, it will show the current patient's details.
+     * @throws IOException Thrown if there is an error reading user input.
+     */
     public void showPatientDetails() throws IOException {
-        if (patientClient && currentPatient != null) {
+        if (patientClient && currentPatient != null) { // If patient client, show current patient details
             printPatientDetails(currentPatient);
-        } else {
+        } else { // If not patient client, prompt user for patient UID
             System.out.println("Enter the patient's UID:");
             String patientUID = reader.readLine();
 
+            // Search for patient in list of patients, if found, print patient details
             for(Patient patient : patients){
                 if(patient.getUID().equals(patientUID)){
                     printPatientDetails(patient);
@@ -281,6 +299,11 @@ public class HCClient {
 
     }
 
+    /**
+     * Prints the patient detials using a patient as a parameter
+     *
+     * @param patient The patient object to be printed
+     */
     private void printPatientDetails(Patient patient) {
         HashMap<String, String> fields = patient.getFields();
         ArrayList<Event> patientEvents = patient.getEvents();
@@ -304,6 +327,9 @@ public class HCClient {
         System.out.println();
     }
 
+    /**
+     * Shows all patients in the client's list of patients.
+     */
     public void showAllPatients() {
         System.out.println("\n--ALL PATIENTS--");
         for(Patient patient : patients){
@@ -311,6 +337,15 @@ public class HCClient {
         }
     }
 
+    /**
+     * Updates the list of full nodes we are communicating with in the network. Anytime a
+     * event is added, the full nodes are alerted and updates the rest of the clients. This
+     * method is used to update the list of clients with the most recent transaction added
+     * to the ledger
+     * 
+     * @param mtp The MerkleTreeProof containing the transaction to update the client with.
+     * @throws IOException If an I/O error occurs.
+     */
     public void updatePatientDetails(MerkleTreeProof mtp) throws IOException {
         synchronized(updateLock){
 
@@ -395,24 +430,6 @@ public class HCClient {
         } catch (InterruptedException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
-        }
-    }
-
-    /**
-     * TEST METHOD. Adds an appointment to the events list.
-     * @param provider The name of the appointment provider
-     */
-    public Appointment testAddAppointment(String provider) {
-        synchronized(updateLock) {
-            
-            Appointment newAppointment = new Appointment(new Date(), "TEST", provider);
-
-            // Object data = new Object();
-            // data = myAddress;
-            // Messager.sendOneWayMessage(new Address(fullNodes.get(0).getPort(), fullNodes.get(0).getHost()),
-            // new Message(Message.Request.ALERT_HC_CLIENTS, data), myAddress);
-
-            return newAppointment;
         }
     }
 
@@ -501,6 +518,9 @@ public class HCClient {
         System.out.println("u: Update full nodes");
     }
 
+    /**
+     * Prints the patient menu to the client.
+     */
     protected void printPatientUsage(){
         System.out.println("BlueChain Patient Health Care Usage:");
         System.out.println("c: Create a new account");

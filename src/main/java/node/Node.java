@@ -857,11 +857,14 @@ public class Node  {
         }
     }
 
+    /**
+     * Requests all the transactions from the nodes. Does this by
+     * recieving a message found in ServerConnection.java and sends
+     * a message back to the client with all the transactions contained
+     * as metadata.
+     * @param address Address of the client that the transactions should be sent to.
+     */
     public void getAllTransactions(Address address) {
-        // If this throws a concurrent modification exeption, it's because it's not thread safe
-        // Made syncronized to avoid concurrent modification exception
-        // Lock: blocklock
-
         synchronized (lockManager.getLock("blockLock")) {
             HashMap<String, Transaction> transactions = new HashMap<String, Transaction>();
 
