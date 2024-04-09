@@ -224,8 +224,6 @@ public class HCClient {
         // Creates a new record update event and transaction. Transaction is sent to nodes
         RecordUpdate recordUpdate = new RecordUpdate(new Date(), key, value);
         HCTransaction newTransaction = new HCTransaction(recordUpdate, patientUID);
-        byte[] signedUID = patientUID.getBytes();
-        newTransaction.setSigUID(signedUID);
 
         submitToNodes(newTransaction);
 
@@ -428,21 +426,16 @@ public class HCClient {
         } catch (IOException e) {
             System.out.println("Full node at " + address + " appears down.");
         } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
     }
 
-    
     /**
      * TEST METHOD. Submits a transaction to the network.
      * @param event The event to submit.
      * @param patientUID The UID of the patient.
      */
     protected void testSubmitToNodes(HCTransaction transaction) {
-
-        //Add signature to transaction
-
         for(Address address : fullNodes){
             submitTransaction(transaction, address);
         }
@@ -469,20 +462,20 @@ public class HCClient {
             pb.setExtraMessage("Testing..."); // Set extra message to display at the end of the bar
             
             for(int i = 0; i < j; i++){
-                    String provider = "Provider " + i;
-                    HCTransaction transaction;
-                    
-                    if(i % 2 == 0) {
-                        Appointment apt = new Appointment(new Date(), "123 st", provider);
-                        transaction = new HCTransaction(apt, patient.getUID());
-                    } else {
-                        Prescription rx = new Prescription("Medication", provider, "123 st", new Date(), 1);
-                        transaction = new HCTransaction(rx, patient.getUID());
-                    }
+                String provider = "Provider " + i;
+                HCTransaction transaction;
+                
+                if(i % 2 == 0) {
+                    Appointment apt = new Appointment(new Date(), "123 st", provider);
+                    transaction = new HCTransaction(apt, patient.getUID());
+                } else {
+                    Prescription rx = new Prescription("Medication", provider, "123 st", new Date(), 1);
+                    transaction = new HCTransaction(rx, patient.getUID());
+                }
 
-                    testSubmitToNodes(transaction);
-                    Thread.sleep(2000);
-                    pb.step();
+                testSubmitToNodes(transaction);
+                Thread.sleep(2000);
+                pb.step();
             }
 
             pb.stop(); // stops the progress bar

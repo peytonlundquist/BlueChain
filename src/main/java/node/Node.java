@@ -924,22 +924,31 @@ public class Node  {
                 e.printStackTrace();
             }
             while (true) {
-                for(Address address : localPeers){
-                    try {                 
-                        Thread.sleep(10000);
-                        Message messageReceived = Messager.sendTwoWayMessage(address, new Message(Message.Request.PING), myAddress);
+                synchronized(lockManager.getLock("lock")) {
+                    for(Address address : localPeers){
+                        try {                 
+                            
+                            Message messageReceived = Messager.sendTwoWayMessage(address, new Message(Message.Request.PING), myAddress);
 
-                        /* configValues.getUse() heartbeat to also output the block chain of the node */
+                            /* configValues.getUse() heartbeat to also output the block chain of the node */
 
-                    } catch (InterruptedException e) {
-                        System.out.println("Received Interrupted Exception from node " + address.getPort());
-                        throw new RuntimeException(e);
-                    } catch (ConcurrentModificationException e){
-                        System.out.println(e);
-                        break;
-                    } catch (IndexOutOfBoundsException e){
-                        System.out.println(e);
+                            Thread.sleep(500);
+                        } catch (InterruptedException e) {
+                            System.out.println("Received Interrupted Exception from node " + address.getPort());
+                            throw new RuntimeException(e);
+                        } catch (ConcurrentModificationException e){
+                            System.out.println(e);
+                            break;
+                        } catch (IndexOutOfBoundsException e){
+                            System.out.println(e);
+                        }
                     }
+                }
+                
+                try {
+                    Thread.sleep(100000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
             }
         }
