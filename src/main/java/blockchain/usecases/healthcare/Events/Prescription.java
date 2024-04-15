@@ -1,8 +1,6 @@
 /**
- * This class represents the event of a prescription. This event tracks the date, medication, 
- * provider, and address of the prescription.
- * 
- * @date 03-20-2021
+ * This class is an event that will be stored in a transaction in the blockchain. It
+ * represents a prescription for a medication issued from a healthcare provider.
  */
 
 package blockchain.usecases.healthcare.Events;
@@ -18,6 +16,23 @@ public class Prescription extends Event {
     private String medication;
     private String provider;
     private String address;
+
+    /**
+     * This constructor sets the medication, provider, address, date, and perscribed count of the prescription.
+     * @param medication The medication name.
+     * @param provider The provider of the prescription.
+     * @param address The address of where the medication was perscribed.
+     * @param date The date the prescription was issued.
+     * @param perscribedCount The perscribed count of the medication.
+     */
+    public Prescription(String medication, String provider, String address, Date date, int perscribedCount) {
+        super(Action.Prescription);
+        this.date = date;
+        this.perscribedCount = perscribedCount;
+        this.provider = provider;
+        this.address = address;
+        this.medication = medication;
+    }
 
     /**
      * This method returns the perscribed count of the medication.
@@ -36,7 +51,7 @@ public class Prescription extends Event {
     }
 
     /**
-     * This method returns the date of the prescription.
+     * This method returns the date the perscription was issued.
      * @return The date of the prescription.
      */
     public Date getDate() {
@@ -44,7 +59,7 @@ public class Prescription extends Event {
     }
 
     /**
-     * This method returns the medication of the prescription.
+     * This method returns the medication name.
      * @return The medication of the prescription.
      */
     public String getMedication() {
@@ -52,28 +67,11 @@ public class Prescription extends Event {
     }
 
     /**
-     * This method returns the address of the prescription.
+     * This method returns where the medication was perscribed.
      * @return The address of the prescription.
      */
     public String getAddress() {
         return address;
-    }
-
-    /**
-     * This constructor sets the medication, provider, address, date, and perscribed count of the prescription.
-     * @param medication The medication of the prescription.
-     * @param provider The provider of the prescription.
-     * @param address The address of the prescription.
-     * @param date The date of the prescription.
-     * @param perscribedCount The perscribed count of the medication.
-     */
-    public Prescription(String medication, String provider, String address, Date date, int perscribedCount) {
-        super(Action.Prescription);
-        this.date = date;
-        this.perscribedCount = perscribedCount;
-        this.provider = provider;
-        this.address = address;
-        this.medication = medication;
     }
     
     public String toString() {

@@ -1,9 +1,6 @@
 /**
  * This abstract class is the base class for all events that can be tracked in the healthcare blockchain.
- * It contains an enum for the action that the event represents and a constructor to set the action.
- * This class is extended by the Appointment, Prescription, Record_Update, and Create_Patient classes.
- * 
- * @date 03-20-2021
+ * Any class that extends this one is used to store in the blockchain. Refer to the Events file for examples.
  */
 
 package blockchain.usecases.healthcare;
@@ -36,4 +33,8 @@ public abstract class Event implements Serializable{
     public Event(Action action){
         this.action = action;
     }
+
+    public String toString(){
+        return "";
+     };
 }

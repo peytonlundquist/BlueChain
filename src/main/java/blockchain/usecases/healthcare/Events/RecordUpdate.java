@@ -1,8 +1,7 @@
 /**
- * Class to represent the event of a record update. This event updates a existing
- * or new record of a patient. It contains the date, key, and value of the record
- * 
- * @date 03-20-2021
+ * This class is an event that will be stored in a transaction in the blockchain. It
+ * represents a update of a patients record. For example, A patient's height, weight,
+ * blood pressure, etc.
  */
 
 package blockchain.usecases.healthcare.Events;
@@ -12,22 +11,21 @@ import java.util.Date;
 import blockchain.usecases.healthcare.Event;
 
 public class RecordUpdate extends Event{
-
+    
     private Date date;
     private String key;
     private String value;
 
-
     /**
-     * This method returns the date of the record update.
+     * This constructor sets the date, key, and value of the record update.
      * @param date The date of the record update.
-     * @param key The key of the record update.
-     * @param value The value of the record update.
+     * @param record The record to be updated.
+     * @param value The new value of the record.
      */
-    public RecordUpdate(Date date, String key, String value) {
+    public RecordUpdate(Date date, String record, String value) {
         super(Action.Record_Update);
         this.date = date;
-        this.key = key;
+        this.key = record;
         this.value = value;
     }
     
@@ -53,5 +51,9 @@ public class RecordUpdate extends Event{
      */
     public String getValue() {
         return value;
+    }
+
+    public String toString(){
+        return "Record Update: " + date.toString() + " | " + key + " | " + value;
     }
 }
