@@ -69,14 +69,15 @@ public class HCClient {
         this.formatter = new SimpleDateFormat("dd-MM-yyyy HH:mm a");
 
         // Messages the wallet to add this client on the list of clients to alert.
-        Object data = new Object();
-        data = myAddress;
+        Object[] data = new Object[2];
+        data[0] = "HC";
+        data[1] = myAddress;
         Messager.sendOneWayMessage(new Address(fullNodes.get(0).getPort(), fullNodes.get(0).getHost()),
-        new Message(Message.Request.ALERT_HC_CLIENTS, data), myAddress);
+        new Message(Message.Request.ALERT_WALLET, data), myAddress);
 
         // Messages the wallet to request ledger to update client.
         Messager.sendOneWayMessage(new Address(fullNodes.get(0).getPort(), fullNodes.get(0).getHost()),
-        new Message(Message.Request.REQUEST_LEDGER, data), myAddress);
+        new Message(Message.Request.REQUEST_TX, data[1]), myAddress);
     }
 
     /**
@@ -99,6 +100,7 @@ public class HCClient {
                 for (Patient patient : patients) {
                     if (patient.getUID().equals(hcTransaction.getPatientUID())) {
                         patient.addField(recordUpdate.getKey(), recordUpdate.getValue());
+                        patient.addEvent(recordUpdate);
                     }
                 }
             } else if (hcTransaction.getEvent() instanceof Prescription) {
@@ -373,6 +375,7 @@ public class HCClient {
                         if (transaction.getEvent() instanceof RecordUpdate) {
                             RecordUpdate recordUpdate = (RecordUpdate) transaction.getEvent();
                             patient.addField(recordUpdate.getKey(), recordUpdate.getValue());
+                            patient.addEvent(recordUpdate);
                         } else if (transaction.getEvent() instanceof Prescription){
                             Prescription prescription = (Prescription) transaction.getEvent();
                             patient.addEvent(prescription);
@@ -401,10 +404,11 @@ public class HCClient {
             submitTransaction(transaction, address);
         }
 
-        Object data = new Object();
-        data = myAddress;
+        Object[] data = new Object[2];
+        data[0] = "HC";
+        data[1] = myAddress;
         Messager.sendOneWayMessage(new Address(fullNodes.get(0).getPort(), fullNodes.get(0).getHost()),
-        new Message(Message.Request.ALERT_HC_CLIENTS, data), myAddress);
+        new Message(Message.Request.ALERT_WALLET, data), myAddress);
     }
 
     /**
@@ -440,10 +444,11 @@ public class HCClient {
             submitTransaction(transaction, address);
         }
 
-        Object data = new Object();
-        data = myAddress;
+        Object[] data = new Object[2];
+        data[0] = "HC";
+        data[1] = myAddress;
         Messager.sendOneWayMessage(new Address(fullNodes.get(0).getPort(), fullNodes.get(0).getHost()),
-        new Message(Message.Request.ALERT_HC_CLIENTS, data), myAddress);
+        new Message(Message.Request.ALERT_WALLET, data), myAddress);
     }
 
     /**
@@ -465,16 +470,23 @@ public class HCClient {
                 String provider = "Provider " + i;
                 HCTransaction transaction;
                 
-                if(i % 2 == 0) {
+                if(i % 4 == 0) {
                     Appointment apt = new Appointment(new Date(), "123 st", provider);
                     transaction = new HCTransaction(apt, patient.getUID());
-                } else {
+                } else if(i % 4 == 1) {
+                    RecordUpdate ru = new RecordUpdate(new Date(), provider, "Value");
+                    transaction = new HCTransaction(ru, patient.getUID());
+                } else if (i % 4 == 2) {
                     Prescription rx = new Prescription("Medication", provider, "123 st", new Date(), 1);
                     transaction = new HCTransaction(rx, patient.getUID());
+                } else {
+                    Patient tempPatient = new Patient(provider, provider, new Date());
+                    CreatePatient createPatient = new CreatePatient(tempPatient);
+                    transaction = new HCTransaction(createPatient, tempPatient.getUID());
                 }
 
                 testSubmitToNodes(transaction);
-                Thread.sleep(2000);
+                Thread.sleep(5000);
                 pb.step();
             }
 
@@ -482,15 +494,47 @@ public class HCClient {
             System.out.println("Sleeping wallet for last minute updates...");
             Thread.sleep(100000);
 
-            // Make sure that the ledger matches the added events.
-            if(patient.getEvents().size() == j) {
+            int aptActual = 0, aptExpected = j / 4; 
+            int rxActual = 0, rxExpected = j / 4;
+            int ruActual = 0, ruExpected = j / 4;
+            int patientsActual = patients.size() - 1; // -1 because we added a patient at the start
+            int patientsExpected = j / 4;
+            boolean passed = true;
+
+            for (Event e : patient.getEvents()) {
+                if (e instanceof Appointment) {
+                    aptActual++;
+                } else if (e instanceof Prescription) {
+                    rxActual++;
+                } else if (e instanceof RecordUpdate) {
+                    ruActual++;
+                }
+            }
+
+            if (aptActual != aptExpected) {
+                passed = false;
+            }
+            if (rxActual != rxExpected) {
+                passed = false;
+            }
+            if (ruActual != ruExpected) {
+                passed = false;
+            }
+            if (patientsActual != patientsExpected) {
+                passed = false;
+            }
+
+            if(passed) {
                 System.out.println("\n*********************Test passed.*********************");
             }else{
                 System.out.println("\n*********************Test Failed*********************");
             }
 
-            System.out.println("Expected events added: " + j);
-            System.out.println("Actual events added: " + patient.getEvents().size());
+            System.out.println("Tests completed: " + j);
+            System.out.println("Expected appointments: " + aptExpected + " | Appointments Added: " + aptActual);
+            System.out.println("Expected perscriptions: " + rxExpected + " | Perscriptions Added: " + rxActual);
+            System.out.println("Expected record updates: " + ruExpected + " | Record Updates Added: " + ruActual);
+            System.out.println("Expected patients: " + patientsExpected + " | Patients Added: " + (patientsActual));
 
         } catch (InterruptedException e) {
             e.printStackTrace();
