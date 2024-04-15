@@ -12,14 +12,14 @@ public class DefiTransaction extends Transaction {
     protected String from; // Public key string of sender
     protected int amount; // Amount to being transferred
 
-    protected String note; // BRADY EDIT
+    protected String note; // Note attached to the transaction
     
     public DefiTransaction(String to, String from, int amount, String timestamp, String note){
         this.to = to;
         this.from = from;
         this.amount = amount;
         this.timestamp = timestamp;
-        this.note = note; // BRADY EDIT
+        this.note = note;
         UID = Hashing.getSHAString(to + from + amount + timestamp); // Hashing above fields to generate a unique timestamp
     }
 
@@ -28,7 +28,7 @@ public class DefiTransaction extends Transaction {
         this.from = from;
         this.amount = amount;
         this.timestamp = timestamp;
-        this.note = ""; // BRADY EDIT
+        this.note = "";
         UID = Hashing.getSHAString(to + from + amount + timestamp); // Hashing above fields to generate a unique timestamp
     }
 

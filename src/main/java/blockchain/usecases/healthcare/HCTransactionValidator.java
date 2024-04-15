@@ -73,14 +73,9 @@ public class HCTransactionValidator extends TransactionValidator {
             if (recordUpdate.getValue() == null) { return false; }
 
         }
-
-        //HCTransaction transaction = new HCTransaction(event);        
+              
         return true;
     }
-
-    // public boolean isFullString() {
-
-    // }
 
     public static void updateEvents(HashMap<String, HCTransaction> blockTxList){
         HashSet<String> keys = new HashSet<>(blockTxList.keySet());
@@ -110,9 +105,8 @@ public class HCTransactionValidator extends TransactionValidator {
 
             for (Address address : clientsToAlert) {
                 for(String transHash : txMap.keySet()) {
-                    HCTransaction hctx = (HCTransaction) txMap.get(transHash);
                     Messager.sendOneWayMessage(address, 
-                    new Message(Message.Request.ALERT_HC_CLIENTS, mt.getProof(txMap.get(transHash))), myAddress);
+                    new Message(Message.Request.ALERT_WALLET, mt.getProof(txMap.get(transHash))), myAddress);
                 }
             }
         }

@@ -873,7 +873,7 @@ public class Node  {
                     transactions.putAll(block.getTxList());
                 }
 
-                Messager.sendOneWayMessage(address, new Message(Message.Request.SEND_LEDGER, transactions), myAddress);
+                Messager.sendOneWayMessage(address, new Message(Message.Request.SEND_TX, transactions), myAddress);
             }
         }
     }
@@ -944,7 +944,7 @@ public class Node  {
                         }
                     }
                 }
-                
+
                 try {
                     Thread.sleep(100000);
                 } catch (InterruptedException e) {

@@ -125,15 +125,20 @@ public class ServerConnection extends Thread {
                 break;
             case ALERT_WALLET:
                 Object[] data = (Object[]) incomingMessage.getMetadata();
-                DefiTransactionValidator dtv = (DefiTransactionValidator) tv;
-                dtv.addAccountsToAlert((String) data[0], (Address) data[1]);
+                if (((String) data[0]) == "Defi") {
+                    DefiTransactionValidator dtv = (DefiTransactionValidator) tv;
+                    dtv.addAccountsToAlert((String) data[1], (Address) data[2]);
+                } else if (((String) data[0]).equals("HC")) {
+                    HCTransactionValidator hctv = (HCTransactionValidator) tv;
+                    hctv.addClientsToAlert((Address) data[1]);
+                }
                 break;
-            case ALERT_HC_CLIENTS:
-                Object mData = (Object) incomingMessage.getMetadata();
-                HCTransactionValidator hctv = (HCTransactionValidator) tv;
-                hctv.addClientsToAlert((Address) mData);
-                break;
-            case REQUEST_LEDGER:
+            // case ALERT_HC_CLIENTS:
+            //     Object mData = (Object) incomingMessage.getMetadata();
+            //     HCTransactionValidator hctv = (HCTransactionValidator) tv;
+            //     hctv.addClientsToAlert((Address) mData);
+            //     break;
+            case REQUEST_TX:
                 Object mData2 = (Object) incomingMessage.getMetadata();
                 node.getAllTransactions((Address) mData2);
                 break;

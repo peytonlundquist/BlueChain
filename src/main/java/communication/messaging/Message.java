@@ -62,8 +62,8 @@ public class Message implements Serializable {
         RECONCILE_BLOCK,
         ALERT_WALLET,
         ALERT_HC_CLIENTS,
-        REQUEST_LEDGER,
-        SEND_LEDGER
+        REQUEST_TX,
+        SEND_TX
     }
 
     /**

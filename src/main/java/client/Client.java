@@ -30,6 +30,7 @@ public class Client {
     DefiClient defiClient;
 
     HCClient hcClient;
+    static boolean isPatient;
 
     /**
      * Constructs a Client instance.
@@ -122,7 +123,7 @@ public class Client {
         defiClient = new DefiClient(updateLock, reader, myAddress, fullNodes);
         hcClient = new HCClient(updateLock, reader, myAddress, fullNodes);
 
-        if (use.equals("HCP")) {
+        if (isPatient) {
             hcClient.setPatientClient(true);
         }
     }
@@ -137,34 +138,19 @@ public class Client {
         // Reading data using readLine
         String input = "";
         int port = 7999;
+        isPatient = false;
+
         if(args.length > 0){
             if(args[0].equals("-port")){
                 port = Integer.valueOf(args[0]);
-            }else if(args[0].equals("-testDefi")){
-                Client defiClient = new Client(port);
-
-                if (!use.equals("Defi")) {
-                    System.out.println("Client is not configured for Defi use. Please change the config file to use Defi.");
-                    System.exit(1);
-                }
-
-                defiClient.test = true;
-                defiClient.testNetwork( Integer.valueOf(args[1]));
-
-            } else if (args[0].equals("-testHC")) {
-                Client hcClient = new Client(port);
-
-                if (!use.equals("HC")) {
-                    System.out.println("Client is not configured for HC use. Please change the config file to use HC.");
-                    System.exit(1);
-                }
-
-                hcClient.test = true;
-                hcClient.testNetwork( Integer.valueOf(args[1]));
-
+            }else if(args[0].equals("-test")){
+                Client testClient = new Client(port);
+                testClient.test = true;
+                testClient.testNetwork( Integer.valueOf(args[1]));
+                System.exit(0);
+            } else if (args[0].equals("-patient")) {
+                isPatient = true;
             }
-
-            System.exit(0);
         }
 
         Client client = new Client(port);
@@ -189,7 +175,7 @@ public class Client {
                 /* Add account (or something similar depends on use) */
                 case("a"):
                     if(use.equals("Defi")) defiClient.addAccount();
-                    if(use.equals("HC")) hcClient.createAppointment();
+                    if(use.equals("HC") && !isPatient) hcClient.createAppointment();
                     break;
 
                 /* Submit Transaction */
@@ -200,34 +186,34 @@ public class Client {
                 /* Print accounts (or something similar depends on use) */
                 case("p"):
                     if(use.equals("Defi")) defiClient.printAccounts();
-                    if(use.equals("HC")) hcClient.createPerscription();
+                    if(use.equals("HC") && !isPatient) hcClient.createPerscription();
                     break;
 
                 /* Print the specific usage / commmands */
                 case("h"):
                     if(use.equals("Defi")) defiClient.printUsage();
-                    if(use.equals("HC")) hcClient.printUsage();
-                    if(use.equals("HCP")) hcClient.printPatientUsage();
+                    if(use.equals("HC") && !isPatient) hcClient.printUsage();
+                    if(use.equals("HC") && isPatient) hcClient.printPatientUsage();
                     break;
 
                 case("n"):
-                    if(use.equals("HC")) hcClient.createNewPatient();
+                    if(use.equals("HC") && !isPatient) hcClient.createNewPatient();
                     break;
 
                 case("r"):
-                    if(use.equals("HC")) hcClient.updateRecord();
+                    if(use.equals("HC") && !isPatient) hcClient.updateRecord();
                     break;
 
                 case("s"):
-                    if(use.equals("HC") || use.equals("HCP")) hcClient.showPatientDetails();
+                    if(use.equals("HC")) hcClient.showPatientDetails();
                     break;
 
                 case("c"):
-                    if(use.equals("HC") || use.equals("HCP")) hcClient.createNewPatient();
+                    if(use.equals("HC")) hcClient.createNewPatient();
                     break;
 
                 case ("d"):
-                    if(use.equals("HC")) hcClient.showAllPatients();
+                    if(use.equals("HC") && !isPatient) hcClient.showAllPatients();
                     break;
 
                 /* Update full nodes */
@@ -307,12 +293,17 @@ public class Client {
                     
                     if(incomingMessage.getRequest().name().equals("ALERT_WALLET")) {
                         MerkleTreeProof mtp = (MerkleTreeProof) incomingMessage.getMetadata();
-                        defiClient.updateAccounts(mtp);
-                    } else if (incomingMessage.getRequest().name().equals("ALERT_HC_CLIENTS")) {
-                        //System.out.println("Full Node has messaged me");
-                        MerkleTreeProof mtp = (MerkleTreeProof) incomingMessage.getMetadata();
-                        hcClient.updatePatientDetails(mtp);
-                    } else if (incomingMessage.getRequest().name().equals("SEND_LEDGER")) {
+                        if (use.equals("Defi")) {
+                            defiClient.updateAccounts(mtp);
+                        } else if (use.equals("HC")) {
+                            hcClient.updatePatientDetails(mtp);
+                        }
+                        
+                    // } else if (incomingMessage.getRequest().name().equals("ALERT_HC_CLIENTS")) {
+                    //     //System.out.println("Full Node has messaged me");
+                    //     MerkleTreeProof mtp = (MerkleTreeProof) incomingMessage.getMetadata();
+                    //     hcClient.updatePatientDetails(mtp);
+                    } else if (incomingMessage.getRequest().name().equals("SEND_TX")) {
                         hcClient.initializeClient((HashMap<String, Transaction>) incomingMessage.getMetadata());
                     }
                 } catch (IOException e) {
