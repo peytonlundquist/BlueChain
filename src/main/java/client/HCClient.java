@@ -69,15 +69,12 @@ public class HCClient {
         this.formatter = new SimpleDateFormat("dd-MM-yyyy HH:mm a");
 
         // Messages the wallet to add this client on the list of clients to alert.
-        Object[] data = new Object[2];
-        data[0] = "HC";
-        data[1] = myAddress;
         Messager.sendOneWayMessage(new Address(fullNodes.get(0).getPort(), fullNodes.get(0).getHost()),
-        new Message(Message.Request.ALERT_WALLET, data), myAddress);
+        new Message(Message.Request.ALERT_WALLET, myAddress), myAddress);
 
         // Messages the wallet to request ledger to update client.
         Messager.sendOneWayMessage(new Address(fullNodes.get(0).getPort(), fullNodes.get(0).getHost()),
-        new Message(Message.Request.REQUEST_TX, data[1]), myAddress);
+        new Message(Message.Request.REQUEST_TX, myAddress), myAddress);
     }
 
     /**
@@ -404,11 +401,8 @@ public class HCClient {
             submitTransaction(transaction, address);
         }
 
-        Object[] data = new Object[2];
-        data[0] = "HC";
-        data[1] = myAddress;
         Messager.sendOneWayMessage(new Address(fullNodes.get(0).getPort(), fullNodes.get(0).getHost()),
-        new Message(Message.Request.ALERT_WALLET, data), myAddress);
+        new Message(Message.Request.ALERT_WALLET, myAddress), myAddress);
     }
 
     /**
@@ -444,11 +438,8 @@ public class HCClient {
             submitTransaction(transaction, address);
         }
 
-        Object[] data = new Object[2];
-        data[0] = "HC";
-        data[1] = myAddress;
         Messager.sendOneWayMessage(new Address(fullNodes.get(0).getPort(), fullNodes.get(0).getHost()),
-        new Message(Message.Request.ALERT_WALLET, data), myAddress);
+        new Message(Message.Request.ALERT_WALLET, myAddress), myAddress);
     }
 
     /**
@@ -486,7 +477,7 @@ public class HCClient {
                 }
 
                 testSubmitToNodes(transaction);
-                Thread.sleep(5000);
+                Thread.sleep(500);
                 pb.step();
             }
 

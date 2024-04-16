@@ -125,13 +125,15 @@ public class ServerConnection extends Thread {
                 break;
             case ALERT_WALLET:
                 Object[] data = (Object[]) incomingMessage.getMetadata();
-                if (((String) data[0]) == "Defi") {
+                
+                if (node.getUseCase().equals("Defi")) {
                     DefiTransactionValidator dtv = (DefiTransactionValidator) tv;
-                    dtv.addAccountsToAlert((String) data[1], (Address) data[2]);
-                } else if (((String) data[0]).equals("HC")) {
+                    dtv.addAccountsToAlert((String) data[0], (Address) data[1]);
+                } else if (node.getUseCase().equals("HC")) {
                     HCTransactionValidator hctv = (HCTransactionValidator) tv;
-                    hctv.addClientsToAlert((Address) data[1]);
+                    hctv.addClientsToAlert((Address) data[0]);
                 }
+                
                 break;
             case REQUEST_TX:
                 Object mData2 = (Object) incomingMessage.getMetadata();

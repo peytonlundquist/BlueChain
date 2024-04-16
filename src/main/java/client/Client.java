@@ -120,11 +120,15 @@ public class Client {
         Acceptor acceptor = new Acceptor(this);
         acceptor.start();
 
-        defiClient = new DefiClient(updateLock, reader, myAddress, fullNodes);
-        hcClient = new HCClient(updateLock, reader, myAddress, fullNodes);
-
-        if (isPatient) {
-            hcClient.setPatientClient(true);
+        if (use.equals("Defi")) {
+            defiClient = new DefiClient(updateLock, reader, myAddress, fullNodes);
+            hcClient = null;
+        } else if (use.equals("HC")) {
+            hcClient = new HCClient(updateLock, reader, myAddress, fullNodes);
+            defiClient = null;
+            if (isPatient) {
+                hcClient.setPatientClient(true);
+            }
         }
     }
 

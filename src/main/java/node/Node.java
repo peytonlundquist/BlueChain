@@ -112,6 +112,7 @@ public class Node  {
     public HashMap<String, Transaction> getMempool(){return this.mempool;}
     public LinkedList<Block> getBlockchain(){return blockchain;}
     public LockManager getLockManager(){return lockManager;}
+    public String getUseCase(){return configValues.getUse();}
 
 
     /**
