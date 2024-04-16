@@ -298,11 +298,6 @@ public class Client {
                         } else if (use.equals("HC")) {
                             hcClient.updatePatientDetails(mtp);
                         }
-                        
-                    // } else if (incomingMessage.getRequest().name().equals("ALERT_HC_CLIENTS")) {
-                    //     //System.out.println("Full Node has messaged me");
-                    //     MerkleTreeProof mtp = (MerkleTreeProof) incomingMessage.getMetadata();
-                    //     hcClient.updatePatientDetails(mtp);
                     } else if (incomingMessage.getRequest().name().equals("SEND_TX")) {
                         hcClient.initializeClient((HashMap<String, Transaction>) incomingMessage.getMetadata());
                     }
