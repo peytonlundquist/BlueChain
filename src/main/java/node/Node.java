@@ -81,7 +81,7 @@ public class Node  {
         /* Make tx validator */
         if(configValues.getUse().equals("Defi")){
             tv = new DefiTransactionValidator();
-        }else if(configValues.getUse().equals("HC") || configValues.getUse().equals("HCP")){
+        }else if(configValues.getUse().equals("HC")){
             // Room to enable another configValues.getUse() case 
             tv = new HCTransactionValidator();
         }else{
@@ -123,7 +123,7 @@ public class Node  {
 
         if(configValues.getUse().equals("Defi")){
             addBlock(new DefiBlock(new HashMap<String, Transaction>(), "000000", 0));
-        }else if(configValues.getUse().equals("HC") || configValues.getUse().equals("HCP")){
+        }else if(configValues.getUse().equals("HC")){
             addBlock(new HCBlock(new HashMap<String, Transaction>(), "000000", 0));
         }
     }
@@ -431,7 +431,7 @@ public class Node  {
                 if(configValues.getUse().equals("Defi")){
                     validatorObjects[0] = transaction;
                     validatorObjects[1] = blockTransactions;
-                }else if(configValues.getUse().equals("HC") || configValues.getUse().equals("HCP")) {
+                }else if(configValues.getUse().equals("HC")) {
                     // Validator objects will change according to another configValues.getUse() case
                     validatorObjects[0] = transaction;
                 }

@@ -444,7 +444,8 @@ public class HCClient {
 
     /**
      * TEST METHOD. Tests the network by adding a number of appointments, perscriptions, and record updates
-     * to the events list and then checking if they were added to the blockchain.
+     * to the events list and then checking if they were added to the blockchain. Test count (j) must be a
+     * number divisible by 4. Otherwise the test will fail.
      * @param j The number of events to add to the list.
      */
     void testNetwork(int j){
@@ -452,6 +453,11 @@ public class HCClient {
         try {     
             Patient patient = new Patient("John", "Doe", new Date());
             patients.add(patient);
+
+            if (j % 4 != 0) {
+                System.out.println("Error: Test count must be divisible by 4.");
+                return;
+            }
             
             ProgressBar pb = new ProgressBar("Test", j);
             pb.start(); // the progress bar starts timing
