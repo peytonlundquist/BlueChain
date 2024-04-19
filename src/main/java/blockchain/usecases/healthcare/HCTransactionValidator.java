@@ -1,11 +1,3 @@
-/**
- * This class is used to validate the transaction before it is added to the blockchain. It does so
- * by checking the event of the transaction and making sure all the data is not null. If the data is
- * null, then the transaction is not valid and will not be added to the blockchain.
- * 
- * @date 03-20-2021
- */
-
 package blockchain.usecases.healthcare;
 
 import java.util.ArrayList;
@@ -21,6 +13,11 @@ import utils.Address;
 import utils.LockManager;
 import utils.merkletree.MerkleTree;
 
+/**
+ * This class is used to validate the transaction before it is added to the blockchain. It does so
+ * by checking the event of the transaction and making sure all the data is not null. If the data is
+ * null, then the transaction is not valid and will not be added to the blockchain.
+ */
 public class HCTransactionValidator extends TransactionValidator {
 
     private LockManager lockManager;

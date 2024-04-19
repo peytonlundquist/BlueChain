@@ -1,12 +1,3 @@
-/**
- * This class represents the client for the health care use case. It is responsible for prompting the user for
- * intput and then creating the appropriate event and submitting it to the blockchain via transaction. Each event's
- * parameters needs to be filled in or it won't validate and refuse to be added to the blockchain. After the user
- * creates an event, the client will represent the event back to the user verifying that it was added.
- * 
- * @date 03-20-2024
- */
-
 package client;
 
 import java.io.BufferedReader;
@@ -31,6 +22,13 @@ import communication.messaging.Messager;
 import me.tongfei.progressbar.ProgressBar;
 import utils.Address;
 import utils.merkletree.MerkleTreeProof;
+
+/**
+ * This class represents the client for the health care use case. It is responsible for prompting the user for
+ * intput and then creating the appropriate event and submitting it to the blockchain via transaction. Each event's
+ * parameters needs to be filled in or it won't validate and refuse to be added to the blockchain. After the user
+ * creates an event, the client will represent the event back to the user verifying that it was added.
+ */
 
 public class HCClient {
     

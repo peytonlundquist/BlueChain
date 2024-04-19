@@ -1,16 +1,12 @@
-/**
- * This class contains a transaction for the healthcare blockchain. It's contents consist of the
- * event and the UID of the patient. The toString represents the transaction stored in a block back
- * to the user.
- * 
- * @date 03-20-2024
- */
-
 package blockchain.usecases.healthcare;
 
 import blockchain.Transaction;
 import utils.Hashing;
 
+/**
+ * This class contains a transaction for the healthcare blockchain. This is what is stored
+ * in the blockchain.
+ */
 public class HCTransaction extends Transaction {
 
     private Event event;

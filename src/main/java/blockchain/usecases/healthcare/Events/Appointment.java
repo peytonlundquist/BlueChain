@@ -1,14 +1,13 @@
-/**
- * This class is an event that will be stored in a transaction in the blockchain. It
- * represents an appointment with a healthcare provider.
- */
-
 package blockchain.usecases.healthcare.Events;
 
 import java.util.Date;
 
 import blockchain.usecases.healthcare.Event;
 
+/**
+ * This class is an event that will be stored in a transaction in the blockchain. It
+ * represents an appointment with a healthcare provider.
+ */
 public class Appointment extends Event {
 
     private Date date;

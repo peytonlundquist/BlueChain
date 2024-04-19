@@ -1,15 +1,14 @@
-/**
- * This class is an event that will be stored in a transaction in the blockchain. It
- * represents a update of a patients record. For example, A patient's height, weight,
- * blood pressure, etc.
- */
-
 package blockchain.usecases.healthcare.Events;
 
 import java.util.Date;
 
 import blockchain.usecases.healthcare.Event;
 
+/**
+ * This class is an event that will be stored in a transaction in the blockchain. It
+ * represents a update of a patients record. For example, A patient's height, weight,
+ * blood pressure, etc.
+ */
 public class RecordUpdate extends Event{
     
     private Date date;

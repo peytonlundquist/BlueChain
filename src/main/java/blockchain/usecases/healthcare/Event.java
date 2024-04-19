@@ -1,12 +1,11 @@
-/**
- * This abstract class is the base class for all events that can be tracked in the healthcare blockchain.
- * Any class that extends this one is used to store in the blockchain. Refer to the Events file for examples.
- */
-
 package blockchain.usecases.healthcare;
 
 import java.io.Serializable;
 
+/**
+ * This abstract class is the base class for all events that can be tracked in the healthcare blockchain.
+ * Any class that extends this one is used to store in the blockchain. Refer to the Events file for examples.
+ */
 public abstract class Event implements Serializable{
 
     public enum Action {

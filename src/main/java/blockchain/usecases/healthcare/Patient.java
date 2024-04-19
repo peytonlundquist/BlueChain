@@ -1,8 +1,3 @@
-/**
- * This class represents a patient in the healthcare system. This is where
- * all the patient's information is stored including events and records.
- */
-
 package blockchain.usecases.healthcare;
 
 import java.io.Serializable;
@@ -11,6 +6,10 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.UUID;
 
+/**
+ * This class represents a patient in the healthcare system. This is where
+ * all the patient's information is stored including events and records.
+ */
 public class Patient implements Serializable{
 
     /* static fields */

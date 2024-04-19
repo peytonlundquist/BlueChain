@@ -1,13 +1,12 @@
-/**
- * This class is an event that will be stored in a transaction in the blockchain. It
- * represents that a new patient was created.
- */
-
 package blockchain.usecases.healthcare.Events;
 
 import blockchain.usecases.healthcare.Event;
 import blockchain.usecases.healthcare.Patient;
 
+/**
+ * This class is an event that will be stored in a transaction in the blockchain. It
+ * represents that a new patient was created.
+ */
 public class CreatePatient extends Event {
     private Patient patient;
     
