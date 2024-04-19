@@ -544,7 +544,7 @@ public class HCClient {
         System.out.println("a: Create a new appointment");
         System.out.println("p: Create a new perscription");
         System.out.println("r: Update a patient's record");
-        System.out.println("c: create a new patient");
+        System.out.println("c: Create a new patient");
         System.out.println("s: Show patient details");
         System.out.println("d: Show all patients");
         System.out.println("u: Update full nodes");
