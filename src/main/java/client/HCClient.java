@@ -142,15 +142,15 @@ public class HCClient {
         
         System.out.println("Creating a new appointment");
 
-        // Prompt for users UID
+        // Prompt for user UID, continues to prompt until an existing UID is entered
         System.out.println("Enter the patient's UID:");
         String patientUID = reader.readLine();
-
         while(!isPatient(patientUID)) {
             System.out.println("Patient not found. Please enter a valid patient UID:");
             patientUID = reader.readLine();
         }
 
+        // Prompts the user for the appointment date, continues until a valid date is entered.
         Date date = null;
         while(date == null) {
             try {
@@ -162,24 +162,23 @@ public class HCClient {
             }
         }
 
+        // Prompts the user for the appointment location and provider
         System.out.println("Enter the appointment's location:");
         String location = reader.readLine();
         System.out.println("Enter the appointment's provider:");
         String provider = reader.readLine();
-        System.out.println();
 
         Appointment appointment = new Appointment(date, location, provider);
         HCTransaction newTransaction = new HCTransaction(appointment, patientUID);
 
         submitToNodes(newTransaction);
 
-        System.out.println("\n--APPOINTMENT CREATED--");
+        System.out.println("\n\n--APPOINTMENT CREATED--");
         System.out.println("Appointment info:");
         System.out.println("Patient UID: " + patientUID);
         System.out.println("Appointment date: " + date);
         System.out.println("Location: " + location);
-        System.out.println("Provider: " + provider);
-        System.out.println();
+        System.out.println("Provider: " + provider + "\n");
     }
 
     /**
@@ -194,20 +193,49 @@ public class HCClient {
 
         // Prompts user for perscription information
         System.out.println("Creating a new perscription");
+
+        // Prompts the user for the patient's UID, continues until a valid UID is entered
         System.out.println("Enter the patient's UID:");
         String patientUID = reader.readLine();
-        System.out.println("Enter the perscription date (dd-MM-yyyy):");
-        String strDate = reader.readLine();
-        Date date = formatter.parse(strDate);
+        while(!isPatient(patientUID)) {
+            System.out.println("Patient not found. Please enter a valid patient UID:");
+            patientUID = reader.readLine();
+        }
+
+        // Prompts the user for the perscription date, continues until a valid date is entered
+        Date date = null;
+        while(date == null) {
+            try {
+                System.out.println("Enter the perscription's date (dd-MM-yyyy):");
+                String strDate = reader.readLine();
+                date = formatter.parse(strDate);
+            } catch (ParseException e) {
+                System.out.println("Error, please enter the date in the correct format.");
+            }
+        }
+
         System.out.println("Enter the perscription's medication:");
         String medication = reader.readLine();
-        System.out.println("Enter the perscription's perscribed count:");
-        int count = Integer.valueOf(reader.readLine());
+
+        // Prompts the user for the perscribed count, continues until a valid count is entered
+        int count = 0;
+        while (count <= 0) {
+            try {
+                System.out.println("Enter the perscription's perscribed count:");
+                count = Integer.valueOf(reader.readLine());
+                if (count <= 0) {
+                    System.out.println("Error, please enter a number greater than 0.");
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Error, please enter the a number for the medication count.");
+            }
+        }
+
+        // Prompts the user for the perscription provider and address
         System.out.println("Enter the perscription's provider:");
         String provider = reader.readLine();
         System.out.println("Enter address of the issued perscription:");
         String address = reader.readLine();
-        System.out.println();
 
         // Creates a new perscription event and transaction. Transaction is sent to nodes
         Prescription prescription = new Prescription(medication, provider, address, date, count);
@@ -216,14 +244,13 @@ public class HCClient {
         submitToNodes(newTransaction);
 
         // Prints back the perscription information to the user
-        System.out.println("\n--PERSCRIPTION CREATED--");
+        System.out.println("\n\n--PERSCRIPTION CREATED--");
         System.out.println("Patient UID: " + patientUID);
         System.out.println("Perscription date: " + date);
         System.out.println("Medication: " + medication);
         System.out.println("Perscribed count: " + count);
         System.out.println("Provider: " + provider);
-        System.out.println("Address: " + address);
-        System.out.println();
+        System.out.println("Address: " + address + "\n");
     }
 
     /**
@@ -237,11 +264,15 @@ public class HCClient {
         System.out.println("Updating a patient's record");
         System.out.println("Enter the patient's UID:");
         String patientUID = reader.readLine();
+        while(!isPatient(patientUID)) {
+            System.out.println("Patient not found. Please enter a valid patient UID:");
+            patientUID = reader.readLine();
+        }
+
         System.out.println("Enter the record to update:");
         String key = reader.readLine();
         System.out.println("Enter the new value of the record:");
         String value = reader.readLine();
-        System.out.println();
 
         // Creates a new record update event and transaction. Transaction is sent to nodes
         RecordUpdate recordUpdate = new RecordUpdate(new Date(), key, value);
@@ -250,11 +281,10 @@ public class HCClient {
         submitToNodes(newTransaction);
 
         // Prints back the updated record information to the user
-        System.out.println("\n--RECORD UPDATED--");
+        System.out.println("\n\n--RECORD UPDATED--");
         System.out.println("Patient UID: " + patientUID);
         System.out.println("Record to Update: " + key);
-        System.out.println("New value: " + value);
-        System.out.println();
+        System.out.println("New value: " + value + "\n");
     }
 
     // Might not be necessary, requires consultation.
@@ -273,9 +303,17 @@ public class HCClient {
         String fname = reader.readLine();
         System.out.println("Enter the patient's last name:");
         String lname = reader.readLine();
-        System.out.println("Enter the patient's date of birth (dd-MM-yyyy):");
-        String dob = reader.readLine();
-        Date date = formatter.parse(dob);
+
+        Date date = null;
+        while(date == null) {
+            try {
+                System.out.println("Enter the patient's date of birth (dd-MM-yyyy):");
+                String strDate = reader.readLine();
+                date = formatter.parse(strDate);
+            } catch (ParseException e) {
+                System.out.println("Error, please enter the date in the correct format.");
+            }
+        }
 
         // Creates a new patient. 
         Patient patient = new Patient(fname, lname, date);
