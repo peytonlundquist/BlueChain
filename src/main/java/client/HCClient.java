@@ -120,6 +120,15 @@ public class HCClient {
         this.patientClient = patientClient;
     }
 
+    public boolean isPatient(String uid) {
+        for (Patient patient : patients) {
+            if (patient.getUID().equals(uid)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * Creates a new appointment. Prompts the user for the patient's UID, the appointment's date, 
      * location, and provider. It then creates a transaction containing the appointment event and
@@ -132,11 +141,27 @@ public class HCClient {
         formatter = new SimpleDateFormat("dd-MM-yyyy HH:mm a");
         
         System.out.println("Creating a new appointment");
+
+        // Prompt for users UID
         System.out.println("Enter the patient's UID:");
         String patientUID = reader.readLine();
-        System.out.println("Enter the appointment's date (dd-MM-yyyy HH:mm am/pm):");
-        String strDate = reader.readLine();
-        Date date = formatter.parse(strDate);
+
+        while(!isPatient(patientUID)) {
+            System.out.println("Patient not found. Please enter a valid patient UID:");
+            patientUID = reader.readLine();
+        }
+
+        Date date = null;
+        while(date == null) {
+            try {
+                System.out.println("Enter the appointment's date (dd-MM-yyyy HH:mm am/pm):");
+                String strDate = reader.readLine();
+                date = formatter.parse(strDate);
+            } catch (ParseException e) {
+                System.out.println("Error, please enter the date in the correct format.");
+            }
+        }
+
         System.out.println("Enter the appointment's location:");
         String location = reader.readLine();
         System.out.println("Enter the appointment's provider:");
