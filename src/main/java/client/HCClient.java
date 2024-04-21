@@ -511,14 +511,18 @@ public class HCClient {
      */
     void testNetwork(int j){
         System.out.println("Beginning Test");
+
+        if (j % 4 != 0) {
+            System.out.println("Error: Test count must be divisible by 4.");
+            return;
+        }
+
         try {     
             Patient patient = new Patient("John", "Doe", new Date());
-            patients.add(patient);
-
-            if (j % 4 != 0) {
-                System.out.println("Error: Test count must be divisible by 4.");
-                return;
-            }
+            CreatePatient createMasterPatient = new CreatePatient(patient);
+            HCTransaction createPatientTransaction = new HCTransaction(createMasterPatient, patient.getUID());
+            testSubmitToNodes(createPatientTransaction);
+            Thread.sleep(500);
             
             ProgressBar pb = new ProgressBar("Test", j);
             pb.start(); // the progress bar starts timing
@@ -544,7 +548,7 @@ public class HCClient {
                 }
 
                 testSubmitToNodes(transaction);
-                Thread.sleep(500);
+                Thread.sleep(1000);
                 pb.step();
             }
 
@@ -559,7 +563,7 @@ public class HCClient {
             int patientsExpected = j / 4;
             boolean passed = true;
 
-            for (Event e : patient.getEvents()) {
+            for (Event e : patients.get(0).getEvents()) {
                 if (e instanceof Appointment) {
                     aptActual++;
                 } else if (e instanceof Prescription) {
