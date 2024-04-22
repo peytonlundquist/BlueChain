@@ -7,6 +7,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.ArrayList;
@@ -146,8 +147,11 @@ public class HCClient {
         System.out.println("Enter the patient's UID:");
         String patientUID = reader.readLine();
         while(!isPatient(patientUID)) {
-            System.out.println("Patient not found. Please enter a valid patient UID:");
+            System.out.println("Patient not found. Please enter a valid patient UID or [N/n] to quit:");
             patientUID = reader.readLine();
+            if (patientUID.charAt(0) == 'n' || patientUID.charAt(0) == 'N') {
+                return;
+            }
         }
 
         // Prompts the user for the appointment date, continues until a valid date is entered.
@@ -173,12 +177,16 @@ public class HCClient {
 
         submitToNodes(newTransaction);
 
-        System.out.println("\n\n--APPOINTMENT CREATED--");
-        System.out.println("Appointment info:");
-        System.out.println("Patient UID: " + patientUID);
-        System.out.println("Appointment date: " + date);
-        System.out.println("Location: " + location);
-        System.out.println("Provider: " + provider + "\n");
+        if (checkDate(date, 5, 5)) {
+            System.out.println("\n\n--APPOINTMENT CREATED--");
+            System.out.println("Appointment info:");
+            System.out.println("Patient UID: " + patientUID);
+            System.out.println("Appointment date: " + date);
+            System.out.println("Location: " + location);
+            System.out.println("Provider: " + provider + "\n");
+        } else {
+            System.out.println("Error: please enter a date within 5 years of the current date.");
+        }
     }
 
     /**
@@ -198,8 +206,11 @@ public class HCClient {
         System.out.println("Enter the patient's UID:");
         String patientUID = reader.readLine();
         while(!isPatient(patientUID)) {
-            System.out.println("Patient not found. Please enter a valid patient UID:");
+            System.out.println("Patient not found. Please enter a valid patient UID or [N/n] to quit:");
             patientUID = reader.readLine();
+            if (patientUID.charAt(0) == 'n' || patientUID.charAt(0) == 'N') {
+                return;
+            }
         }
 
         // Prompts the user for the perscription date, continues until a valid date is entered
@@ -243,14 +254,18 @@ public class HCClient {
 
         submitToNodes(newTransaction);
 
-        // Prints back the perscription information to the user
-        System.out.println("\n\n--PERSCRIPTION CREATED--");
-        System.out.println("Patient UID: " + patientUID);
-        System.out.println("Perscription date: " + date);
-        System.out.println("Medication: " + medication);
-        System.out.println("Perscribed count: " + count);
-        System.out.println("Provider: " + provider);
-        System.out.println("Address: " + address + "\n");
+        if (checkDate(date, 5, 5)) {
+            // Prints back the perscription information to the user
+            System.out.println("\n\n--PERSCRIPTION CREATED--");
+            System.out.println("Patient UID: " + patientUID);
+            System.out.println("Perscription date: " + date);
+            System.out.println("Medication: " + medication);
+            System.out.println("Perscribed count: " + count);
+            System.out.println("Provider: " + provider);
+            System.out.println("Address: " + address + "\n");
+        } else {
+            System.out.println("Error: please enter a date within 5 years of the current date.");
+        }
     }
 
     /**
@@ -265,8 +280,11 @@ public class HCClient {
         System.out.println("Enter the patient's UID:");
         String patientUID = reader.readLine();
         while(!isPatient(patientUID)) {
-            System.out.println("Patient not found. Please enter a valid patient UID:");
+            System.out.println("Patient not found. Please enter a valid patient UID or [N/n] to quit:");
             patientUID = reader.readLine();
+            if (patientUID.charAt(0) == 'n' || patientUID.charAt(0) == 'N') {
+                return;
+            }
         }
 
         System.out.println("Enter the record to update:");
@@ -330,7 +348,11 @@ public class HCClient {
 
         submitToNodes(newTransaction);
 
-        System.out.println("\nPatient successfully created. Patient UID: " + patient.getUID());
+        if (checkDate(date, 200, 1)) {
+            System.out.println("\nPatient successfully created. Patient UID: " + patient.getUID());
+        } else {
+            System.out.println("Error: New patient's age cannot exist.");
+        }
     }
 
     /**
@@ -344,6 +366,13 @@ public class HCClient {
         } else { // If not patient client, prompt user for patient UID
             System.out.println("Enter the patient's UID:");
             String patientUID = reader.readLine();
+            while(!isPatient(patientUID)) {
+                System.out.println("Patient not found. Please enter a valid patient UID or [N/n] to quit:");
+                patientUID = reader.readLine();
+                if (patientUID.charAt(0) == 'n' || patientUID.charAt(0) == 'N') {
+                    return;
+                }
+            }
 
             // Search for patient in list of patients, if found, print patient details
             for(Patient patient : patients){
@@ -352,7 +381,6 @@ public class HCClient {
                     return;
                 }
             }
-            System.out.println("Patient not found.");
         }
 
     }
@@ -601,6 +629,17 @@ public class HCClient {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+    }
+
+    private boolean checkDate(Date date, int yearsBefore, int yearsAfter) {
+        String dateParts[] = date.toString().split(" ");
+        String year = dateParts[5];
+        if (Integer.parseInt(year) < LocalDate.now().getYear() - yearsBefore) { 
+            return false; 
+        } else if (Integer.parseInt(year) > LocalDate.now().getYear() + yearsAfter) { 
+            return false; 
+        }
+        return true;
     }
 
     /**
