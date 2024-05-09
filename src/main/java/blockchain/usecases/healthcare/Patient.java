@@ -1,6 +1,7 @@
 package blockchain.usecases.healthcare;
 
 import java.io.Serializable;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -123,7 +124,8 @@ public class Patient implements Serializable{
 
     @Override
     public String toString() {
-        return "Name: " + this.firstName + " " + this.lastName + " | DOB: " + this.dob.toString() + " | UID: " + this.UID;
+        SimpleDateFormat formatter = new SimpleDateFormat("MM-dd-yyyy");
+        return "Name: " + this.firstName + " " + this.lastName + " | DOB: " + formatter.format(dob) + " | UID: " + this.UID;
         // Also return the fields entered by doctors
     }
 }

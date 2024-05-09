@@ -120,25 +120,7 @@ public class Client {
             hcClient = null;
         } else if (use.equals("HC")) {
             defiClient = null;
-
-            // If nodes are busy and aren't able to initialize the client, waits for 5 seconds and tries again 
-            System.out.println("Please wait, initializing client...");
             hcClient = new HCClient(updateLock, reader, myAddress, fullNodes);
-            try {
-                Thread.sleep(5000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-
-            while (!hcClient.isInitialized()) {
-                try {
-                    Thread.sleep(5000);
-                    System.out.println("An error has occured, retrying...");
-                    hcClient = new HCClient(updateLock, reader, myAddress, fullNodes);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
 
             if (isPatient) {
                 hcClient.setPatientClient(true);

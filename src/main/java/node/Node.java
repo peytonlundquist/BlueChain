@@ -867,7 +867,6 @@ public class Node  {
      */
     public void getAllTransactions(Address address) {
         synchronized (lockManager.getLock("blockLock")) {
-            //HashMap<String, Transaction> transactions = new HashMap<String, Transaction>();
             ArrayList<Transaction> transactions = new ArrayList<Transaction>();
 
             if (blockchain != null && blockchain.size() > 1){
@@ -878,9 +877,8 @@ public class Node  {
                         transactions.add(tx);
                     }
                 }
-
-                Messager.sendOneWayMessage(address, new Message(Message.Request.SEND_TX, transactions), myAddress);
             }
+            Messager.sendOneWayMessage(address, new Message(Message.Request.SEND_TX, transactions), myAddress);
         }
     }
 
