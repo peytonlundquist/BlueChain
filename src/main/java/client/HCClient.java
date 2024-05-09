@@ -65,7 +65,7 @@ public class HCClient {
         this.seenTransactions = new HashSet<>();
         this.patients = new ArrayList<Patient>();
 
-        this.formatter = new SimpleDateFormat("dd-MM-yyyy HH:mm a");
+        this.formatter = new SimpleDateFormat("MM-dd-yyyy HH:mm a");
 
         // Messages the wallet to add this client on the list of clients to alert.
         Messager.sendOneWayMessage(new Address(fullNodes.get(0).getPort(), fullNodes.get(0).getHost()),
@@ -84,15 +84,17 @@ public class HCClient {
      * 
      * @param ledger The BlockChain ledger to initialize the client with.
      */
-    public void initializeClient(HashMap<String, Transaction> ledger) {
-        for (Transaction transaction : ledger.values()) {
+    public void initializeClient(ArrayList<Transaction> ledger) {
+        for (Transaction transaction : ledger) {
             HCTransaction hcTransaction = (HCTransaction) transaction;
             if (hcTransaction.getEvent() instanceof CreatePatient) {
+                System.out.println("createPatient");
                 CreatePatient createPatient = (CreatePatient) hcTransaction.getEvent();
                 Patient patient = createPatient.getPatient();
                 patients.add(patient);
             } else if (hcTransaction.getEvent() instanceof RecordUpdate) {
                 RecordUpdate recordUpdate = (RecordUpdate) hcTransaction.getEvent();
+                System.out.println("recordUpdate");
                 for (Patient patient : patients) {
                     if (patient.getUID().equals(hcTransaction.getPatientUID())) {
                         patient.addField(recordUpdate.getKey(), recordUpdate.getValue());
@@ -100,6 +102,7 @@ public class HCClient {
                     }
                 }
             } else if (hcTransaction.getEvent() instanceof Prescription) {
+                System.out.println("prescription");
                 Prescription prescription = (Prescription) hcTransaction.getEvent();
                 for (Patient patient : patients) {
                     if (patient.getUID().equals(hcTransaction.getPatientUID())) {
@@ -107,6 +110,7 @@ public class HCClient {
                     }
                 }
             } else if (hcTransaction.getEvent() instanceof Appointment) {
+                System.out.println("appointment");
                 Appointment appointment = (Appointment) hcTransaction.getEvent();
                 for (Patient patient : patients) {
                     if (patient.getUID().equals(hcTransaction.getPatientUID())) {
@@ -139,7 +143,7 @@ public class HCClient {
      * @throws ParseException Thrown if there is an error parsing the date.
      */
     public void createAppointment() throws IOException, ParseException {
-        formatter = new SimpleDateFormat("dd-MM-yyyy HH:mm a");
+        formatter = new SimpleDateFormat("MM-dd-yyyy HH:mm a");
         
         System.out.println("Creating a new appointment");
 
@@ -158,7 +162,7 @@ public class HCClient {
         Date date = null;
         while(date == null) {
             try {
-                System.out.println("Enter the appointment's date (dd-MM-yyyy HH:mm am/pm):");
+                System.out.println("Enter the appointment's date (MM-dd-yyyy HH:mm am/pm):");
                 String strDate = reader.readLine();
                 date = formatter.parse(strDate);
             } catch (ParseException e) {
@@ -175,9 +179,9 @@ public class HCClient {
         Appointment appointment = new Appointment(date, location, provider);
         HCTransaction newTransaction = new HCTransaction(appointment, patientUID);
 
-        submitToNodes(newTransaction);
-
         if (checkDate(date, 5, 5)) {
+            submitToNodes(newTransaction);
+
             System.out.println("\n\n--APPOINTMENT CREATED--");
             System.out.println("Appointment info:");
             System.out.println("Patient UID: " + patientUID);
@@ -185,7 +189,7 @@ public class HCClient {
             System.out.println("Location: " + location);
             System.out.println("Provider: " + provider + "\n");
         } else {
-            System.out.println("Error: please enter a date within 5 years of the current date.");
+            System.out.println("Error: Date must be within 5 years of the current date.");
         }
     }
 
@@ -197,7 +201,7 @@ public class HCClient {
      * @throws ParseException Thrown if there is an error parsing the date.
      */
     public void createPerscription() throws IOException, ParseException{
-        formatter = new SimpleDateFormat("dd-MM-yyyy");
+        formatter = new SimpleDateFormat("MM-dd-yyyy");
 
         // Prompts user for perscription information
         System.out.println("Creating a new perscription");
@@ -217,7 +221,7 @@ public class HCClient {
         Date date = null;
         while(date == null) {
             try {
-                System.out.println("Enter the perscription's date (dd-MM-yyyy):");
+                System.out.println("Enter the perscription's date (MM-dd-yyyy):");
                 String strDate = reader.readLine();
                 date = formatter.parse(strDate);
             } catch (ParseException e) {
@@ -252,9 +256,9 @@ public class HCClient {
         Prescription prescription = new Prescription(medication, provider, address, date, count);
         HCTransaction newTransaction = new HCTransaction(prescription, patientUID);
 
-        submitToNodes(newTransaction);
-
         if (checkDate(date, 5, 5)) {
+            submitToNodes(newTransaction);
+
             // Prints back the perscription information to the user
             System.out.println("\n\n--PERSCRIPTION CREATED--");
             System.out.println("Patient UID: " + patientUID);
@@ -264,7 +268,7 @@ public class HCClient {
             System.out.println("Provider: " + provider);
             System.out.println("Address: " + address + "\n");
         } else {
-            System.out.println("Error: please enter a date within 5 years of the current date.");
+            System.out.println("Error: date must be within 5 years of the current date.");
         }
     }
 
@@ -313,7 +317,7 @@ public class HCClient {
             return;
         }
 
-        formatter = new SimpleDateFormat("dd-MM-yyyy");
+        formatter = new SimpleDateFormat("MM-dd-yyyy");
 
         // Prompts user for patient information
         System.out.println("Creating a new patient");
@@ -325,7 +329,7 @@ public class HCClient {
         Date date = null;
         while(date == null) {
             try {
-                System.out.println("Enter the patient's date of birth (dd-MM-yyyy):");
+                System.out.println("Enter the patient's date of birth (MM-dd-yyyy):");
                 String strDate = reader.readLine();
                 date = formatter.parse(strDate);
             } catch (ParseException e) {
@@ -349,7 +353,7 @@ public class HCClient {
         submitToNodes(newTransaction);
 
         if (checkDate(date, 200, 1)) {
-            System.out.println("\nPatient successfully created. Patient UID: " + patient.getUID());
+            System.out.println("\nCreating new patient...");
         } else {
             System.out.println("Error: New patient's age cannot exist.");
         }
