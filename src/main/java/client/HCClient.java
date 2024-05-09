@@ -40,6 +40,7 @@ public class HCClient {
     protected boolean test;
     private boolean patientClient;
     private Patient currentPatient;
+    private boolean initialized;
 
     HashSet<HCTransaction> seenTransactions;
     ArrayList<Patient> patients;
@@ -61,6 +62,7 @@ public class HCClient {
         this.fullNodes = fullNodes;
         this.patientClient = false;
         this.currentPatient = null;
+        this.initialized = false;
 
         this.seenTransactions = new HashSet<>();
         this.patients = new ArrayList<Patient>();
@@ -115,6 +117,7 @@ public class HCClient {
                 }
             }
         }
+        initialized = true;
     }
 
     public void setPatientClient(boolean patientClient) {
@@ -644,6 +647,10 @@ public class HCClient {
             return false; 
         }
         return true;
+    }
+
+    public boolean isInitialized() {
+        return initialized;
     }
 
     /**

@@ -867,11 +867,16 @@ public class Node  {
      */
     public void getAllTransactions(Address address) {
         synchronized (lockManager.getLock("blockLock")) {
-            HashMap<String, Transaction> transactions = new HashMap<String, Transaction>();
+            //HashMap<String, Transaction> transactions = new HashMap<String, Transaction>();
+            ArrayList<Transaction> transactions = new ArrayList<Transaction>();
 
             if (blockchain != null && blockchain.size() > 1){
                 for (Block block : blockchain) {
-                    transactions.putAll(block.getTxList());
+                    // Converts the hashmap of transactions into an arraylist of transactions
+                    ArrayList<Transaction> txList = new ArrayList<Transaction>(block.getTxList().values());
+                    for (Transaction tx : txList) {
+                        transactions.add(tx);
+                    }
                 }
 
                 Messager.sendOneWayMessage(address, new Message(Message.Request.SEND_TX, transactions), myAddress);

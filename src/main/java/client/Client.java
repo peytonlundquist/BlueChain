@@ -112,11 +112,6 @@ public class Client {
         String host = ip.getHostAddress();
         myAddress = new Address(port, host);
 
-        System.out.println("Wallet bound to " + myAddress);
-
-        if(!this.test) System.out.println("Full Nodes to connect to by default: \n" + fullNodes + 
-        "\nTo update Full Nodes address use 'u' command. \nUse 'h' command for full list of options");
-
         Acceptor acceptor = new Acceptor(this);
         acceptor.start();
 
@@ -124,12 +119,36 @@ public class Client {
             defiClient = new DefiClient(updateLock, reader, myAddress, fullNodes);
             hcClient = null;
         } else if (use.equals("HC")) {
-            hcClient = new HCClient(updateLock, reader, myAddress, fullNodes);
             defiClient = null;
+
+            // If nodes are busy and aren't able to initialize the client, waits for 5 seconds and tries again 
+            System.out.println("Please wait, initializing client...");
+            hcClient = new HCClient(updateLock, reader, myAddress, fullNodes);
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            while (!hcClient.isInitialized()) {
+                try {
+                    Thread.sleep(5000);
+                    System.out.println("An error has occured, retrying...");
+                    hcClient = new HCClient(updateLock, reader, myAddress, fullNodes);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
             if (isPatient) {
                 hcClient.setPatientClient(true);
             }
         }
+
+        System.out.println("Wallet bound to " + myAddress);
+
+        if(!this.test) System.out.println("Full Nodes to connect to by default: \n" + fullNodes + 
+        "\nTo update Full Nodes address use 'u' command. \nUse 'h' command for full list of options");
     }
 
     public static void main(String[] args) throws IOException, ParseException{
@@ -303,7 +322,7 @@ public class Client {
                             hcClient.updatePatientDetails(mtp);
                         }
                     } else if (incomingMessage.getRequest().name().equals("SEND_TX")) {
-                        hcClient.initializeClient((HashMap<String, Transaction>) incomingMessage.getMetadata());
+                        hcClient.initializeClient((ArrayList<Transaction>) incomingMessage.getMetadata());
                     }
                 } catch (IOException e) {
                     System.out.println(e);
