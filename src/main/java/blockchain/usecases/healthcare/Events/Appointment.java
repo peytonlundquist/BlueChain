@@ -1,6 +1,9 @@
 package blockchain.usecases.healthcare.Events;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
+
+import javax.swing.text.DateFormatter;
 
 import blockchain.usecases.healthcare.Event;
 
@@ -53,6 +56,7 @@ public class Appointment extends Event {
 
     @Override
     public String toString() {
-        return "Appointment: " + date + " at " + location + " with " + provider;
+        SimpleDateFormat formatter = new SimpleDateFormat("MM-dd-yyyy HH:mm a");
+        return "Appointment: " + formatter.format(date) + " | " + location + " | " + provider;
     }
 }

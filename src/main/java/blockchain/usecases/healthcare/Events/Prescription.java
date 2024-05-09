@@ -1,5 +1,6 @@
 package blockchain.usecases.healthcare.Events;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import blockchain.usecases.healthcare.Event;
@@ -74,6 +75,7 @@ public class Prescription extends Event {
     }
     
     public String toString() {
-        return "Prescription: " + perscribedCount + "ct of " + medication + " prescribed by " + provider + " on " + date + " at " + address;
+        SimpleDateFormat formatter = new SimpleDateFormat("MM-dd-yyyy");
+        return "Perscription: " + formatter.format(date) + " | " + perscribedCount + "ct | " + medication + " | " + provider + " | " + address;
     }
 }

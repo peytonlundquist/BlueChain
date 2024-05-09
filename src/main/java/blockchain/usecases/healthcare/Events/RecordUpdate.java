@@ -1,5 +1,6 @@
 package blockchain.usecases.healthcare.Events;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import blockchain.usecases.healthcare.Event;
@@ -53,6 +54,7 @@ public class RecordUpdate extends Event{
     }
 
     public String toString(){
-        return "Record Update: " + date.toString() + " | " + key + " | " + value;
+        SimpleDateFormat formatter = new SimpleDateFormat("MM-dd-yyyy");
+        return "Record Update: " + formatter.format(date) + " | " + key + " | " + value;
     }
 }
