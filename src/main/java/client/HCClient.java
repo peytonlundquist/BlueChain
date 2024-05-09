@@ -88,13 +88,11 @@ public class HCClient {
         for (Transaction transaction : ledger) {
             HCTransaction hcTransaction = (HCTransaction) transaction;
             if (hcTransaction.getEvent() instanceof CreatePatient) {
-                System.out.println("createPatient");
                 CreatePatient createPatient = (CreatePatient) hcTransaction.getEvent();
                 Patient patient = createPatient.getPatient();
                 patients.add(patient);
             } else if (hcTransaction.getEvent() instanceof RecordUpdate) {
                 RecordUpdate recordUpdate = (RecordUpdate) hcTransaction.getEvent();
-                System.out.println("recordUpdate");
                 for (Patient patient : patients) {
                     if (patient.getUID().equals(hcTransaction.getPatientUID())) {
                         patient.addField(recordUpdate.getKey(), recordUpdate.getValue());
@@ -102,7 +100,6 @@ public class HCClient {
                     }
                 }
             } else if (hcTransaction.getEvent() instanceof Prescription) {
-                System.out.println("prescription");
                 Prescription prescription = (Prescription) hcTransaction.getEvent();
                 for (Patient patient : patients) {
                     if (patient.getUID().equals(hcTransaction.getPatientUID())) {
@@ -110,7 +107,6 @@ public class HCClient {
                     }
                 }
             } else if (hcTransaction.getEvent() instanceof Appointment) {
-                System.out.println("appointment");
                 Appointment appointment = (Appointment) hcTransaction.getEvent();
                 for (Patient patient : patients) {
                     if (patient.getUID().equals(hcTransaction.getPatientUID())) {
@@ -365,25 +361,31 @@ public class HCClient {
      * @throws IOException Thrown if there is an error reading user input.
      */
     public void showPatientDetails() throws IOException {
-        if (patientClient && currentPatient != null) { // If patient client, show current patient details
-            printPatientDetails(currentPatient);
-        } else { // If not patient client, prompt user for patient UID
-            System.out.println("Enter the patient's UID:");
-            String patientUID = reader.readLine();
-            while(!isPatient(patientUID)) {
-                System.out.println("Patient not found. Please enter a valid patient UID or [N/n] to quit:");
-                patientUID = reader.readLine();
-                if (patientUID.charAt(0) == 'n' || patientUID.charAt(0) == 'N') {
-                    return;
-                }
+        if (patientClient) { // If patient client, show current patient details
+            if (currentPatient != null) {
+                printPatientDetails(currentPatient);
+            } else {
+                System.out.println("You are not a patient. Please create a patient account to view details.");
             }
+            return;
+        } 
 
-            // Search for patient in list of patients, if found, print patient details
-            for(Patient patient : patients){
-                if(patient.getUID().equals(patientUID)){
-                    printPatientDetails(patient);
-                    return;
-                }
+        // If not patient client, prompt user for patient UID
+        System.out.println("Enter the patient's UID:");
+        String patientUID = reader.readLine();
+        while(!isPatient(patientUID)) {
+            System.out.println("Patient not found. Please enter a valid patient UID or [N/n] to quit:");
+            patientUID = reader.readLine();
+            if (patientUID.charAt(0) == 'n' || patientUID.charAt(0) == 'N') {
+                return;
+            }
+        }
+
+        // Search for patient in list of patients, if found, print patient details
+        for(Patient patient : patients){
+            if(patient.getUID().equals(patientUID)){
+                printPatientDetails(patient);
+                return;
             }
         }
 
@@ -454,8 +456,6 @@ public class HCClient {
                 return;
             }
 
-            if (!this.test) System.out.println("Updating patient details...");
-
             if (transaction.getEvent() instanceof CreatePatient) {
                 CreatePatient createPatient = (CreatePatient) transaction.getEvent();
                 patients.add(createPatient.getPatient());
@@ -478,7 +478,7 @@ public class HCClient {
             }
         }
 
-        if(!this.test) {
+        if(!this.test && !patientClient) {
             System.out.println("\nFull node has update. Updating patients...");
             System.out.print(">");
         }
