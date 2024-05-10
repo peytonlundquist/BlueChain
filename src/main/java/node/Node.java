@@ -112,6 +112,7 @@ public class Node  {
     public HashMap<String, Transaction> getMempool(){return this.mempool;}
     public LinkedList<Block> getBlockchain(){return blockchain;}
     public LockManager getLockManager(){return lockManager;}
+    public String getUseCase(){return configValues.getUse();}
 
 
     /**
@@ -200,6 +201,7 @@ public class Node  {
 
             }else{
                 //tv = new HCTransactionValidator(); // To be changed to another configValues.getUse() case in the future
+                validatorObjects[0] = transaction;
             }
 
             if(!tv.validate(validatorObjects)){
@@ -429,8 +431,9 @@ public class Node  {
                 if(configValues.getUse().equals("Defi")){
                     validatorObjects[0] = transaction;
                     validatorObjects[1] = blockTransactions;
-                }else if(configValues.getUse().equals("HC")){
+                }else if(configValues.getUse().equals("HC")) {
                     // Validator objects will change according to another configValues.getUse() case
+                    validatorObjects[0] = transaction;
                 }
                 tv.validate(validatorObjects);
                 blockTransactions.put(key, transaction);
@@ -774,10 +777,12 @@ public class Node  {
         blockchain.add(block);
         System.out.println("Node " + myAddress.getPort() + ": " + chainString(blockchain) + " MP: " + mempool.values());
 
-
         if(configValues.getUse().equals("Defi")){
             DefiTransactionValidator dtv = (DefiTransactionValidator) tv;
             dtv.alertWallet(txMap, mt, myAddress);
+        } else {
+            HCTransactionValidator hctv = (HCTransactionValidator) tv;
+            hctv.alertWallet(txMap, mt, myAddress);
         }
 
 
@@ -838,7 +843,7 @@ public class Node  {
      * @return True if the node is in the quorum, otherwise false.
      */
     public boolean inQuorum(Block block){
-        synchronized (lockManager.getLock("quorumLock")){
+        synchronized (lockManager.getLock("quorumLock")){ // Only allows one thread to process this code at a time
             if(block.getBlockId() - 1 != blockchain.getLast().getBlockId()){ // 
                 return false;
             }
@@ -850,6 +855,30 @@ public class Node  {
                 }
             }
             return quorumMember;
+        }
+    }
+
+    /**
+     * Requests all the transactions from the nodes. Does this by
+     * recieving a message found in ServerConnection.java and sends
+     * a message back to the client with all the transactions contained
+     * as metadata.
+     * @param address Address of the client that the transactions should be sent to.
+     */
+    public void getAllTransactions(Address address) {
+        synchronized (lockManager.getLock("blockLock")) {
+            ArrayList<Transaction> transactions = new ArrayList<Transaction>();
+
+            if (blockchain != null && blockchain.size() > 1){
+                for (Block block : blockchain) {
+                    // Converts the hashmap of transactions into an arraylist of transactions
+                    ArrayList<Transaction> txList = new ArrayList<Transaction>(block.getTxList().values());
+                    for (Transaction tx : txList) {
+                        transactions.add(tx);
+                    }
+                }
+            }
+            Messager.sendOneWayMessage(address, new Message(Message.Request.SEND_TX, transactions), myAddress);
         }
     }
 
@@ -899,22 +928,31 @@ public class Node  {
                 e.printStackTrace();
             }
             while (true) {
-                for(Address address : localPeers){
-                    try {                 
-                        Thread.sleep(10000);
-                        Message messageReceived = Messager.sendTwoWayMessage(address, new Message(Message.Request.PING), myAddress);
+                synchronized(lockManager.getLock("lock")) {
+                    for(Address address : localPeers){
+                        try {                 
+                            
+                            Message messageReceived = Messager.sendTwoWayMessage(address, new Message(Message.Request.PING), myAddress);
 
-                        /* configValues.getUse() heartbeat to also output the block chain of the node */
+                            /* configValues.getUse() heartbeat to also output the block chain of the node */
 
-                    } catch (InterruptedException e) {
-                        System.out.println("Received Interrupted Exception from node " + address.getPort());
-                        throw new RuntimeException(e);
-                    } catch (ConcurrentModificationException e){
-                        System.out.println(e);
-                        break;
-                    } catch (IndexOutOfBoundsException e){
-                        System.out.println(e);
+                            Thread.sleep(500);
+                        } catch (InterruptedException e) {
+                            System.out.println("Received Interrupted Exception from node " + address.getPort());
+                            throw new RuntimeException(e);
+                        } catch (ConcurrentModificationException e){
+                            System.out.println(e);
+                            break;
+                        } catch (IndexOutOfBoundsException e){
+                            System.out.println(e);
+                        }
                     }
+                }
+
+                try {
+                    Thread.sleep(100000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
             }
         }

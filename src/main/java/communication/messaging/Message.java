@@ -60,7 +60,9 @@ public class Message implements Serializable {
         RECEIVE_SKELETON,
         RECEIVE_SIGNATURE,
         RECONCILE_BLOCK,
-        ALERT_WALLET
+        ALERT_WALLET,
+        REQUEST_TX,
+        SEND_TX
     }
 
     /**

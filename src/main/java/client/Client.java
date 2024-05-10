@@ -2,6 +2,7 @@ package client;
 
 import java.io.*;
 import java.net.*;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Properties; 
 import java.util.regex.Pattern;
@@ -11,6 +12,8 @@ import com.github.lalyos.jfiglet.FigletFont;
 import communication.messaging.Message;
 import utils.Address;
 import utils.merkletree.MerkleTreeProof;
+import blockchain.Transaction;
+import java.util.HashMap;
 
 /**
  * Represents a client application for interacting with the BlueChain network.
@@ -23,8 +26,11 @@ public class Client {
     ArrayList<Address> fullNodes; // List of full nodes we want to use
     Object updateLock; // Lock for multithreading
     boolean test; // Boolean for test vs normal output
-    String use;
+    static String use;
     DefiClient defiClient;
+
+    HCClient hcClient;
+    static boolean isPatient;
 
     /**
      * Constructs a Client instance.
@@ -106,18 +112,28 @@ public class Client {
         String host = ip.getHostAddress();
         myAddress = new Address(port, host);
 
+        Acceptor acceptor = new Acceptor(this);
+        acceptor.start();
+
+        if (use.equals("Defi")) {
+            defiClient = new DefiClient(updateLock, reader, myAddress, fullNodes);
+            hcClient = null;
+        } else if (use.equals("HC")) {
+            defiClient = null;
+            hcClient = new HCClient(updateLock, reader, myAddress, fullNodes);
+
+            if (isPatient) {
+                hcClient.setPatientClient(true);
+            }
+        }
+
         System.out.println("Wallet bound to " + myAddress);
 
         if(!this.test) System.out.println("Full Nodes to connect to by default: \n" + fullNodes + 
         "\nTo update Full Nodes address use 'u' command. \nUse 'h' command for full list of options");
-
-        Acceptor acceptor = new Acceptor(this);
-        acceptor.start();
-
-        defiClient = new DefiClient(updateLock, reader, myAddress, fullNodes);
     }
 
-    public static void main(String[] args) throws IOException{
+    public static void main(String[] args) throws IOException, ParseException{
 
         String asciiArt1 = FigletFont.convertOneLine("BlueChain Client");
         System.out.println(asciiArt1);
@@ -127,14 +143,18 @@ public class Client {
         // Reading data using readLine
         String input = "";
         int port = 7999;
+        isPatient = false;
+
         if(args.length > 0){
             if(args[0].equals("-port")){
                 port = Integer.valueOf(args[0]);
             }else if(args[0].equals("-test")){
-                Client defiClient = new Client(port);
-                defiClient.test = true;
-                defiClient.testNetwork( Integer.valueOf(args[1]));
-                System.exit(0); // We just test then exit
+                Client testClient = new Client(port);
+                testClient.test = true;
+                testClient.testNetwork( Integer.valueOf(args[1]));
+                System.exit(0);
+            } else if (args[0].equals("-patient")) {
+                isPatient = true;
             }
         }
 
@@ -151,14 +171,16 @@ public class Client {
      * Interpret the string input
      * 
      * @param input the string to interpret
+     * @throws ParseException 
      */
-    public void interpretInput(String input){
+    public void interpretInput(String input) throws ParseException{
         try {
             switch(input){
 
                 /* Add account (or something similar depends on use) */
                 case("a"):
                     if(use.equals("Defi")) defiClient.addAccount();
+                    if(use.equals("HC") && !isPatient) hcClient.createAppointment();
                     break;
 
                 /* Submit Transaction */
@@ -169,17 +191,41 @@ public class Client {
                 /* Print accounts (or something similar depends on use) */
                 case("p"):
                     if(use.equals("Defi")) defiClient.printAccounts();
+                    if(use.equals("HC") && !isPatient) hcClient.createPerscription();
                     break;
 
                 /* Print the specific usage / commmands */
                 case("h"):
                     if(use.equals("Defi")) defiClient.printUsage();
+                    if(use.equals("HC") && !isPatient) hcClient.printUsage();
+                    if(use.equals("HC") && isPatient) hcClient.printPatientUsage();
+                    break;
+
+                case("n"):
+                    if(use.equals("HC") && !isPatient) hcClient.createNewPatient();
+                    break;
+
+                case("r"):
+                    if(use.equals("HC") && !isPatient) hcClient.updateRecord();
+                    break;
+
+                case("s"):
+                    if(use.equals("HC")) hcClient.showPatientDetails();
+                    break;
+
+                case("c"):
+                    if(use.equals("HC")) hcClient.createNewPatient();
+                    break;
+
+                case ("d"):
+                    if(use.equals("HC") && !isPatient) hcClient.showAllPatients();
                     break;
 
                 /* Update full nodes */
                 case("u"):
                     updateFullNode();
                     break;
+    
             }
         } catch (IOException e) {
             System.out.println("Input malformed. Try again.");
@@ -222,6 +268,9 @@ public class Client {
         if(use.equals("Defi")){
             defiClient.test = true;
             defiClient.testNetwork(iterations);
+        } else {
+            hcClient.test = true;
+            hcClient.testNetwork(iterations);
         }
     }
 
@@ -235,6 +284,7 @@ public class Client {
             this.wallet = wallet;
         }
 
+        @SuppressWarnings("unchecked")
         public void run() {
             Socket client;
             while (true) {
@@ -246,9 +296,15 @@ public class Client {
                     ObjectInputStream oin = new ObjectInputStream(in);
                     Message incomingMessage = (Message) oin.readObject();
                     
-                    if(incomingMessage.getRequest().name().equals("ALERT_WALLET")){
+                    if(incomingMessage.getRequest().name().equals("ALERT_WALLET")) {
                         MerkleTreeProof mtp = (MerkleTreeProof) incomingMessage.getMetadata();
-                        defiClient.updateAccounts(mtp);
+                        if (use.equals("Defi")) {
+                            defiClient.updateAccounts(mtp);
+                        } else if (use.equals("HC")) {
+                            hcClient.updatePatientDetails(mtp);
+                        }
+                    } else if (incomingMessage.getRequest().name().equals("SEND_TX")) {
+                        hcClient.initializeClient((ArrayList<Transaction>) incomingMessage.getMetadata());
                     }
                 } catch (IOException e) {
                     System.out.println(e);

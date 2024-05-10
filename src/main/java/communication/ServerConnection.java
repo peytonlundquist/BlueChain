@@ -7,7 +7,6 @@ import utils.Utils;
 import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -16,9 +15,8 @@ import blockchain.BlockSignature;
 import blockchain.BlockSkeleton;
 import blockchain.Transaction;
 import blockchain.TransactionValidator;
-import blockchain.usecases.defi.DefiTransaction;
 import blockchain.usecases.defi.DefiTransactionValidator;
-import communication.*;
+import blockchain.usecases.healthcare.HCTransactionValidator;
 import communication.messaging.Message;
 
 /**
@@ -123,9 +121,20 @@ public class ServerConnection extends Thread {
                 node.receiveSkeleton(blockSkeleton);
                 break;
             case ALERT_WALLET:
-                Object[] data = (Object[]) incomingMessage.getMetadata();
-                DefiTransactionValidator dtv = (DefiTransactionValidator) tv;
-                dtv.addAccountsToAlert((String) data[0], (Address) data[1]);
+                                
+                if (node.getUseCase().equals("Defi")) {
+                    Object[] data = (Object[]) incomingMessage.getMetadata();
+                    DefiTransactionValidator dtv = (DefiTransactionValidator) tv;
+                    dtv.addAccountsToAlert((String) data[0], (Address) data[1]);
+                } else if (node.getUseCase().equals("HC")) {
+                    HCTransactionValidator hctv = (HCTransactionValidator) tv;
+                    hctv.addClientsToAlert((Address) incomingMessage.getMetadata());
+                }
+
+                break;
+            case REQUEST_TX:
+                Object mData2 = (Object) incomingMessage.getMetadata();
+                node.getAllTransactions((Address) mData2);
                 break;
         }
     }

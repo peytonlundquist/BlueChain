@@ -71,9 +71,7 @@ public class DefiClient {
 
             String pubKeyString = DSA.bytesToString(newAccount.getKeyPair().getPublic().getEncoded());
 
-            Object[] data = new Object[2];
-            data[0] = pubKeyString;
-            data[1] = myAddress;
+            Object[] data = {pubKeyString, myAddress};
             Messager.sendOneWayMessage(new Address(fullNodes.get(0).getPort(), fullNodes.get(0).getHost()), 
             new Message(Message.Request.ALERT_WALLET, data), myAddress);
 
@@ -95,6 +93,8 @@ public class DefiClient {
         String nickname = reader.readLine();
         System.out.println("Amount to send?");
         int amount = Integer.valueOf(reader.readLine());
+        System.out.println("Note?");
+        String note = reader.readLine();
 
         Account chosenAccount = null;
         for(Account account : accounts){
@@ -114,7 +114,7 @@ public class DefiClient {
             return;
         }
 
-        DefiTransaction newTransaction = new DefiTransaction(to, myPublicKeyString, amount, String.valueOf(System.currentTimeMillis()));
+        DefiTransaction newTransaction = new DefiTransaction(to, myPublicKeyString, amount, String.valueOf(System.currentTimeMillis()), note);
         String UID = newTransaction.getUID();
         byte[] signedUID = DSA.signHash(UID, pk);
         newTransaction.setSigUID(signedUID);
@@ -237,9 +237,7 @@ public class DefiClient {
 
             String pubKeyString = DSA.bytesToString(newAccount.getKeyPair().getPublic().getEncoded());
 
-            Object[] data = new Object[2];
-            data[0] = pubKeyString;
-            data[1] = myAddress;
+            Object[] data = {pubKeyString, myAddress};
             Messager.sendOneWayMessage(new Address(fullNodes.get(0).getPort(), fullNodes.get(0).getHost()), 
             new Message(Message.Request.ALERT_WALLET, data), myAddress);
         }
@@ -274,7 +272,7 @@ public class DefiClient {
             return;
         }
 
-        DefiTransaction newTransaction = new DefiTransaction(to, myPublicKeyString, amount, String.valueOf(System.currentTimeMillis()));
+        DefiTransaction newTransaction = new DefiTransaction(to, myPublicKeyString, amount, String.valueOf(System.currentTimeMillis()), "Admin");
         String UID = newTransaction.getUID();
         byte[] signedUID = DSA.signHash(UID, pk);
         newTransaction.setSigUID(signedUID);
@@ -300,10 +298,10 @@ public class DefiClient {
             
 
             for(int i = 0; i < j; i++){
-                    testAddAccount(String.valueOf(i));
-                    Thread.sleep(500);
-                    testSubmitTransaction(String.valueOf(i), DSA.bytesToString(accounts.get(0).getKeyPair().getPublic().getEncoded()), 10);
-                    pb.step(); 
+                testAddAccount(String.valueOf(i));
+                Thread.sleep(500);
+                testSubmitTransaction(String.valueOf(i), DSA.bytesToString(accounts.get(0).getKeyPair().getPublic().getEncoded()), 10);
+                pb.step(); 
             }
             pb.stop(); // stops the progress bar
             System.out.println("Sleeping wallet for last minute updates...");

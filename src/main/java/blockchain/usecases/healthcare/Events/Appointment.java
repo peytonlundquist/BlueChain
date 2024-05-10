@@ -1,40 +1,62 @@
 package blockchain.usecases.healthcare.Events;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
+
+import javax.swing.text.DateFormatter;
 
 import blockchain.usecases.healthcare.Event;
 
+/**
+ * This class is an event that will be stored in a transaction in the blockchain. It
+ * represents an appointment with a healthcare provider.
+ */
 public class Appointment extends Event {
 
     private Date date;
-    private String time;
     private String location;
     private String provider;
-    
-    public String getTime() {
-        return time;
-    }
 
+    /**
+     * This constructor sets the date, location, and provider of the appointment.
+     * @param date The date and time of the appointment.
+     * @param location The location of the appointment.
+     * @param provider The provider overseeing appointment.
+     */
+    public Appointment(Date date, String location, String provider) {
+        super(Action.Appointment);
+        this.date = date;
+        this.location = location;
+        this.provider = provider;
+    }
+    
+    /**
+     * This method returns the provider of the appointment.
+     * @return The provider of the appointment.
+     */
     public String getProvider() {
         return provider;
     }
 
-    public void setProvider(String provider) {
-        this.provider = provider;
-    }
-
+    /**
+     * This method returns the date of the appointment.
+     * @return The date of the appointment.
+     */
     public Date getDate() {
         return date;
     }
 
+    /**
+     * This method returns the location of the appointment.
+     * @return The location of the appointment.
+     */
     public String getLocation() {
         return location;
     }
 
-    public Appointment(String patientUID, Date date, String time, String location) {
-        super(patientUID, Action.Appointment);
-        this.date = date;
-        this.time = time;
-        this.location = location;
+    @Override
+    public String toString() {
+        SimpleDateFormat formatter = new SimpleDateFormat("MM-dd-yyyy HH:mm a");
+        return "Appointment: " + formatter.format(date) + " | " + location + " | " + provider;
     }
 }

@@ -1,41 +1,81 @@
 package blockchain.usecases.healthcare.Events;
 
-import java.sql.Date;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import blockchain.usecases.healthcare.Event;
 
-public class Prescription extends Event{
+/**
+ * This class is an event that will be stored in a transaction in the blockchain. It
+ * represents a prescription for a medication issued from a healthcare provider.
+ */
+public class Prescription extends Event {
 
     private Date date;
-    private int amount;
+    private int perscribedCount;
     private String medication;
     private String provider;
-    
-    public int getAmount() {
-        return amount;
+    private String address;
+
+    /**
+     * This constructor sets the medication, provider, address, date, and perscribed count of the prescription.
+     * @param medication The medication name.
+     * @param provider The provider of the prescription.
+     * @param address The address of where the medication was perscribed.
+     * @param date The date the prescription was issued.
+     * @param perscribedCount The perscribed count of the medication.
+     */
+    public Prescription(String medication, String provider, String address, Date date, int perscribedCount) {
+        super(Action.Prescription);
+        this.date = date;
+        this.perscribedCount = perscribedCount;
+        this.provider = provider;
+        this.address = address;
+        this.medication = medication;
     }
 
+    /**
+     * This method returns the perscribed count of the medication.
+     * @return The perscribed count of the medication.
+     */
+    public int getPerscribedCount() {
+        return perscribedCount;
+    }
+
+    /**
+     * This method returns the provider of the prescription.
+     * @return The provider of the prescription.
+     */
     public String getProvider() {
         return provider;
     }
 
-    public void setProvider(String provider) {
-        this.provider = provider;
-    }
-
+    /**
+     * This method returns the date the perscription was issued.
+     * @return The date of the prescription.
+     */
     public Date getDate() {
         return date;
     }
 
+    /**
+     * This method returns the medication name.
+     * @return The medication of the prescription.
+     */
     public String getMedication() {
         return medication;
     }
 
-    public Prescription(String patientUID, String medication, Date date, int amount) {
-        super(patientUID, Action.Prescription);
-        this.date = date;
-        this.amount = amount;
-        this.medication = medication;
+    /**
+     * This method returns where the medication was perscribed.
+     * @return The address of the prescription.
+     */
+    public String getAddress() {
+        return address;
     }
     
+    public String toString() {
+        SimpleDateFormat formatter = new SimpleDateFormat("MM-dd-yyyy");
+        return "Perscription: " + formatter.format(date) + " | " + perscribedCount + "ct | " + medication + " | " + provider + " | " + address;
+    }
 }
