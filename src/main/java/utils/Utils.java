@@ -193,6 +193,8 @@ public class Utils {
                 Random random = new Random(seed); // Makes our random in theory the same across all healthy nodes
                 int quorumNodeIndex; // The index from our global peers from which we select nodes to participate in next quorum
                 Address quorumNode; // The address of thenode from the quorumNode Index to go in to the quorum
+
+                // Loops through the list of global peers and adds them to the quorum until the quorum size is reached.
                 while(quorum.size() < configValues.getQuorumSize()){
                     quorumNodeIndex = random.nextInt(configValues.getNumNodes()); // may be wrong but should still work
                     quorumNode = globalPeers.get(quorumNodeIndex);
@@ -200,6 +202,7 @@ public class Utils {
                         quorum.add(globalPeers.get(quorumNodeIndex));
                     }
                 }
+                
                 return quorum;
             } catch (NoSuchAlgorithmException e) {
                 throw new RuntimeException(e);
