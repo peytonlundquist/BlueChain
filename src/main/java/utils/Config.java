@@ -19,6 +19,7 @@ public class Config {
     private int minimumTransactions;
     private int debugLevel;
     private String use;
+    private int minVoteAcceptance;
 
     /**
      * Gets the number of nodes in the distributed system.
@@ -92,6 +93,15 @@ public class Config {
         return use;
     }
 
+    /**
+     * Gets the minimum vote acceptance threshold for quorum.
+     *
+     * @return The minimum vote acceptance threshold.
+     */
+    public int getMinVoteAcceptance() {
+        return minVoteAcceptance;
+    }
+
 
     /**
      * Constructs a Config object by loading configuration properties from the specified file.
@@ -118,5 +128,6 @@ public class Config {
         minimumTransactions = Integer.parseInt(prop.getProperty("MINIMUM_TRANSACTIONS"));
         debugLevel = Integer.parseInt(prop.getProperty("DEBUG_LEVEL"));
         use = prop.getProperty("USE");
+        minVoteAcceptance = Integer.parseInt(prop.getProperty("MIN_VOTE_ACCEPTANCE"));
     }
 }
