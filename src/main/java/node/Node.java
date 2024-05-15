@@ -590,6 +590,7 @@ public class Node  {
 
                     }                    
                 } else {
+                    // This is where changes should go
                     System.out.println("Node " + myAddress.getPort() + ": tallyQuorumSigs: quorumBlockHash does not equals(winningHash)");
                 }
             } else {
