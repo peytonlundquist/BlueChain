@@ -489,18 +489,23 @@ public class Node  {
         synchronized (lockManager.getLock("sigRoundsLock")){
             if(configValues.getDebugLevel() == 1) { System.out.println("Node " + myAddress.getPort() + ": 1st part receiveQuorumSignature invoked. state: " + state);}
 
+            // Creates a quorum of addresses
             ArrayList<Address> quorum = deriveQuorum(blockchain.getLast(), 0, configValues, globalPeers);
 
+            // Uses static method in Utils.java to check if...
             if(!containsAddress(quorum, signature.getAddress())){
                 if(configValues.getDebugLevel() == 1) System.out.println("Node " + myAddress.getPort() + ": false sig from " + signature.getAddress());
                 return;
             }
 
+            // Checks to see if the current node is in the quorum
             if(!inQuorum()){
                 if(configValues.getDebugLevel() == 1) System.out.println("Node " + myAddress.getPort() + ": not in quorum? q: " + quorum + " my addr: " + myAddress); 
                 return;
             } 
 
+            // Adds the signature to the quorum signatures. Signatures contain the hash of the block we want to add, 
+            // the signature from the node, and the address of the node that signed it.
             quorumSigs.add(signature);
             int blockId = blockchain.size() - 1;
 
@@ -536,6 +541,7 @@ public class Node  {
             stateManager.stateChangeRequest(4);
             ArrayList<Address> quorum = deriveQuorum(blockchain.getLast(), 0, configValues, globalPeers);
 
+            // Checks to see if the current node is not in the quorum
             if(!inQuorum()){
                 System.out.println("Node " + myAddress.getPort() + ": tQs: not in quorum? q: " + quorum + " my addr: " + myAddress);
                 return;
@@ -544,18 +550,23 @@ public class Node  {
             HashMap<String, Integer> hashVotes = new HashMap<>();
             String quorumBlockHash;
             int block = blockchain.size() - 1;
+
             try {                
                 if(quorumBlock == null){
                     System.out.println("Node " + myAddress.getPort() + ": tallyQuorumSigs quorum null");
                 }
 
                 quorumBlockHash = getBlockHash(quorumBlock, 0);
-                hashVotes.put(quorumBlockHash, 1);;
+                hashVotes.put(quorumBlockHash, 1);
             } catch (NoSuchAlgorithmException e) {
                 throw new RuntimeException(e);
             }
+            
             for (BlockSignature sig : quorumSigs) {
                 if (verifySignatureFromRegistry(sig.getHash(), sig.getSignature(), sig.getAddress())) {
+                    /* If the signature for the quorumBlock hash matches the quorumBlock hash, increment the votes.
+                     * Otherwise, add the hash to the hashVotes map with a vote of 0.
+                     */
                     if (hashVotes.containsKey(sig.getHash())) {
                         int votes = hashVotes.get(sig.getHash());
                         votes++;
@@ -565,29 +576,31 @@ public class Node  {
                     }
                 } else {
                     /* Signature has failed. Authenticity or integrity compromised */
+                    break;
                 }
-
-
             }
 
             String winningHash = quorumSigs.get(0).getHash();
 
             for (BlockSignature blockSignature : quorumSigs) {
                 String hash = blockSignature.getHash();
+                // Checks to see if the votes are not null and if each hash has more votes than the winning hash
                 if (hashVotes.get(hash) != null && (hashVotes.get(hash) > hashVotes.get(winningHash))) {
                     winningHash = hash;
                 }
             }
+
             if (configValues.getDebugLevel() == 1) {
                 System.out.println("Node " + myAddress.getPort() + ": tallyQuorumSigs: Winning hash votes = " + hashVotes.get(winningHash));
             }
-            if (hashVotes.get(winningHash) == quorum.size()) {
-                if (quorumBlockHash.equals(winningHash)) {
+            
+            // Checks if the ammount of votes for the hash with the most votes is greater than or equals the minimum vote acceptance
+            if (hashVotes.get(winningHash) >= configValues.getMinVoteAcceptance()) {
+                if (quorumBlockHash.equals(winningHash)) { // if winning hash matches the quorumBlock, add the block.
                     sendSkeleton();
                     addBlock(quorumBlock);
                     if(quorumBlock == null){
                         System.out.println("Node " + myAddress.getPort() + ": tallyQuorumSigs quorum null");
-
                     }                    
                 } else {
                     // This is where changes should go
@@ -696,7 +709,8 @@ public class Node  {
                 }
             }
 
-            if(verifiedSignatures != quorum.size() - 1){
+            if(verifiedSignatures < configValues.getMinVoteAcceptance()){
+                System.out.println(configValues.getMinVoteAcceptance());
                 if(configValues.getDebugLevel() == 1) { System.out.println("Node " + myAddress.getPort() + ": sigs not verified for block " + blockSkeleton.getBlockId() + 
                 ". Verified sigs: " + verifiedSignatures + ". Needed: " + quorum.size() + " - 1."); }
                 return;
