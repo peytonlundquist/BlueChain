@@ -604,6 +604,35 @@ public class Node  {
                     }                    
                 } else {
                     // This is where changes should go
+
+                    /* Here is where we decide what to do if the quorum fails 
+                     * 
+                     * We can do one of three things. The first being to reject the block outright without
+                     * any consideration. The second thing we can do is to retry with the same quorum. This will
+                     * allow some protection so new blocks won't be automaticly thrown out because of a small error.
+                     * The last thing we can do is retry with a new quorum. There could be a chance that a malicious
+                     * node is trying to alter the contents of the block. If the quorum fails the first time, we can
+                     * try again. If it fails after a second round of consensus, reject the block.
+                     * 
+                     * There are other ways of handling a failed vote. Some involve penalizing the node's authority 
+                     * when said node conflicts with the majority. Another way is to create a fault tolerance where
+                     * if a quorum fails a vote, they can adjust the parameters of the validator and try again. These
+                     * methods are lengthy and involve massive changes.
+                    */
+
+                    // 1st method: Rejecting the block after failed vote:
+                    /*  
+                        LinkedList<Block> failedBlocks = new LinkedList<Block>();
+                        failedBlocks.add(quorumBlock); 
+                    */
+                    // failedBlocks would be a variable in Node.java and would store all the failed blocks. We could
+                    // use this to document the reasons for the rejection and debugging purposes. If not nessasary, we
+                    // could outright reject the block and forget about it.
+
+                    // 2nd method: retrying with the same quorum.
+                    
+                    // 3rd method: retrying with a different quorum
+                     
                     System.out.println("Node " + myAddress.getPort() + ": tallyQuorumSigs: quorumBlockHash does not equals(winningHash)");
                 }
             } else {
@@ -710,7 +739,7 @@ public class Node  {
             }
 
             if(verifiedSignatures < configValues.getMinVoteAcceptance()){
-                System.out.println(configValues.getMinVoteAcceptance());
+                // System.out.println(configValues.getMinVoteAcceptance());
                 if(configValues.getDebugLevel() == 1) { System.out.println("Node " + myAddress.getPort() + ": sigs not verified for block " + blockSkeleton.getBlockId() + 
                 ". Verified sigs: " + verifiedSignatures + ". Needed: " + quorum.size() + " - 1."); }
                 return;
