@@ -62,7 +62,9 @@ public class Message implements Serializable {
         RECONCILE_BLOCK,
         ALERT_WALLET,
         REQUEST_TX,
-        SEND_TX
+        SEND_TX, 
+        INCREMENT_NONCE,
+        RESET_VOTE
     }
 
     /**
