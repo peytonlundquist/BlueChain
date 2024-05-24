@@ -112,11 +112,9 @@ public class ServerConnection extends Thread {
             case QUORUM_READY:
                 node.receiveQuorumReady(oout, oin);
                 break;
-            case INCREMENT_NONCE:
-                node.incrementNonce();
-                break;
-            case RESET_VOTE:
-                node.resetVote();
+            case FAILED_VOTE:
+                Object[] failedData = (Object[]) incomingMessage.getMetadata();
+                node.failedVote((String) failedData[0], (String[]) failedData[1]);
                 break;
             case RECEIVE_SIGNATURE:
                 BlockSignature blockSignature = (BlockSignature) incomingMessage.getMetadata();

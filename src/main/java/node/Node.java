@@ -104,7 +104,8 @@ public class Node  {
         }
 
         this.nonce = 0;
-        this.failedVote = false;
+        this.failedVoteHashes = new ArrayList<>();
+        this.failedVoteTxList = new ArrayList<>();
     }
 
     /* A collection of getters */
@@ -180,6 +181,10 @@ public class Node  {
         stateManager.waitForState(0);
         synchronized(lockManager.getLock("memPoolLock")){
             if(Utils.containsTransactionInMap(transaction, mempool)) return;
+            if(failedVoteTxList.contains(getSHAString(transaction.getUID()))) {
+                if(configValues.getDebugLevel() == 1) {System.out.println("Node " + myAddress.getPort() + ": tried to recieve a failed transaction");}
+                return;
+            }
 
             if(configValues.getDebugLevel() == 1){System.out.println("Node " + myAddress.getPort() + ": verifyTransaction: " + 
                     transaction.getUID() + ", blockchain size: " + blockchain.size());}
@@ -292,7 +297,7 @@ public class Node  {
                     if(configValues.getDebugLevel() == 1) {
                         System.out.println("Node " + myAddress.getPort() + ": not in quorum? q: " + quorum + " my addr: " + myAddress);
                     }
-                    oout.writeObject(new Message(Message.Request.RECONCILE_BLOCK, new Object[]{currentBlock.getBlockId(), getBlockHash(currentBlock, 0)}));
+                    oout.writeObject(new Message(Message.Request.RECONCILE_BLOCK, new Object[]{currentBlock.getBlockId(), getBlockHash(currentBlock, this.nonce)}));
                     oout.flush();
                     Message reply = (Message) oin.readObject();
 
@@ -444,13 +449,13 @@ public class Node  {
             try {
                 if(configValues.getUse().equals("Defi")){
                     quorumBlock = new DefiBlock(blockTransactions,
-                        getBlockHash(blockchain.getLast(), 0),
+                        getBlockHash(blockchain.getLast(), this.nonce),
                                 blockchain.size());
                 }else{
 
                     // Room to enable another configValues.getUse() case 
                     quorumBlock = new HCBlock(blockTransactions,
-                        getBlockHash(blockchain.getLast(), 0),
+                        getBlockHash(blockchain.getLast(), this.nonce),
                                 blockchain.size());
                 }
 
@@ -470,7 +475,8 @@ public class Node  {
         String blockHash;
         byte[] sig;
 
-        try {blockHash = getBlockHash(quorumBlock, 0);
+        try {
+            blockHash = getBlockHash(quorumBlock, this.nonce);
             sig = signHash(blockHash, privateKey);
         } catch (NoSuchAlgorithmException e) {throw new RuntimeException(e);}
 
@@ -492,10 +498,8 @@ public class Node  {
 
             if(configValues.getDebugLevel() == 1) { System.out.println("Node " + myAddress.getPort() + ": 1st part receiveQuorumSignature invoked. state: " + state);}
 
-            // Creates a quorum of addresses
             ArrayList<Address> quorum = deriveQuorum(blockchain.getLast(), nonce, configValues, globalPeers);
 
-            // Uses static method in Utils.java to check if...
             if(!containsAddress(quorum, signature.getAddress())){
                 if(configValues.getDebugLevel() == 1) System.out.println("Node " + myAddress.getPort() + ": false sig from " + signature.getAddress());
                 return;
@@ -507,8 +511,6 @@ public class Node  {
                 return;
             } 
 
-            // Adds the signature to the quorum signatures. Signatures contain the hash of the block we want to add, 
-            // the signature from the node, and the address of the node that signed it.
             quorumSigs.add(signature);
             int blockId = blockchain.size() - 1;
 
@@ -552,14 +554,14 @@ public class Node  {
 
             HashMap<String, Integer> hashVotes = new HashMap<>();
             String quorumBlockHash;
-            int block = blockchain.size() - 1;
+            //int block = blockchain.size() - 1;
 
             try {                
                 if(quorumBlock == null){
                     System.out.println("Node " + myAddress.getPort() + ": tallyQuorumSigs quorum null");
                 }
 
-                quorumBlockHash = getBlockHash(quorumBlock, 0);
+                quorumBlockHash = getBlockHash(quorumBlock, this.nonce);
                 hashVotes.put(quorumBlockHash, 1);
             } catch (NoSuchAlgorithmException e) {
                 throw new RuntimeException(e);
@@ -567,15 +569,6 @@ public class Node  {
 
             for (BlockSignature sig : quorumSigs) {
                 if (verifySignatureFromRegistry(sig.getHash(), sig.getSignature(), sig.getAddress())) {
-                    /* If the signature for the quorumBlock hash matches the quorumBlock hash, increment the votes.
-                     * Otherwise, add the hash to the hashVotes map with a vote of 0.
-                     */
-
-                    // if (sig.getAddress().getPort() == 8001 || sig.getAddress().getPort() == 8002 || sig.getAddress().getPort() == 8003 || sig.getAddress().getPort() == 8004) {
-                    //     System.out.println("Node " + myAddress.getPort() + ": Changed to wrong hash value");
-                    //     sig = new BlockSignature(sig.getSignature(), "00000", sig.getAddress());
-                    // }
-
                     if (hashVotes.containsKey(sig.getHash())){
                         int votes = hashVotes.get(sig.getHash());
                         votes++;
@@ -583,9 +576,12 @@ public class Node  {
                     } else {
                         hashVotes.put(sig.getHash(), 1);
                     }
+
                 } else {
                     /* Signature has failed. Authenticity or integrity compromised */
-                    break;
+                    if (configValues.getDebugLevel() == 1) {
+                        System.out.println("Node " + myAddress.getPort() + ": Signature failed from port " + sig.getAddress().getPort());
+                    }
                 }
             }
 
@@ -593,11 +589,10 @@ public class Node  {
 
             for (BlockSignature blockSignature : quorumSigs) {
                 String hash = blockSignature.getHash();
-                // Checks to see if the votes are not null and if each hash has more votes than the winning hash
+
                 if (hashVotes.get(hash) != null && (hashVotes.get(hash) > hashVotes.get(winningHash))) {
                     winningHash = hash;
                 }
-                System.out.println("Winning Hash: " + winningHash);
             }
 
             if (configValues.getDebugLevel() == 1) {
@@ -611,107 +606,84 @@ public class Node  {
                     addBlock(quorumBlock);
                     if(quorumBlock == null){
                         System.out.println("Node " + myAddress.getPort() + ": tallyQuorumSigs quorum null");
-                    }                    
+                    }                
                 } else {
-                    // This is where changes should go
-
-                    /* Here is where we decide what to do if the quorum fails 
-                     * 
-                     * We can do one of three things. The first being to reject the block outright without
-                     * any consideration. The second thing we can do is to retry with the same quorum. This will
-                     * allow some protection so new blocks won't be automaticly thrown out because of a small error.
-                     * The last thing we can do is retry with a new quorum. There could be a chance that a malicious
-                     * node is trying to alter the contents of the block. If the quorum fails the first time, we can
-                     * try again. If it fails after a second round of consensus, reject the block.
-                     * 
-                     * There are other ways of handling a failed vote. Some involve penalizing the node's authority 
-                     * when said node conflicts with the majority. Another way is to create a fault tolerance where
-                     * if a quorum fails a vote, they can adjust the parameters of the validator and try again. These
-                     * methods are lengthy and involve massive changes.
-                    */
-
-                    // 1st method: Rejecting the block after failed vote:
-                    /*  
-                        LinkedList<Block> failedBlocks = new LinkedList<Block>();
-                        failedBlocks.add(quorumBlock); 
-                    */
-                    // failedBlocks would be a variable in Node.java and would store all the failed blocks. We could
-                    // use this to document the reasons for the rejection and debugging purposes. If not nessasary, we
-                    // could outright reject the block and forget about it.
-                    
-                    // 3rd method: retrying with a different quorum
-                    
-                    // Message Nodes to increment nonce
-                    //incrementNonce();
-                    //nonce++;
-
-                    incrementNonce();
-                    nonce++;
-                    System.out.println("Nonce incremented in quorum. New Nonce: " + nonce);
-                    System.out.println("Node " + myAddress.getPort() + ": tallyQuorumSigs: quorumBlockHash does not equals(winningHash)");
-
-                    try {
-                        Thread.sleep(2000);
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
+                    if (configValues.getDebugLevel() == 1) {
+                        System.out.println("Node " + myAddress.getPort() + ": Quorum block hash does not match the winning hash. Block rejected.");
                     }
-
-                    resetVote();
+                    stateManager.stateChangeRequest(0);
                 }
+
             } else {
-                incrementNonce();
-                nonce++;
-                System.out.println("Nonce incremented in quorum. New Nonce: " + nonce);
-                System.out.println("Node " + myAddress.getPort() + ": tallyQuorumSigs: failed vote. votes: " + hashVotes + " my block " + quorumBlock.getBlockId() + " " + quorumBlockHash.substring(0, 4) +
-                " quorumSigs: " + quorumSigs);
-
-                try {
-                    Thread.sleep(2000);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+                if(configValues.getDebugLevel() == 1) {
+                    System.out.println("Node " + myAddress.getPort() + ": tallyQuorumSigs: Failed to reach quorum. Resetting node."); 
                 }
 
-                resetVote();
+                // Converts the failed transactions into an array
+                int len = quorumBlock.getTxList().keySet().size();
+                int index = 0;
+                String[] failedTxList = new String[len + 1];
+                for (String key : quorumBlock.getTxList().keySet()) {
+                    failedTxList[index] = key;
+                    index++;
+                }
+
+                failedVote(winningHash, failedTxList);
+
+                // Resets current node here rather than in failedVote().
+                this.nonce++;
+                stateManager.stateChangeRequest(0);
+                waitForTransactions();
             } 
+
             hashVotes.clear();
             quorumSigs.clear();
         }
     }
 
-    public void incrementNonce(){
-        // Add functionality to not increment the nonce for nodes in the quorum. They can handle it themselves.
-        if(!failedVote) {
-            ArrayList<Integer> quorum = new ArrayList<Integer>();
-            for (Address address : deriveQuorum(blockchain.getLast(), nonce, configValues, globalPeers)) {
-                quorum.add(address.getPort());
+    /**
+     * If the node fails to reach quorum, it will reset the node and remove the failed transactions from the mempool.
+     * It will also message the other nodes and tell them to do the same. The nonce is incremented to prevent the same
+     * quorum from voting again.
+     * 
+     * @param failedHash The failed block hash that didn't pass.
+     * @param failedTxList An array of failed transactions in the quorum block.
+     */
+    public void failedVote(String failedHash, String[] failedTxList){
+        //synchronized(lockManager.getLock("blockLock")) {
+            if (failedVoteHashes.contains(failedHash)) {
+                return;
             }
 
-            if (!quorum.contains(myAddress.getPort())) {
-                nonce++;
+            // adds the failed transactions to the failedVoteTxList
+            this.failedVoteHashes.add(failedHash);
+            for (String hash : failedTxList) {
+                if (!this.failedVoteTxList.contains(hash)) {
+                    this.failedVoteTxList.add(hash);
+                }
             }
 
-            failedVote = true;
+            // Messages other nodes to reset their 'state'
+            Object[] validatorObjects = {failedHash, failedTxList};
+            Messager.sendOneWayMessageToGroup(new Message(Message.Request.FAILED_VOTE, validatorObjects), localPeers, myAddress);
 
-            System.out.println("Node " + myAddress.getPort() + ": incrementNonce invoked. nonce: " + nonce + ". failedVote set to true.");
+            if (!inQuorum()) {                
+                this.nonce++;
 
-            Messager.sendOneWayMessageToGroup(new Message(Message.Request.INCREMENT_NONCE), localPeers, myAddress);
-        }
-    }
+                if (configValues.getDebugLevel() == 1) {
+                    System.out.println("Node " + myAddress.getPort() + ": Failed quorum consensus. reseting node. New nonce: " + nonce);
+                }
 
-    // This method should run when all of the nodes in the quorum are done with their voting process.
-    // Use the same thread as the one that adds new transactions and use a sleep method to wait for the
-    // other nodes in the quorum to finish.
-    // Lock: memPoolLock
-    public void resetVote(){
-        if (failedVote) {
-            stateManager.stateChangeRequest(0);
-            resetMempool();
-            failedVote = false;
-            System.out.println("Node " + myAddress.getPort() + ": Mempool reset. failedVote set to false. Nonce: " + nonce);
-            Messager.sendOneWayMessageToGroup(new Message(Message.Request.RESET_VOTE), localPeers, myAddress);
+                // Removes the failed transactions from the mempool
+                for (String key : failedTxList) {
+                    mempool.remove(key);
+                }
 
-            waitForTransactions();
-        }
+                // Resets the node
+                stateManager.stateChangeRequest(0);
+                waitForTransactions();
+            }
+        //}
     }
 
     /**
@@ -809,9 +781,8 @@ public class Node  {
             }
 
             if(verifiedSignatures < configValues.getMinVoteAcceptance()){
-                // System.out.println(configValues.getMinVoteAcceptance());
                 if(configValues.getDebugLevel() == 1) { System.out.println("Node " + myAddress.getPort() + ": sigs not verified for block " + blockSkeleton.getBlockId() + 
-                ". Verified sigs: " + verifiedSignatures + ". Needed: " + quorum.size() + " - 1."); }
+                ". Verified sigs: " + verifiedSignatures + ". Needed: " + configValues.getMinVoteAcceptance()); }
                 return;
             }
 
@@ -840,7 +811,9 @@ public class Node  {
                     blockTransactions.put(key, mempool.get(key));
                     mempool.remove(key);
                 }else{
-                    // need to ask for trans
+                    if (configValues.getDebugLevel() == 1) {
+                        System.out.println("Node " + myAddress.getPort() + ": Needs to request transactions/block");
+                    }
                 }
             }
 
@@ -899,27 +872,14 @@ public class Node  {
         }
 
         waitForTransactions();
-
-        // ArrayList<Address> quorum = deriveQuorum(blockchain.getLast(), nonce, configValues, globalPeers);
-
-        // if(configValues.getDebugLevel() == 1) {
-        //     System.out.println("Node " + myAddress.getPort() + ": Added block " + block.getBlockId() + ". Next quorum: " + quorum);
-        // }
-
-        // if(inQuorum()){
-        //     while(mempool.size() < configValues.getMinimumTransactions()){
-        //         try {
-        //             Thread.sleep(3000);
-        //         } catch (InterruptedException e) {
-        //             e.printStackTrace();
-        //         }
-        //     }
-        //     sendQuorumReady();
-        // }
     }
 
+    /**
+     * If the node is in the quorum, this method waits for the minimum number of transactions
+     * to be received before sending a quorum ready signal.
+     */
     private void waitForTransactions(){
-        ArrayList<Address> quorum = deriveQuorum(blockchain.getLast(), nonce, configValues, globalPeers);
+        ArrayList<Address> quorum = deriveQuorum(blockchain.getLast(), this.nonce, configValues, globalPeers);
 
         if(configValues.getDebugLevel() == 1) {
             System.out.println("Node " + myAddress.getPort() + ": Waiting for transaction: Next quorum: " + quorum);
@@ -928,7 +888,6 @@ public class Node  {
         if(inQuorum()){
             while(mempool.size() < configValues.getMinimumTransactions()){
                 try {
-                    //System.out.println("Node " + myAddress.getPort() + ": Waiting for transactions. Current transactions: " + mempool.size());
                     Thread.sleep(3000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -1108,6 +1067,7 @@ public class Node  {
     private TransactionValidator tv;
 
     private int nonce;
-    private boolean failedVote;
+    private ArrayList<String> failedVoteHashes;
+    private ArrayList<String> failedVoteTxList;
 
 }

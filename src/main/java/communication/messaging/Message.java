@@ -63,8 +63,7 @@ public class Message implements Serializable {
         ALERT_WALLET,
         REQUEST_TX,
         SEND_TX, 
-        INCREMENT_NONCE,
-        RESET_VOTE
+        FAILED_VOTE
     }
 
     /**
