@@ -207,7 +207,6 @@ public class Node  {
                 validatorObjects[1] = mempool;
 
             }else{
-                //tv = new HCTransactionValidator(); // To be changed to another configValues.getUse() case in the future
                 validatorObjects[0] = transaction;
             }
 

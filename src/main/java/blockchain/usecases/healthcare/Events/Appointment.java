@@ -3,8 +3,6 @@ package blockchain.usecases.healthcare.Events;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import javax.swing.text.DateFormatter;
-
 import blockchain.usecases.healthcare.Event;
 
 /**

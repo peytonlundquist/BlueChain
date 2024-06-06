@@ -13,7 +13,6 @@ import communication.messaging.Message;
 import utils.Address;
 import utils.merkletree.MerkleTreeProof;
 import blockchain.Transaction;
-import java.util.HashMap;
 
 /**
  * Represents a client application for interacting with the BlueChain network.
@@ -290,9 +289,9 @@ public class Client {
             while (true) {
                 try {
                     client = ss.accept();
-                    OutputStream out = client.getOutputStream();
+                    // OutputStream out = client.getOutputStream();
                     InputStream in = client.getInputStream();
-                    ObjectOutputStream oout = new ObjectOutputStream(out);
+                    // ObjectOutputStream oout = new ObjectOutputStream(out);
                     ObjectInputStream oin = new ObjectInputStream(in);
                     Message incomingMessage = (Message) oin.readObject();
                     
