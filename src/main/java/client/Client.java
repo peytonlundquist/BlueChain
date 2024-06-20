@@ -13,7 +13,6 @@ import communication.messaging.Message;
 import utils.Address;
 import utils.merkletree.MerkleTreeProof;
 import blockchain.Transaction;
-import java.util.HashMap;
 
 /**
  * Represents a client application for interacting with the BlueChain network.
@@ -284,7 +283,7 @@ public class Client {
             this.wallet = wallet;
         }
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings({ "unchecked", "unused" })
         public void run() {
             Socket client;
             while (true) {

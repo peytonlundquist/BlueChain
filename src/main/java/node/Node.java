@@ -238,7 +238,7 @@ public class Node  {
                     if(messageReceived.getRequest().name().equals("RECONCILE_BLOCK")){
                         Object[] blockData = (Object[]) messageReceived.getMetadata();
                         int blockId = (Integer) blockData[0];
-                        String blockHash = (String) blockData[1];
+                        //String blockHash = (String) blockData[1];
 
                         if(blockId == currentBlock.getBlockId()){
 
@@ -337,6 +337,7 @@ public class Node  {
                         MessagerPack mp = Messager.sendComplexMessage(quorumAddress, new Message(Message.Request.RECEIVE_MEMPOOL, keys), myAddress);                        ;
                         Message messageReceived = mp.getMessage();
                         if(messageReceived.getRequest().name().equals("REQUEST_TRANSACTION")){
+                            @SuppressWarnings("unchecked")
                             ArrayList<String> hashesRequested = (ArrayList<String>) messageReceived.getMetadata();
                             if(configValues.getDebugLevel() == 1) System.out.println("Node " + myAddress.getPort() + ": sendMempoolHashes: requested trans: " + hashesRequested);
                             ArrayList<Transaction> transactionsToSend = new ArrayList<>();
@@ -388,6 +389,7 @@ public class Node  {
                     oout.writeObject(new Message(Message.Request.REQUEST_TRANSACTION, keysAbsent));
                     oout.flush();
                     Message message = (Message) oin.readObject();
+                    @SuppressWarnings("unchecked")
                     ArrayList<Transaction> transactionsReturned = (ArrayList<Transaction>) message.getMetadata();
                     
                     for(Transaction transaction : transactionsReturned){
@@ -543,7 +545,7 @@ public class Node  {
 
             HashMap<String, Integer> hashVotes = new HashMap<>();
             String quorumBlockHash;
-            int block = blockchain.size() - 1;
+            //int block = blockchain.size() - 1;
             try {                
                 if(quorumBlock == null){
                     System.out.println("Node " + myAddress.getPort() + ": tallyQuorumSigs quorum null");
@@ -921,6 +923,7 @@ public class Node  {
             this.node = node;
         }
 
+        @SuppressWarnings("unused")
         public void run() {
             try {
                 Thread.sleep(10000);

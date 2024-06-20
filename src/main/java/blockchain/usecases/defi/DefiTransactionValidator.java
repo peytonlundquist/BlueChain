@@ -134,6 +134,7 @@ public class DefiTransactionValidator extends TransactionValidator{
     @Override
     public boolean validate(Object[] objects) {
         Transaction transaction = (Transaction) objects[0];
+        @SuppressWarnings("unchecked")
         HashMap<String, Transaction> assumedTransactions = (HashMap<String, Transaction>) objects[1];
         return isValid(transaction, accounts, assumedTransactions);
     }

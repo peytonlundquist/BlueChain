@@ -106,7 +106,7 @@ public class ServerConnection extends Thread {
                 node.addTransaction(transaction);
                 break;
             case RECEIVE_MEMPOOL:
-                Set<String> memPoolHashes = (HashSet<String>) incomingMessage.getMetadata();
+                @SuppressWarnings("unchecked") Set<String> memPoolHashes = (HashSet<String>) incomingMessage.getMetadata();
                 node.receiveMempoolHashes(memPoolHashes, oout, oin);
                 break;
             case QUORUM_READY:
@@ -135,6 +135,8 @@ public class ServerConnection extends Thread {
             case REQUEST_TX:
                 Object mData2 = (Object) incomingMessage.getMetadata();
                 node.getAllTransactions((Address) mData2);
+                break;
+            default:
                 break;
         }
     }

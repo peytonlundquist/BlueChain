@@ -1,7 +1,6 @@
 package utils;
 
 import java.io.Serializable;
-import java.util.Objects;
 
 /**
  * Represents a network address with a port and host.

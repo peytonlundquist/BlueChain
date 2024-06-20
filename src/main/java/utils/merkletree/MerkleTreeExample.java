@@ -4,7 +4,6 @@ import java.util.ArrayList;
 
 import blockchain.Transaction;
 import blockchain.usecases.defi.DefiTransaction;
-import utils.Hashing;
 
 public class MerkleTreeExample {
     public static void main(String[] args) {

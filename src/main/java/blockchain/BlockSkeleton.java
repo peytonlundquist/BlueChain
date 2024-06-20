@@ -2,7 +2,6 @@ package blockchain;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Set;
 
 /**
  * The BlockSkeleton class represents a simplified version of a block containing essential

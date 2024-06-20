@@ -18,6 +18,7 @@ public class Messager{
      * @param message The message to be sent.
      * @param myAddress The sender's address.
      */
+    @SuppressWarnings("unused")
     public static void sendOneWayMessage(Address address, Message message, Address myAddress) {
         try {
             Socket s = new Socket(address.getHost(), address.getPort());
