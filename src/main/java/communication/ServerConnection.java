@@ -102,6 +102,10 @@ public class ServerConnection extends Thread {
                 oout.flush();
                 break;
             case ADD_TRANSACTION:
+                if (node.getBlockchain() == null) {
+                    System.out.println("Transaction added before blockchain was initialized. Tx rejected.");
+                    break;
+                }
                 Transaction transaction = (Transaction) incomingMessage.getMetadata();
                 node.addTransaction(transaction);
                 break;
