@@ -46,10 +46,18 @@ BlueChain is not production-grade software, and should not be externally hosted 
     
     ./startNetwork.sh
     
-  4. Launch the client associated with the use case defined in the config file
-   - For the Defi use case for example, run 
+  5. Launch the client associated with the use case defined in the config file
+
+  - To launch the client, run the following command
     
-    ./startDefiWallet.sh 
+        ./startClient.sh
+
+  - Some use cases will have special clients.
+  - The health care use case has a special patient client where the patient can access all of their important information.
+  Launch the shell script below to access the patient client.
+
+        ./startPatientClient.sh
+    
       
 ### Running a cross-host Network
   For steps 1 and 2, please refer to the 'Running a Local Netork' section's steps 1 and 2
