@@ -19,15 +19,17 @@ import utils.Address;
 import utils.DSA;
 import utils.merkletree.MerkleTreeProof;
 
-public class DefiClient {
+public class DefiClient extends Client{
 
-    Object updateLock;
-    BufferedReader reader;
+    // Object updateLock;
+    // BufferedReader reader;
+
     ArrayList<Account> accounts; // Our defi account list
     HashSet<DefiTransaction> seenTransactions; // Transactions we've seen from full nodes
-    Address myAddress;
-    ArrayList<Address> fullNodes; // List of full nodes we want to use
-    boolean test; // Boolean for test vs normal output
+
+    // Address myAddress;
+    // ArrayList<Address> fullNodes; // List of full nodes we want to use
+    // boolean test; // Boolean for test vs normal output
 
 
     /**

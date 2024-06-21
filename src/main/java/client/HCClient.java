@@ -31,13 +31,15 @@ import utils.merkletree.MerkleTreeProof;
  * creates an event, the client will represent the event back to the user verifying that it was added.
  */
 
-public class HCClient {
+public class HCClient extends Client{
     
-    private Object updateLock;
-    private BufferedReader reader;
-    private Address myAddress;
-    private ArrayList<Address> fullNodes;
-    protected boolean test;
+    // private Object updateLock;
+    // private BufferedReader reader;
+    // private Address myAddress;
+    // private ArrayList<Address> fullNodes;
+    // protected boolean test;
+
+
     private boolean patientClient;
     private Patient currentPatient;
     private boolean initialized;
