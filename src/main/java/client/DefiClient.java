@@ -32,8 +32,8 @@ public class DefiClient extends Client{
      * @param myAddress The address of the client.
      * @param fullNodes The list of full nodes to interact with.
      */
-    public DefiClient(Object updateLock, BufferedReader reader, Address myAddress, ArrayList<Address> fullNodes){
-        super(updateLock, reader, myAddress, fullNodes);
+    public DefiClient(int port){
+        super(port);
 
         seenTransactions = new HashSet<>();
         accounts = new ArrayList<>();

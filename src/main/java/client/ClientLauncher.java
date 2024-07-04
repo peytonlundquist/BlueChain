@@ -26,22 +26,18 @@ public class ClientLauncher {
     Object updateLock; // Lock for multithreading
     boolean test; // Boolean for test vs normal output
     static String use;
-    DefiClient defiClient;
+    //DefiClient defiClient;
 
     HCClient hcClient;
     static boolean isPatient;
+    private Client client;
 
     /**
      * Constructs a Client instance.
      * @param port The port to bind the client's server socket.
      */
     public ClientLauncher(int port){
-
-        /* Initializations */
-        fullNodes = new ArrayList<>();
         reader = new BufferedReader(new InputStreamReader(System.in));
-        updateLock = new Object();
-
 
         /* Grab values from config file */
         String configFilePath = "src/main/java/config.properties";
@@ -58,73 +54,22 @@ public class ClientLauncher {
             e.printStackTrace();
         }
 
-        boolean boundToPort = false;
-        int portBindingAttempts = 10; // Amount of attempts to bind to a port
-        int fullNodeDefaultAmount = 3; // Full nodes we will try to connect to by default
+        if (use.equals("Defi")) {
+            client = new DefiClient(port);
+        } else if (use.equals("HC")) {
+            client = new HCClient(port);
 
-        String path = "./src/main/java/node/nodeRegistry/"; 
-        File folder = new File(path);        
-        File[] listOfFiles = folder.listFiles();
-
-        /* Iterate through each file in the nodeRegistry dir in order to derive our full nodes dynamically */
-        for (int i = 0; i < listOfFiles.length; i++) {
-
-            /* Make sure each item is in fact a file, isn't the special '.keep' file */
-            if (listOfFiles[i].isFile() && !listOfFiles[i].getName().contains("keep") && fullNodes.size() < fullNodeDefaultAmount) {
-
-                /* Extracting address from file name */
-                String[] addressStrings = listOfFiles[i].getName().split("_");
-                String hostname = addressStrings[0];
-                String portString[] = addressStrings[1].split((Pattern.quote(".")));
-                int fullNodePort = Integer.valueOf(portString[0]);
-                fullNodes.add(new Address(fullNodePort, hostname));
+            if (isPatient) {
+                ((HCClient) client).setPatientClient(true);
             }
         }
 
-        /* Binding to our Server Socket so full nodes can hit us up */
-        try {
-            ss = new ServerSocket(port);
-            boundToPort = true;
-        } catch (IOException e) {
-            for(int i = 1; i < portBindingAttempts; i++){ // We will try several attempts to find a port we can bind too
-                try {
-                    ss = new ServerSocket(port - i);
-                    boundToPort = true;
-                    port = port - i;
-                } catch (IOException E) {}
-            }
-        }
-
-        if(boundToPort == false){
-            System.out.println("Specify a new port in args[0]");
-            System.exit(1);
-        }
-
-        InetAddress ip;
-
-        try {
-            ip = InetAddress.getLocalHost();
-        } catch (UnknownHostException e) {
-            throw new RuntimeException(e);
-        }
-
-        String host = ip.getHostAddress();
-        myAddress = new Address(port, host);
+        this.ss = client.getSS();
+        this.fullNodes = client.getFullNodes();
+        this.myAddress = client.getMyAddress();
 
         Acceptor acceptor = new Acceptor(this);
         acceptor.start();
-
-        if (use.equals("Defi")) {
-            defiClient = new DefiClient(updateLock, reader, myAddress, fullNodes);
-            hcClient = null;
-        } else if (use.equals("HC")) {
-            defiClient = null;
-            hcClient = new HCClient(updateLock, reader, myAddress, fullNodes);
-
-            if (isPatient) {
-                hcClient.setPatientClient(true);
-            }
-        }
 
         System.out.println("Wallet bound to " + myAddress);
 
@@ -178,24 +123,24 @@ public class ClientLauncher {
 
                 /* Add account (or something similar depends on use) */
                 case("a"):
-                    if(use.equals("Defi")) defiClient.addAccount();
+                    if(use.equals("Defi")) ((DefiClient) client).addAccount();
                     if(use.equals("HC") && !isPatient) hcClient.createAppointment();
                     break;
 
                 /* Submit Transaction */
                 case("t"):
-                    if(use.equals("Defi")) defiClient.submitTransaction();
+                    if(use.equals("Defi")) ((DefiClient) client).submitTransaction();
                     break;
 
                 /* Print accounts (or something similar depends on use) */
                 case("p"):
-                    if(use.equals("Defi")) defiClient.printAccounts();
+                    if(use.equals("Defi")) ((DefiClient) client).printAccounts();
                     if(use.equals("HC") && !isPatient) hcClient.createPerscription();
                     break;
 
                 /* Print the specific usage / commmands */
                 case("h"):
-                    if(use.equals("Defi")) defiClient.printUsage();
+                    if(use.equals("Defi")) client.printUsage();
                     if(use.equals("HC") && !isPatient) hcClient.printUsage();
                     if(use.equals("HC") && isPatient) hcClient.printPatientUsage();
                     break;
@@ -265,8 +210,8 @@ public class ClientLauncher {
      */
     public void testNetwork(int iterations){
         if(use.equals("Defi")){
-            defiClient.test = true;
-            defiClient.testNetwork(iterations);
+            client.test = true;
+            client.testNetwork(iterations);
         } else {
             hcClient.test = true;
             hcClient.testNetwork(iterations);
@@ -285,12 +230,12 @@ public class ClientLauncher {
 
         @SuppressWarnings({ "unchecked", "unused" })
         public void run() {
-            Socket client;
+            Socket ssClient;
             while (true) {
                 try {
-                    client = ss.accept();
-                    OutputStream out = client.getOutputStream();
-                    InputStream in = client.getInputStream();
+                    ssClient = ss.accept();
+                    OutputStream out = ssClient.getOutputStream();
+                    InputStream in = ssClient.getInputStream();
                     ObjectOutputStream oout = new ObjectOutputStream(out);
                     ObjectInputStream oin = new ObjectInputStream(in);
                     Message incomingMessage = (Message) oin.readObject();
@@ -298,7 +243,7 @@ public class ClientLauncher {
                     if(incomingMessage.getRequest().name().equals("ALERT_WALLET")) {
                         MerkleTreeProof mtp = (MerkleTreeProof) incomingMessage.getMetadata();
                         if (use.equals("Defi")) {
-                            defiClient.updateAccounts(mtp);
+                            ((DefiClient) client).updateAccounts(mtp);
                         } else if (use.equals("HC")) {
                             hcClient.updatePatientDetails(mtp);
                         }

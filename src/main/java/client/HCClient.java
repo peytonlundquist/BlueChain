@@ -57,8 +57,8 @@ public class HCClient extends Client{
      * @param myAddress The address of the client.
      * @param fullNodes The address list of full nodes to use.
      */
-    public HCClient(Object updateLock, BufferedReader reader, Address myAddress, ArrayList<Address> fullNodes){
-        super(updateLock, reader, myAddress, fullNodes);
+    public HCClient(int port){
+        super(port);
         this.patientClient = false;
         this.currentPatient = null;
         this.initialized = false;
