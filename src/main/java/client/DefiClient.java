@@ -21,15 +21,8 @@ import utils.merkletree.MerkleTreeProof;
 
 public class DefiClient extends Client{
 
-    // Object updateLock;
-    // BufferedReader reader;
-
     ArrayList<Account> accounts; // Our defi account list
     HashSet<DefiTransaction> seenTransactions; // Transactions we've seen from full nodes
-
-    // Address myAddress;
-    // ArrayList<Address> fullNodes; // List of full nodes we want to use
-    // boolean test; // Boolean for test vs normal output
 
 
     /**
@@ -40,14 +33,10 @@ public class DefiClient extends Client{
      * @param fullNodes The list of full nodes to interact with.
      */
     public DefiClient(Object updateLock, BufferedReader reader, Address myAddress, ArrayList<Address> fullNodes){
-        this.reader = reader;
-        this.updateLock = updateLock;
-        this.myAddress = myAddress;
-        this.fullNodes = fullNodes;
+        super(updateLock, reader, myAddress, fullNodes);
 
         seenTransactions = new HashSet<>();
         accounts = new ArrayList<>();
-
     }
 
     /**
@@ -288,7 +277,7 @@ public class DefiClient extends Client{
      * Performs a network test with the specified number of iterations.
      * @param iterations The number of test iterations.
      */
-    void testNetwork(int j){
+    public void testNetwork(int j){
         System.out.println("Beginning Test");
         try {            
             testAddAccount("Satoshi");
@@ -326,7 +315,7 @@ public class DefiClient extends Client{
     /**
      * Prints the usage information for the BlueChain Wallet.
      */
-    protected void printUsage(){
+    public void printUsage(){
         System.out.println("BlueChain Wallet Usage:");
         System.out.println("a: Add a new account");
         System.out.println("t: Create a transaction");

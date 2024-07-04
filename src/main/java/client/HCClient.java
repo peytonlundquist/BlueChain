@@ -58,10 +58,7 @@ public class HCClient extends Client{
      * @param fullNodes The address list of full nodes to use.
      */
     public HCClient(Object updateLock, BufferedReader reader, Address myAddress, ArrayList<Address> fullNodes){
-        this.reader = reader;
-        this.updateLock = updateLock;
-        this.myAddress = myAddress;
-        this.fullNodes = fullNodes;
+        super(updateLock, reader, myAddress, fullNodes);
         this.patientClient = false;
         this.currentPatient = null;
         this.initialized = false;
@@ -546,7 +543,7 @@ public class HCClient extends Client{
      * number divisible by 4. Otherwise the test will fail.
      * @param j The number of events to add to the list.
      */
-    void testNetwork(int j){
+    public void testNetwork(int j){
         System.out.println("Beginning Test");
 
         if (j % 4 != 0) {
@@ -658,7 +655,7 @@ public class HCClient extends Client{
     /**
      * Prints the user menu to the client.
      */
-    protected void printUsage(){
+    public void printUsage(){
         System.out.println("BlueChain Health Care Usage:");
         System.out.println("a: Create a new appointment");
         System.out.println("p: Create a new perscription");
@@ -672,7 +669,7 @@ public class HCClient extends Client{
     /**
      * Prints the patient menu to the client.
      */
-    protected void printPatientUsage(){
+    public void printPatientUsage(){
         System.out.println("BlueChain Patient Health Care Usage:");
         System.out.println("c: Create a new account");
         System.out.println("s: Show account details");
