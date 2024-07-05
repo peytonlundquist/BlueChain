@@ -637,6 +637,11 @@ public class HCClient extends Client{
         }
     }
 
+    /**
+     * Helper method to check if a date is within a certain time
+     * frame.
+     * @throws IOException If an I/O error occurs.
+     */
     private boolean checkDate(Date date, int yearsBefore, int yearsAfter) {
         String dateParts[] = date.toString().split(" ");
         String year = dateParts[5];
@@ -648,9 +653,7 @@ public class HCClient extends Client{
         return true;
     }
 
-    public boolean isInitialized() {
-        return initialized;
-    }
+    public boolean isInitialized() { return initialized; }
 
     /**
      * Prints the user menu to the client.
@@ -675,6 +678,11 @@ public class HCClient extends Client{
         System.out.println("s: Show account details");
     }
 
+    /**
+     * Interprets the user input and calls the appropriate method.
+     * @param input The user input to interpret.
+     * @throws IOException If an I/O error occurs.
+     */
     public void interpretInput(String input) throws IOException, ParseException {
         try {
             switch(input){
@@ -710,6 +718,12 @@ public class HCClient extends Client{
         }
     }
 
+    /**
+     * Interprets the user input and calls the appropriate method. Only
+     * includes the patient options.
+     * @param input The user input to interpret.
+     * @throws IOException If an I/O error occurs.
+     */
     public void interpretPatientInput(String input) throws IOException, ParseException {
         try {
             switch(input){

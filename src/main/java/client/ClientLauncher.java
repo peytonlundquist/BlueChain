@@ -87,8 +87,8 @@ public class ClientLauncher {
                 port = Integer.valueOf(args[0]);
             }else if(args[0].equals("-test")){
                 ClientLauncher testClient = new ClientLauncher(port);
-                testClient.test = true;
-                testClient.testNetwork( Integer.valueOf(args[1]));
+                testClient.client.test = true;
+                testClient.client.testNetwork( Integer.valueOf(args[1]));
                 System.exit(0);
             } else if (args[0].equals("-patient")) {
                 isPatient = true;

@@ -112,17 +112,9 @@ public abstract class Client {
         acceptor.start();
     }
 
-    public ServerSocket getSS() {
-        return ss;
-    }
-
-    public ArrayList<Address> getFullNodes() {
-        return fullNodes;
-    }
-
-    public Address getMyAddress() {
-        return myAddress;
-    }
+    public ServerSocket getSS() { return ss; }
+    public ArrayList<Address> getFullNodes() { return fullNodes; }
+    public Address getMyAddress() { return myAddress; }
 
     /**
      * Update the list of full nodes we are communicating with in the network
@@ -152,6 +144,7 @@ public abstract class Client {
         }
     }
 
+    // Abstract methods
     public abstract void testNetwork(int numOfTests);
     public abstract void printUsage();
     public abstract void interpretInput(String input) throws IOException, ParseException;
