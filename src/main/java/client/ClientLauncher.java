@@ -5,14 +5,10 @@ import java.net.*;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Properties; 
-import java.util.regex.Pattern;
 
 import com.github.lalyos.jfiglet.FigletFont;
 
-import communication.messaging.Message;
 import utils.Address;
-import utils.merkletree.MerkleTreeProof;
-import blockchain.Transaction;
 
 /**
  * Represents a client application for interacting with the BlueChain network.
@@ -68,9 +64,6 @@ public class ClientLauncher {
         this.fullNodes = client.getFullNodes();
         this.myAddress = client.getMyAddress();
 
-        Acceptor acceptor = new Acceptor(this);
-        acceptor.start();
-
         System.out.println("Wallet bound to " + myAddress);
 
         if(!this.test) System.out.println("Full Nodes to connect to by default: \n" + fullNodes + 
@@ -118,47 +111,5 @@ public class ClientLauncher {
     public void testNetwork(int iterations){
         client.test = true;
         client.testNetwork(iterations);
-    }
-
-    /**
-     *  A thread for accepting incoming connections.
-     */
-    class Acceptor extends Thread {
-        ClientLauncher wallet;
-
-        Acceptor(ClientLauncher wallet){
-            this.wallet = wallet;
-        }
-
-        @SuppressWarnings({ "unchecked", "unused" })
-        public void run() {
-            Socket ssClient;
-            while (true) {
-                try {
-                    ssClient = ss.accept();
-                    OutputStream out = ssClient.getOutputStream();
-                    InputStream in = ssClient.getInputStream();
-                    ObjectOutputStream oout = new ObjectOutputStream(out);
-                    ObjectInputStream oin = new ObjectInputStream(in);
-                    Message incomingMessage = (Message) oin.readObject();
-                    
-                    if(incomingMessage.getRequest().name().equals("ALERT_WALLET")) {
-                        MerkleTreeProof mtp = (MerkleTreeProof) incomingMessage.getMetadata();
-                        if (use.equals("Defi")) {
-                            ((DefiClient) client).updateAccounts(mtp);
-                        } else if (use.equals("HC")) {
-                            ((HCClient) client).updatePatientDetails(mtp);
-                        }
-                    } else if (incomingMessage.getRequest().name().equals("SEND_TX")) {
-                        ((HCClient) client).initializeClient((ArrayList<Transaction>) incomingMessage.getMetadata());
-                    }
-                } catch (IOException e) {
-                    System.out.println(e);
-                    throw new RuntimeException(e);
-                } catch (ClassNotFoundException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
     }
 }

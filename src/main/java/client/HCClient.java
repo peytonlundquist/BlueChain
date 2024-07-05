@@ -1,6 +1,5 @@
 package client;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
@@ -85,6 +84,7 @@ public class HCClient extends Client{
      * 
      * @param ledger The BlockChain ledger to initialize the client with.
      */
+    @Override
     public void initializeClient(ArrayList<Transaction> ledger) {
         for (Transaction transaction : ledger) {
             HCTransaction hcTransaction = (HCTransaction) transaction;
@@ -440,7 +440,7 @@ public class HCClient extends Client{
      * @param mtp The MerkleTreeProof containing the transaction to update the client with.
      * @throws IOException If an I/O error occurs.
      */
-    public void updatePatientDetails(MerkleTreeProof mtp) throws IOException {
+    public void updateAccounts(MerkleTreeProof mtp) throws IOException {
         synchronized(updateLock){
 
             HCTransaction transaction = (HCTransaction) mtp.getTransaction();

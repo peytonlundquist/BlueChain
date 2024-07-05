@@ -1,6 +1,5 @@
 package client;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
@@ -156,7 +155,7 @@ public class DefiClient extends Client{
      * Updates the client's accounts based on a MerkleTreeProof.
      * @param mtp The MerkleTreeProof containing the transaction information.
      */
-    protected void updateAccounts(MerkleTreeProof mtp){
+    public void updateAccounts(MerkleTreeProof mtp) throws IOException{
         synchronized(updateLock){
 
             DefiTransaction transaction = (DefiTransaction) mtp.getTransaction();

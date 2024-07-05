@@ -2,16 +2,27 @@ package client;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Properties;
 import java.util.regex.Pattern;
 
+import blockchain.Transaction;
+import communication.messaging.Message;
 import utils.Address;
+import utils.merkletree.MerkleTreeProof;
 
 public abstract class Client {
     protected Object updateLock;
@@ -21,6 +32,7 @@ public abstract class Client {
     protected boolean test;
 
     private ServerSocket ss;
+    private String use;
 
     public Client(int port) {
         /* Initializations */
@@ -31,6 +43,21 @@ public abstract class Client {
         boolean boundToPort = false;
         int portBindingAttempts = 10; // Amount of attempts to bind to a port
         int fullNodeDefaultAmount = 3; // Full nodes we will try to connect to by default
+
+        /* Grab values from config file */
+        String configFilePath = "src/main/java/config.properties";
+        FileInputStream fileInputStream;
+
+        try {
+            fileInputStream = new FileInputStream(configFilePath);    
+            Properties prop = new Properties();
+            prop.load(fileInputStream);
+            use = prop.getProperty("USE");
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         String path = "./src/main/java/node/nodeRegistry/"; 
         File folder = new File(path);        
@@ -80,6 +107,9 @@ public abstract class Client {
 
         String host = ip.getHostAddress();
         this.myAddress = new Address(port, host);
+
+        Acceptor acceptor = new Acceptor(this);
+        acceptor.start();
     }
 
     public ServerSocket getSS() {
@@ -125,4 +155,44 @@ public abstract class Client {
     public abstract void testNetwork(int numOfTests);
     public abstract void printUsage();
     public abstract void interpretInput(String input) throws IOException, ParseException;
+    public abstract void updateAccounts(MerkleTreeProof mtp) throws IOException;
+    public void initializeClient(ArrayList<Transaction> transactions) {}
+
+    /**
+     *  A thread for accepting incoming connections.
+     */
+    class Acceptor extends Thread {
+        Client wallet;
+
+        Acceptor(Client client){
+            this.wallet = client;
+        }
+
+        @SuppressWarnings({ "unchecked", "unused" })
+        public void run() {
+            Socket ssClient;
+            while (true) {
+                try {
+                    ssClient = ss.accept();
+                    OutputStream out = ssClient.getOutputStream();
+                    InputStream in = ssClient.getInputStream();
+                    ObjectOutputStream oout = new ObjectOutputStream(out);
+                    ObjectInputStream oin = new ObjectInputStream(in);
+                    Message incomingMessage = (Message) oin.readObject();
+                    
+                    if(incomingMessage.getRequest().name().equals("ALERT_WALLET")) {
+                        MerkleTreeProof mtp = (MerkleTreeProof) incomingMessage.getMetadata();
+                        updateAccounts(mtp);
+                    } else if (incomingMessage.getRequest().name().equals("SEND_TX") && use.equals("HC")) {
+                        initializeClient((ArrayList<Transaction>) incomingMessage.getMetadata());
+                    }
+                } catch (IOException e) {
+                    System.out.println(e);
+                    throw new RuntimeException(e);
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
 }
