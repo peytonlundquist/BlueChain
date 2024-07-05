@@ -2,15 +2,13 @@ package client;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.UnknownHostException;
+import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Properties;
 import java.util.regex.Pattern;
 
 import utils.Address;
@@ -96,6 +94,35 @@ public abstract class Client {
         return myAddress;
     }
 
+    /**
+     * Update the list of full nodes we are communicating with in the network
+     * @throws IOException If an I/O error occurs.
+     */
+    public void updateFullNode() throws IOException{
+        System.out.println("Updating Full Nodes. \nAdd or remove? ('a' or 'r'): ");
+        String response = reader.readLine();
+        if(response.equals("a")){
+            System.out.println("Full Node host?: ");
+            String hostname = reader.readLine();
+            System.out.println("Full Node port?: ");
+            String port = reader.readLine();
+            fullNodes.add(new Address(Integer.valueOf(port), hostname));
+        }else if(response.equals("r")){
+            System.out.println("Full Node index to remove?: \n" + fullNodes);
+            int index = Integer.parseInt(reader.readLine());
+            if(index > fullNodes.size()){
+                System.out.println("Index not in range.");
+                return;
+            } 
+
+            Address removedAddress = fullNodes.remove(index);
+            System.out.println("Removed full node: " + removedAddress);
+        }else{
+            System.out.println("Invalid option");
+        }
+    }
+
     public abstract void testNetwork(int numOfTests);
     public abstract void printUsage();
+    public abstract void interpretInput(String input) throws IOException, ParseException;
 }

@@ -30,7 +30,7 @@ public class ClientLauncher {
 
     HCClient hcClient;
     static boolean isPatient;
-    private Client client;
+    public Client client;
 
     /**
      * Constructs a Client instance.
@@ -102,105 +102,12 @@ public class ClientLauncher {
             }
         }
 
-        ClientLauncher client = new ClientLauncher(port);
+        ClientLauncher clientLauncher = new ClientLauncher(port);
 
         while(!input.equals("exit") | !input.equals("e")){
             System.out.print(">");
             input = mainReader.readLine();
-            client.interpretInput(input);
-        }
-    }
-
-    /**
-     * Interpret the string input
-     * 
-     * @param input the string to interpret
-     * @throws ParseException 
-     */
-    public void interpretInput(String input) throws ParseException{
-        try {
-            switch(input){
-
-                /* Add account (or something similar depends on use) */
-                case("a"):
-                    if(use.equals("Defi")) ((DefiClient) client).addAccount();
-                    if(use.equals("HC") && !isPatient) hcClient.createAppointment();
-                    break;
-
-                /* Submit Transaction */
-                case("t"):
-                    if(use.equals("Defi")) ((DefiClient) client).submitTransaction();
-                    break;
-
-                /* Print accounts (or something similar depends on use) */
-                case("p"):
-                    if(use.equals("Defi")) ((DefiClient) client).printAccounts();
-                    if(use.equals("HC") && !isPatient) hcClient.createPerscription();
-                    break;
-
-                /* Print the specific usage / commmands */
-                case("h"):
-                    if(use.equals("Defi")) client.printUsage();
-                    if(use.equals("HC") && !isPatient) hcClient.printUsage();
-                    if(use.equals("HC") && isPatient) hcClient.printPatientUsage();
-                    break;
-
-                case("n"):
-                    if(use.equals("HC") && !isPatient) hcClient.createNewPatient();
-                    break;
-
-                case("r"):
-                    if(use.equals("HC") && !isPatient) hcClient.updateRecord();
-                    break;
-
-                case("s"):
-                    if(use.equals("HC")) hcClient.showPatientDetails();
-                    break;
-
-                case("c"):
-                    if(use.equals("HC")) hcClient.createNewPatient();
-                    break;
-
-                case ("d"):
-                    if(use.equals("HC") && !isPatient) hcClient.showAllPatients();
-                    break;
-
-                /* Update full nodes */
-                case("u"):
-                    updateFullNode();
-                    break;
-    
-            }
-        } catch (IOException e) {
-            System.out.println("Input malformed. Try again.");
-        } 
-    }
-
-    /**
-     * Update the list of full nodes we are communicating with in the network
-     * @throws IOException If an I/O error occurs.
-     */
-    public void updateFullNode() throws IOException{
-        System.out.println("Updating Full Nodes. \nAdd or remove? ('a' or 'r'): ");
-        String response = reader.readLine();
-        if(response.equals("a")){
-            System.out.println("Full Node host?: ");
-            String hostname = reader.readLine();
-            System.out.println("Full Node port?: ");
-            String port = reader.readLine();
-            fullNodes.add(new Address(Integer.valueOf(port), hostname));
-        }else if(response.equals("r")){
-            System.out.println("Full Node index to remove?: \n" + fullNodes);
-            int index = Integer.parseInt(reader.readLine());
-            if(index > fullNodes.size()){
-                System.out.println("Index not in range.");
-                return;
-            } 
-
-            Address removedAddress = fullNodes.remove(index);
-            System.out.println("Removed full node: " + removedAddress);
-        }else{
-            System.out.println("Invalid option");
+            clientLauncher.client.interpretInput(input);
         }
     }
 
@@ -209,13 +116,8 @@ public class ClientLauncher {
      * @param iterations The number of test iterations.
      */
     public void testNetwork(int iterations){
-        if(use.equals("Defi")){
-            client.test = true;
-            client.testNetwork(iterations);
-        } else {
-            hcClient.test = true;
-            hcClient.testNetwork(iterations);
-        }
+        client.test = true;
+        client.testNetwork(iterations);
     }
 
     /**
@@ -245,10 +147,10 @@ public class ClientLauncher {
                         if (use.equals("Defi")) {
                             ((DefiClient) client).updateAccounts(mtp);
                         } else if (use.equals("HC")) {
-                            hcClient.updatePatientDetails(mtp);
+                            ((HCClient) client).updatePatientDetails(mtp);
                         }
                     } else if (incomingMessage.getRequest().name().equals("SEND_TX")) {
-                        hcClient.initializeClient((ArrayList<Transaction>) incomingMessage.getMetadata());
+                        ((HCClient) client).initializeClient((ArrayList<Transaction>) incomingMessage.getMetadata());
                     }
                 } catch (IOException e) {
                     System.out.println(e);

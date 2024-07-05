@@ -322,4 +322,35 @@ public class DefiClient extends Client{
         System.out.println("p: Print acccounts and balances");
         System.out.println("u: Update full nodes");
     }
+
+    /**
+     * Interprets the user input and performs the corresponding action.
+     * @param input The user input.
+     * @throws IOException If an I/O error occurs.
+     */
+    public void interpretInput(String input) throws IOException{
+        try {
+            switch(input){
+                case("h"):
+                    printUsage();
+                    break;
+                case("a"):
+                    addAccount();
+                    break;
+                case("t"):
+                    submitTransaction();
+                    break;
+                case("p"):
+                    printAccounts();
+                    break;
+                case("u"):
+                    updateFullNode();
+                    break;
+                default:
+                    break;
+            }
+        } catch (IOException e) {
+            System.out.println("Input malformed. Try again.");
+        }
+    }
 }

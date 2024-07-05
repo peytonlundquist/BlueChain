@@ -674,4 +674,59 @@ public class HCClient extends Client{
         System.out.println("c: Create a new account");
         System.out.println("s: Show account details");
     }
+
+    public void interpretInput(String input) throws IOException, ParseException {
+        try {
+            switch(input){
+                case("h"):
+                    printUsage();
+                    break;
+                case("a"):
+                    createAppointment();
+                    break;
+                case("p"):
+                    createPerscription();
+                    break;
+                case("r"):
+                    updateRecord();
+                    break;
+                case("c"):
+                    createNewPatient();
+                    break;
+                case("s"):
+                    showPatientDetails();
+                    break;
+                case("d"):
+                    showAllPatients();
+                    break;
+                case("u"):
+                    updateFullNode();
+                    break;
+                default:
+                    break;
+            }
+        } catch (IOException e) {
+            System.out.println("Input malformed. Try again.");
+        }
+    }
+
+    public void interpretPatientInput(String input) throws IOException, ParseException {
+        try {
+            switch(input){
+                case("h"):
+                    printPatientUsage();
+                    break;
+                case("c"):
+                    createNewPatient();
+                    break;
+                case("s"):
+                    showPatientDetails();
+                    break;
+                default:
+                    break;
+            }
+        } catch (IOException e) {
+            System.out.println("Input malformed. Try again.");
+        }
+    }
 }
